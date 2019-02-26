@@ -3,14 +3,90 @@ const graphlite = require('../src');
 
 const connection = new connectionProvider('./test/databases/test.db');
 
+const products = {
+  name: 'product',
+  tableName: 'PRODUTO',
+  properties: {
+    DescricaoProduto: 'string',
+    Numero: {
+      type: 'string',
+      alias: 'NumeroProduto'
+    },
+    FotoProduto: {
+      resolve: ['ArquivoFotoProduto', 'ArquivoFotoProduto2']
+    }
+  },
+  hasMany: 'aplication'
+}
+
+const makers = {
+  name: 'maker',
+  tableName: 'fabricante',
+  properties: {
+    DescricaoFabricante: 'string'
+  }
+}
+
+const aplications = {
+  name: 'aplication',
+  tableName: 'APLICACAO',
+  properties: {
+    DescricaoAplicacao: 'string',
+    complemento: {
+      join: ['ComplementoAplicacao2', 'ComplementoAplicacao']
+    }
+  },
+  hasOne: 'maker'
+};
+
+const result = {
+  name: 'result',
+  graph: {
+    product: {
+      properties: "*",
+      aplication: {
+        properties: [
+          "DescricaoAplicacao",
+        ],
+        // maker: {
+        //   properties: "*"
+        // }
+      },
+      where: {
+        DescricaoProduto: "var"
+      }
+    }
+  }
+};
+
+const makersList = {
+  name: 'markersList',
+  graph: {
+    maker: {
+      properties: [
+        "_id",
+        "DescricaoFabricante"
+      ],
+      where: {
+        hasOne: "product"
+      }
+    }
+  }
+};
+
+
 const instance = new graphlite({
   connection,
   schema: [
-    require('./models/products'),
-    require('./models/aplications'),
-    require('./models/result'),
+    products,
+    makers,
+    aplications,
+    // result
+  ],
+  queries: [
+    result,
+    // makersList
   ]
 });
 
-// console.log(instance);
-instance.findAll('result');
+instance.test('result');
