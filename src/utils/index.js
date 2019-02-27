@@ -1,22 +1,29 @@
-const jtree = require('./jtree');
-const createHashCode = require('./create-hash-code');
-const type = require('./type');
-const isArray = require('./is-array');
-const isNumber = require('./is-number');
-const isString = require('./is-string');
-const isObject = require('./is-object');
-const isFunction = require('./is-function');
-const isDef = require('./is-def');
-const quote = require('./quote');
-const pbcopy = require('./pbcopy');
-const xtend = require('./xtend');
-const keys = require('./keys');
+const	jtree           = require('./jtree'),
+      createHashCode  = require('./create-hash-code'),
+      type            = require('./type'),
+      isArray         = require('./is-array'),
+      isBoolean       = require('./is-boolean'),
+      isNumber        = require('./is-number'),
+      isString        = require('./is-string'),
+      isObject        = require('./is-object'),
+      isFunction      = require('./is-function'),
+      isDef           = require('./is-def'),
+      quote           = require('./quote'),
+      pbcopy          = require('./pbcopy'),
+      xtend           = require('./xtend'),
+      keys            = require('./keys'),
+      defaults        = require('./defaults'),
+      pickBy          = require('./pick-by'),
+      equals          = require('./equals'),
+      copy            = require('./copy'),
+      jpretty         = require('./jpretty');
 
 module.exports = {
   jtree,
   createHashCode,
   type,
   isArray,
+  isBoolean,
   isNumber,
   isString,
   isObject,
@@ -26,4 +33,9 @@ module.exports = {
   pbcopy,
   xtend,
   keys,
-};
+  defaults,
+  pickBy,
+  equals,
+  copy,
+  jpretty,
+}

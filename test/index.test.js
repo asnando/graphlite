@@ -1,12 +1,19 @@
 const connectionProvider = require('./connection-provider');
-const graphlite = require('../src');
+const GraphLite = require('../src');
 
 const connection = new connectionProvider('./test/databases/test.db');
+
+const graphlite = new GraphLite({
+  connection
+});
 
 const products = {
   name: 'product',
   tableName: 'PRODUTO',
   properties: {
+    CodigoProduto: {
+      type: 'primaryKey'
+    },
     DescricaoProduto: 'string',
     Numero: {
       type: 'string',
@@ -16,13 +23,20 @@ const products = {
       resolve: ['ArquivoFotoProduto', 'ArquivoFotoProduto2']
     }
   },
-  hasMany: 'aplication'
+  // hasMany: 'aplication'
+  // hasMany: {
+  //   aplication: {
+  //     tableName: '',
+  //     foreignKey: ''
+  //   }
+  // }
 }
 
 const makers = {
   name: 'maker',
-  tableName: 'fabricante',
+  tableName: 'FABRICANTE',
   properties: {
+    CodigoFabricante: 'primaryKey',
     DescricaoFabricante: 'string'
   }
 }
@@ -31,12 +45,13 @@ const aplications = {
   name: 'aplication',
   tableName: 'APLICACAO',
   properties: {
+    CodigoAplicacao: 'primaryKey',
     DescricaoAplicacao: 'string',
     complemento: {
       join: ['ComplementoAplicacao2', 'ComplementoAplicacao']
     }
   },
-  hasOne: 'maker'
+  // hasOne: 'maker'
 };
 
 const result = {
@@ -45,12 +60,10 @@ const result = {
     product: {
       properties: "*",
       aplication: {
+        type: 'array',
         properties: [
           "DescricaoAplicacao",
         ],
-        // maker: {
-        //   properties: "*"
-        // }
       },
       where: {
         DescricaoProduto: "var"
@@ -74,19 +87,11 @@ const makersList = {
   }
 };
 
+graphlite
+  .defineSchema(products)
+  .defineSchema(makers)
+  .defineSchema(aplications)
+  .defineQuery(result)
+  // .defineQuery(makersList);
 
-const instance = new graphlite({
-  connection,
-  schema: [
-    products,
-    makers,
-    aplications,
-    // result
-  ],
-  queries: [
-    result,
-    // makersList
-  ]
-});
-
-instance.test('result');
+graphlite.test('result');
