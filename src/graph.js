@@ -1,46 +1,55 @@
 const _ = require('./utils');
+const GraphNode = require('./graph-node');
+
 const debug = require('./utils/debug'),
       warn  = require('./utils/warn');
 
 class Graph {
   constructor() {
-    this._rootNode = null;
-    this._lastNode = null;
+    this.head = null;
+    this.tail = null;
     this.graph = {};
   }
-  addNode(nodeHash, node) {
-    if (!this._rootNode) {
-      this._rootNode = nodeHash;
-    }
-    if (this._lastNode) {
-      node._prevNode = this._lastNode;
-      this.graph[node._prevNode]._nextNodes.push(node);
-    }
-    node.parent = !this._lastNode ? this.getNode.bind(this, null) : this.getNode.bind(this, node._prevNode);
-    node._nextNodes = [];
+  addNode(nodeHash, node, nodeResolver) {
+    // Sets the head if not defined yet
+    this.head = this.head || nodeHash;
+    // Creates a node witin the hash
+    node = new GraphNode({
+      nodeHash,
+      resolver: nodeResolver,
+      node
+    });
+    // Adds the new node to the graph
     this.graph[nodeHash] = node;
-    this._lastNode = nodeHash;
+    if (!!this.tail) {
+      // Sets tail node as previous node
+      node.setPreviousNode(this.getNode(this.tail));
+      // Add this node as the next node to the previous
+      this.getNode(this.tail).addNextNode(node);
+    }
+    // Updates the tail
+    this.tail = nodeHash;
   }
   getNode(nodeHash) {
-    const node = this.graph[nodeHash];
-    if (_.isDef(node)) {
-      node.resolveNextNodes = this._resolveNextNodes;
-    }
-    return node;
+    return this.graph[nodeHash];
   }
-  getRootNodeHash() {
-    return this._rootNode;
+  getHeadNode() {
+    return this.graph[this.getHeadNodeHash()];
   }
-  walk(walker, nodeHash = this.getRootNodeHash()) {
-    if (!_.isFunction(walker)) return;
-    const node = this.getNode(nodeHash);
-    walker(node);
-    if (node._nextNodes.length) {
-      node._nextNodes.forEach(nextNode => this.walk(walker, nextNode));
-    }
+  getTailNode() {
+    return this.graph[this.getTailNodeHash()];
   }
-  _resolveNextNodes() {
-    return this._nextNodes.map(nextNode => nextNode.resolve()).join('');
+  getHeadNodeHash() {
+    return this.head;
+  }
+  getTailNodeHash() {
+    return this.tail;
+  }
+  resolve() {
+    return this.getHeadNode().resolve();
+  }
+  walk() {
+
   }
 }
 

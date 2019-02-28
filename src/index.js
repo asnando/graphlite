@@ -26,19 +26,25 @@ class GraphLite {
     query.build(queryOpts);
   }
 
-  _schemaProvider(schemaName) {
-    return this._schema.find(schema => schema.name === schemaName);
+  defineSchema(name, opts) {
+    opts = _.isObject(name) ? name : opts;
+    name = _.isObject(name) ? name.name : name;
+    const schema = new Schema(name, opts);
+    this._schema.push(schema);
+    return schema;
   }
 
-  defineSchema(schema) {
-    this._schema.push(new Schema(schema));
-    return this;
-  }
-
-  defineQuery(query) {
+  defineQuery(name, graph) {
     const schemaProvider = this._schemaProvider.bind(this);
-    this._queries.push(new Query(_.xtend(query, { schemaProvider })));
-    return this;
+    graph = _.isObject(name) ? name : graph;
+    name = _.isObject(name) ? name.name : name;
+    const query = new Query(name, graph, schemaProvider);
+    this._queries.push(query);
+    return query;
+  }
+
+  executeRawQuery(query) {
+    return this.connection.run(query);
   }
 
 }

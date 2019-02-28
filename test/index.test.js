@@ -3,12 +3,9 @@ const GraphLite = require('../src');
 
 const connection = new connectionProvider('./test/databases/test.db');
 
-const graphlite = new GraphLite({
-  connection
-});
+const graphlite = new GraphLite({ connection });
 
-const products = {
-  name: 'product',
+const products = graphlite.defineSchema('product', {
   tableName: 'PRODUTO',
   properties: {
     CodigoProduto: {
@@ -21,27 +18,26 @@ const products = {
     },
     FotoProduto: {
       resolve: ['ArquivoFotoProduto', 'ArquivoFotoProduto2']
+    },
+    preco: {
+      alias: 'PrecoProduto',
+      parse: function(value) {
+        return value || 1;
+      }
     }
-  },
-  // hasMany: 'aplication'
-  // hasMany: {
-  //   aplication: {
-  //     tableName: '',
-  //     foreignKey: ''
-  //   }
-  // }
-}
+  }
+});
 
-const makers = {
-  name: 'maker',
+const automakers = graphlite.defineSchema({
+  name: 'automaker',
   tableName: 'FABRICANTE',
   properties: {
     CodigoFabricante: 'primaryKey',
     DescricaoFabricante: 'string'
   }
-}
+});
 
-const aplications = {
+const aplications = graphlite.defineSchema({
   name: 'aplication',
   tableName: 'APLICACAO',
   properties: {
@@ -50,48 +46,25 @@ const aplications = {
     complemento: {
       join: ['ComplementoAplicacao2', 'ComplementoAplicacao']
     }
-  },
-  // hasOne: 'maker'
-};
+  }
+});
 
-const result = {
-  name: 'result',
-  graph: {
-    product: {
-      properties: "*",
-      aplication: {
-        type: 'array',
-        properties: [
-          "DescricaoAplicacao",
-        ],
-      },
-      where: {
-        DescricaoProduto: "var"
-      }
+products.hasMany(automakers);
+automakers.belongsTo(products);
+automakers.hasOne(aplications);
+aplications.belongsTo(automakers);
+
+const test = graphlite.defineQuery('test', {
+  product: {
+    properties: '*',
+    automaker: {
+      properties: '*',
+      aplication: '*'
     }
   }
-};
+});
 
-const makersList = {
-  name: 'markersList',
-  graph: {
-    maker: {
-      properties: [
-        "_id",
-        "DescricaoFabricante"
-      ],
-      where: {
-        hasOne: "product"
-      }
-    }
-  }
-};
+graphlite.test('test');
 
-graphlite
-  .defineSchema(products)
-  .defineSchema(makers)
-  .defineSchema(aplications)
-  .defineQuery(result)
-  // .defineQuery(makersList);
-
-graphlite.test('result');
+// sourceKey, targetKey
+// sourceTable, targetTable

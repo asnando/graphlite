@@ -4,89 +4,157 @@ const alert = require('./utils/alert');
 const  _ = require('./utils/');
 const Graph = require('./graph');
 
-// TODO: Create query nodes resolvers.
-
 class Query {
 
-  constructor(opts) {
-    this.name = opts.name;
-    this.rawGraph = opts.graph;
-    this.schemaProvider = opts.schemaProvider;
+  constructor(name, graph, schemaProvider) {
+    this.name = name;
+    this.rawGraph = graph;
+    this.schemaProvider = schemaProvider;
     this.graph = this._resolveGraph(this.rawGraph);
   }
 
   _resolveGraph(graph) {
     let resolvedGraph = new Graph();
-
+    const schemaProvider = this.schemaProvider;
     _.jtree(graph, (node, path) => {
       const isSchemaNode = !/^\$$/.test(path) && !/(?<=\.where)|(properties|\d|where|type|(?<=has)(\w+)|(?<=\_)\w+)$/.test(path);
+
       if (!isSchemaNode) return;
+
       const schemaName = path.split('.').pop();
+
       // Resolves the schema graph
-      if (_.isFunction(this.schemaProvider)) {
-        
-        const schema = this.schemaProvider(schemaName);
-        if (!schema) throw new Error(`Coult not detect schema configuration for "${schemaName}".`);
-        
-        const resolvedProperties = _.equals(node.properties, '*') ? schema.properties
-          : schema.properties.filter(schemaProp => node.properties.includes(schemaProp.name));
-
-        resolvedGraph.addNode(schema.hash, {
-          properties: resolvedProperties,
-          tableName: schema.tableName,
-          hash: schema.hash,
-          type: _.defaults(node.type, 'object'),
-          options: {
-            where: node.where,
-            orderBy: node.orderBy,
-            size: node.size,
-            page: node.page
-          },
-          resolveProperties: schema._resolveProperties,
-          resolve: this._resolveQueryNode
-        });
-
+      const schema = schemaProvider(schemaName);
+      
+      if (!schema) {
+        throw new Error(`Could not detect schema configuration for "${schemaName}".`);
       }
+
+      function schemaBelongsToParent() {
+        const parent = resolvedGraph.getTailNode().raw();
+        return !!schema.belongs.many[parent.name] || !!schema.belongs.one[parent.name];
+      }
+
+      function hasRelationWithParent() {
+        const parent = resolvedGraph.getTailNode().raw();
+        return !!parent.has.many[schema.name] || !!parent.has.one[schema.name];
+      }
+
+      function getParentName() {
+        return resolvedGraph.getTailNode().raw().name;
+      }
+
+      let relationSize;
+      
+      // Check if this schema have relation with the parent schema.
+      if (resolvedGraph.tail && (!schemaBelongsToParent() || !hasRelationWithParent())) {
+        throw(`"${schema.name}" is not related to "${getParentName()}"`);
+      }
+
+      return resolvedGraph.addNode(schema.hash, {
+        ...schema,
+        options: {
+          where: node.where,
+          orderBy: node.orderBy,
+          size: node.size,
+          page: node.page
+        },
+        relationSize,
+        // 
+        resolveTableName: schema._resolveTableName,
+        resolveSource: function() {
+
+        },
+        resolveProperties: schema._resolveProperties,
+        resolveOptions: function() {
+          return '';
+        }
+      }, graphNodeResolver);
     });
     return resolvedGraph;
   }
 
-  _resolveQueryNode() {
-    debug('Resolve Query Node:', this);
-    return this.resolveProperties();
-  }
-
   build(options = {}) {
     alert(`Building query "${this.name}" with options ${_.jpretty(options)}`);
-    // this.graph.walk(node => {
-      const node = this.graph.getNode(this.graph.getRootNodeHash());
-      let query;
-      const parent = node.parent();
-      const fields = node.resolveProperties();
-      const schemaType = node.type;
-      const schemaName = node.tableName;
-
-      switch (schemaType) {
-        case 'object':
-          query = `SELECT json_object(${fields}) FROM ${schemaName}`;
-          break;
-        case 'array':
-          query = `SELECT json_group_array(json_object(${fields})) FROM ${schemaName}`;
-          break;
-      };
-
-      debug(node.resolveNextNodes());
-
-      // if (!!parent) {
-      //   const parentSchemaName = parent.tableName;
-      //   query += ``;
-      // }
-
-      debug('***');
-      debug(query);
-    // });
+    this.graph.resolve();
   }
 
+}
+
+function graphNodeResolver(rawNode, node, nextNodes) {
+
+  function objectHasOneKey(object) {
+    for (let key in object) {
+      if (_.isDef(object[key])) return true;
+    }
+    return false;
+  }
+
+  let query = '';
+
+  const parent      = node.getParent(),
+        fields      = rawNode.resolveProperties(),
+        objectType  = rawNode.relationSize || 'object',
+        options     = rawNode.options;
+
+  query = 'SELECT';
+
+  switch (objectType) {
+    case 'object':
+      query += ` json_object(${fields})`;
+      break;
+    case 'array':
+      query += ` json_object('${rawNode.name}', json_group_array(json_object(${fields})))`;
+      break;
+  };
+
+  if (!parent) {
+    query += ` FROM ${rawNode.resolveTableName()}`;
+  } else {
+    // TODO: Resolve relation join(s).
+    query += ` FROM `;
+  }
+
+  warn('options:', rawNode.resolveOptions());
+
+  nextNodes();
+  debug('***');
+  alert(query);
+  return query;
+
+  // let query;
+  // const parentNode = node.parent();
+  // const tableName = node.resolveTableName();
+  // const props = node.resolveProperties();
+
+  // warn('building', tableName);
+
+  // switch (node.type) {
+  //   case 'object':
+  //     query = `SELECT json_patch(json_object(${props}), (${nextNodes()}))`;
+  //     break;
+  //   case 'array':
+  //     query = `SELECT json_object(${_.quote(tableName)}, json_group_array(json_patch(json_object(${props}), (${nextNodes()}))))`;
+  //     break;
+  // };
+
+  // if (parentNode) {
+  //   const parentTableName = node.resolveParentTableName(node);
+  //   const crossTableName = node.resolveCrossTableName(node);
+  //   const primaryKey = 'CodigoAplicacao';
+  //   const foreignKey = 'CodigoProduto'
+  //   query += ` FROM (SELECT * FROM ${crossTableName} INNER JOIN ${tableName} ON ${tableName}.${primaryKey}=${crossTableName}.${primaryKey} WHERE ${crossTableName}.${foreignKey}=${parentTableName}.${foreignKey}) AS ${tableName}`;
+  // } else {
+  //   query += ` FROM ${tableName}`;
+  // }
+
+  // if (!node.parent()) {
+  //   query += ';';
+  //   _.pbcopy(query);
+  //   debug(query);
+  // }
+  
+  // return query;
 }
 
 module.exports = Query;

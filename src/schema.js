@@ -6,16 +6,13 @@ const  _ = require('./utils/');
 
 class Schema {
 
-  constructor(opts) {
-    this.name = opts.name;
+  constructor(name, opts) {
+    this.name = name;
     this.tableName = opts.tableName;
     this.hash = _.createHashCode();
     this.properties = this._createSchemaProperties(opts.properties);
-    this.hasMany = opts.hasMany;
-    this.hasOne = opts.hasOne;
-    // debug('***');
-    // debug(this);
-    // debug(this._resolveProperties());
+    this.has = { many: {}, one: {} };
+    this.belongs = { many: {}, one: {} };
   }
 
   _createSchemaProperties(props) {
@@ -31,7 +28,6 @@ class Schema {
   }
 
   _createSchemaProperty(propName, propDef) {
-
     let primaryKey, primaryKeyName;
     
     primaryKey = (_.isString(propDef) && _.equals(propDef, 'primaryKey')) ||
@@ -39,38 +35,63 @@ class Schema {
 
     primaryKeyName = !primaryKey ? null : _.isString(propDef) ? propName : propDef.name || propName;
 
-    function resolveProperty(prop) {
-      const tableNamePrefix = this.tableName.concat('.');
-
-      const resolvedPropValue = prop.resolve
-        ? `CASE ${prop.resolve.map(prop => `WHEN ${tableNamePrefix}${prop} IS NOT NULL THEN ${tableNamePrefix}${prop}`).join(' ')} END`
-        : prop.join ? prop.join.map(prop => tableNamePrefix.concat(prop)).join(' || ')
-        : tableNamePrefix.concat(prop.alias || prop.name);
-
-      return [
-        _.quote(_.equals(prop.type, 'primaryKey') ? '_id' : prop.name),
-        resolvedPropValue
-      ].join(',');
-    }
-
-    let schemaProperty = _.pickBy({
+    const property = _.pickBy({
       name: primaryKey ? primaryKeyName : _.defaults(propDef.name, propName),
       type: primaryKey ? 'primaryKey' : _.defaults(propDef.type, 'default'),
       alias: propDef.alias,
-      resolve: propDef.resolve,
+      resolver: propDef.resolve,
       join: propDef.join,
+      parser: propDef.parse,
     });
 
-    schemaProperty.resolver = resolveProperty.bind(this, schemaProperty);
+    if (primaryKey) this.primaryKey = property.name;
 
-    return schemaProperty;
+    return property;
+  }
+
+  _resolveTableName() {
+    return this.tableName;
   }
 
   _resolveProperties(withId = true) {
     return this.properties
       // Do not bring the primary key field when "withId" is false
       .filter(prop => _.equals(withId, false) ? (prop.type !== 'primaryKey') : true)
-      .map(prop => prop.resolver()).join(',');
+      .map(prop => {
+        // This function will be called by each property in the schema
+        // and will resolves the property definition that is used inside the 
+        // select section of the query.
+        const tableNamePrefix = this.tableName.concat('.');
+        const resolvedPropValue = prop.resolver
+          ? `CASE ${prop.resolver.map(prop => `WHEN ${tableNamePrefix}${prop} IS NOT NULL THEN ${tableNamePrefix}${prop}`).join(' ')} END`
+          : prop.join ? prop.join.map(prop => tableNamePrefix.concat(prop)).join(' || ')
+          : tableNamePrefix.concat(prop.alias || prop.name);
+        return [
+          _.quote(_.equals(prop.type, 'primaryKey') ? '_id' : prop.name),
+          resolvedPropValue
+        ].join(',');
+      })
+      .join(',');
+  }
+
+  hasMany(schema, options = {}) {
+    options.associationType = 'array';
+    this.has.many[schema.name] = { schema, options };
+  }
+
+  hasOne(schema, options = {}) {
+    options.associationType = 'object';
+    this.has.one[schema.name] = { schema, options };
+  }
+
+  belongsTo(schema, options = {}) {
+    options.associationType = 'object';
+    this.belongs.one[schema.name] = { schema, options };
+  }
+
+  belongsToMany(schema, options = {}) {
+    options.associationType = 'array';
+    this.belongs.many[schema.name] = { schema, options };
   }
 
 }
