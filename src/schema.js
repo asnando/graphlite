@@ -61,14 +61,13 @@ class Schema {
         // This function will be called by each property in the schema
         // and will resolves the property definition that is used inside the 
         // select section of the query.
-        const tableNamePrefix = this.tableName.concat('.');
-        const resolvedPropValue = prop.resolver
-          ? `CASE ${prop.resolver.map(prop => `WHEN ${tableNamePrefix}${prop} IS NOT NULL THEN ${tableNamePrefix}${prop}`).join(' ')} END`
-          : prop.join ? prop.join.map(prop => tableNamePrefix.concat(prop)).join(' || ')
-          : tableNamePrefix.concat(prop.alias || prop.name);
         return [
           _.quote(_.equals(prop.type, 'primaryKey') ? '_id' : prop.name),
-          resolvedPropValue
+          prop.resolver
+            ? propDefinitionWithResolver(this.tableName, prop.resolver)
+            : prop.join
+              ? propDefinitionWithJoin(this.tableName, prop.join)
+              : propDefinition(this.tableName, prop.alias, prop.name)
         ].join(',');
       })
       .join(',');
@@ -94,6 +93,18 @@ class Schema {
     this.belongs.many[schema.name] = { schema, options };
   }
 
+}
+
+function propDefinitionWithResolver(tableName, resolver) {
+  return `CASE ${resolver.map(prop => `WHEN ${tableName}${prop} IS NOT NULL THEN ${tableName}${prop}`).join(' ')} END`;
+}
+
+function propDefinitionWithJoin(tableName, join) {
+  return join.map(prop => tableName.concat(prop)).join(' || ');
+}
+
+function propDefinition(tableName, alias, name) {
+  return tableName.concat(alias || name);
 }
 
 module.exports = Schema;

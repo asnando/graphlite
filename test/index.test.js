@@ -49,17 +49,22 @@ const aplications = graphlite.defineSchema({
   }
 });
 
-products.hasMany(automakers);
-automakers.belongsTo(products);
-automakers.hasOne(aplications);
-aplications.belongsTo(automakers);
+// products.hasMany(automakers);
+// automakers.belongsTo(products);
+// automakers.hasOne(aplications);
+// aplications.belongsTo(automakers);
+
+products.hasMany(aplications);
+aplications.hasMany(automakers);
 
 const test = graphlite.defineQuery('test', {
   product: {
     properties: '*',
-    automaker: {
-      properties: '*',
-      aplication: '*'
+    aplication: {
+      automaker: {
+        properties: '*',
+        aplication: '*'
+      }
     }
   }
 });

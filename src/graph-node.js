@@ -5,9 +5,7 @@ class GraphNode {
   constructor(opts) {
     this.prevNode = null;
     this.nextNodes = [];
-    this.node = _.xtend(opts.node, {
-      parent: this.getParent.bind(this)
-    });
+    this.node = opts.node;
     this.resolver = opts.resolver;
   }
   getParent() {
