@@ -54,16 +54,46 @@ const aplications = graphlite.defineSchema({
 // automakers.hasOne(aplications);
 // aplications.belongsTo(automakers);
 
-products.hasMany(aplications);
-aplications.hasMany(automakers);
+// products.hasMany(aplications);
+// aplications.hasOne(automakers);
+
+
+// const test = graphlite.defineQuery('test', {
+//   product: {
+//     properties: '*',
+//     aplication: {
+//       automaker: {
+//         properties: '*',
+//         aplication: '*'
+//       }
+//     }
+//   }
+// });
+
+products.hasMany(automakers);
+automakers.belongsTo(products);
+automakers.hasMany(aplications);
+aplications.belongsTo(automakers);
 
 const test = graphlite.defineQuery('test', {
   product: {
-    properties: '*',
-    aplication: {
-      automaker: {
-        properties: '*',
-        aplication: '*'
+    properties: {
+      descricao: {
+        alias: 'DescricaoProduto'
+      },
+      numero: {
+        alias: 'NumeroProduto'
+      }
+    },
+    automaker: {
+      properties: {
+        DescricaoFabricante: 'string'
+      },
+      aplication: {
+        properties: {
+          DescricaoAplicacao: 'string',
+          join: ['ComplementoAplicacao', 'ComplementoAplicacao2']
+        }
       }
     }
   }

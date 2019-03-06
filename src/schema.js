@@ -1,7 +1,4 @@
-const debug = require('./utils/debug'),
-      warn = require('./utils/warn'),
-      alert = require('./utils/alert');
-
+const debug = require('./debugger');
 const  _ = require('./utils/');
 
 class Schema {
@@ -22,7 +19,7 @@ class Schema {
     // Schemas usually have a primary key. Warn developer if
     // this property is missing.
     if (!props.find(prop => prop.type === 'primaryKey')) {
-      warn(`[WARN] Missing primary key for "${this.name}" schema.`);
+      debug.warn(`[WARN] Missing primary key for "${this.name}" schema.`);
     }
     return props;
   }

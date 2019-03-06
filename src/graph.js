@@ -1,9 +1,5 @@
 const _ = require('./utils');
 const GraphNode = require('./graph-node');
-
-const debug = require('./utils/debug'),
-      warn  = require('./utils/warn');
-
 class Graph {
   constructor() {
     this.head = null;

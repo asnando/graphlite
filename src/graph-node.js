@@ -1,6 +1,4 @@
 const _ = require('./utils');
-const debug = require('./utils/debug');
-
 class GraphNode {
   constructor(opts) {
     this.prevNode = null;
