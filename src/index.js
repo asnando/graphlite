@@ -1,6 +1,7 @@
 const _ = require('./utils');
 const Schema = require('./schema');
 const Query = require('./query');
+const debug = require('./debugger');
 class GraphLite {
 
   constructor(opts) {
@@ -19,8 +20,9 @@ class GraphLite {
     return this._schema.find(schema => schema.name === schemaName);
   }
 
-  test(queryName, queryOpts) {
+  test(queryName, queryOpts = {}) {
     const query = this._queries.find(query => query.name === queryName);
+    if (!query) throw new Error(`Undefined "${queryName}" query.`);
     query.build(queryOpts);
   }
 

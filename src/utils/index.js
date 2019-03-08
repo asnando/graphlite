@@ -16,7 +16,8 @@ const	jtree           = require('./jtree'),
       pickBy          = require('./pick-by'),
       equals          = require('./equals'),
       copy            = require('./copy'),
-      jpretty         = require('./jpretty');
+      jpretty         = require('./jpretty'),
+      omit            = require('./omit');
 
 module.exports = {
   jtree,
@@ -38,4 +39,5 @@ module.exports = {
   equals,
   copy,
   jpretty,
+  omit,
 }

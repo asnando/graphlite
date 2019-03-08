@@ -15,14 +15,14 @@ class GraphNode {
   addNextNode(node) {
     return this.nextNodes.push(node);
   }
-  resolve() {
-    return this.resolver(this.raw(), this, this.renderNextNodes.bind(this));
+  resolve(options) {
+    return this.resolver.apply(this, [ this.raw(), options ]);
   }
-  renderNextNodes() {
-    return !this.nextNodes.length ? 'json_object()' : this.nextNodes.map(nextNode => nextNode.resolve()).join('');
+  renderNextNodes(dflt) {
+    return !this.nextNodes.length ? dflt : this.nextNodes.map(nextNode => nextNode.resolve()).join('');
   }
   raw() {
-    return _.copy(this.node);
+    return this.node;
   }
 }
 

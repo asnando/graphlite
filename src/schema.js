@@ -8,8 +8,10 @@ class Schema {
     this.tableName = opts.tableName;
     this.hash = _.createHashCode();
     this.properties = this._createSchemaProperties(opts.properties);
-    this.has = { many: {}, one: {} };
-    this.belongs = { many: {}, one: {} };
+    this.hasManyRelationsWith = {};
+    this.hasOneRelationWith = {};
+    this.belongsToOneRelation = {};
+    this.belongsToManyRelations = {};
   }
 
   _createSchemaProperties(props) {
@@ -46,11 +48,9 @@ class Schema {
     return property;
   }
 
-  _resolveTableName() {
-    return this.tableName;
-  }
-
-  _resolveProperties(withId = true) {
+  _resolveProperties(raw = false, withId = true, useHash = true) {
+    const tableName = useHash ? this.hash : this.tableName;
+    if (raw) return `${tableName}.*`;
     return this.properties
       // Do not bring the primary key field when "withId" is false
       .filter(prop => _.equals(withId, false) ? (prop.type !== 'primaryKey') : true)
@@ -61,10 +61,10 @@ class Schema {
         return [
           _.quote(_.equals(prop.type, 'primaryKey') ? '_id' : prop.name),
           prop.resolver
-            ? propDefinitionWithResolver(this.tableName, prop.resolver)
+            ? propDefinitionWithResolver.call(this, tableName, prop.resolver)
             : prop.join
-              ? propDefinitionWithJoin(this.tableName, prop.join)
-              : propDefinition(this.tableName, prop.alias, prop.name)
+              ? propDefinitionWithJoin.call(this, tableName, prop.join)
+              : propDefinition.call(this, tableName, prop.alias, prop.name)
         ].join(',');
       })
       .join(',');
@@ -72,36 +72,44 @@ class Schema {
 
   hasMany(schema, options = {}) {
     options.associationType = 'array';
-    this.has.many[schema.name] = { schema, options };
+    this.hasManyRelationsWith[schema.name] = { schema, options };
   }
 
   hasOne(schema, options = {}) {
     options.associationType = 'object';
-    this.has.one[schema.name] = { schema, options };
+    this.hasOneRelationWith[schema.name] = { schema, options };
   }
 
   belongsTo(schema, options = {}) {
     options.associationType = 'object';
-    this.belongs.one[schema.name] = { schema, options };
+    this.belongsToOneRelation[schema.name] = { schema, options };
   }
 
   belongsToMany(schema, options = {}) {
     options.associationType = 'array';
-    this.belongs.many[schema.name] = { schema, options };
+    this.belongsToManyRelations[schema.name] = { schema, options };
   }
 
 }
 
 function propDefinitionWithResolver(tableName, resolver) {
-  return `CASE ${resolver.map(prop => `WHEN ${tableName}${prop} IS NOT NULL THEN ${tableName}${prop}`).join(' ')} END`;
+  return `CASE ${resolver.map(prop => `WHEN ${tableName}.${prop} IS NOT NULL THEN ${tableName}.${prop}`).join(' ')} END`;
 }
 
 function propDefinitionWithJoin(tableName, join) {
-  return join.map(prop => tableName.concat(prop)).join(' || ');
+  return join.map(prop => tableName.concat('.').concat(prop)).join(' || ');
 }
 
 function propDefinition(tableName, alias, name) {
-  return tableName.concat(alias || name);
+  return tableName.concat('.').concat(alias || name);
+}
+
+function rawPropDefinition(prop) {
+  return _.isArray(prop.join)
+    ? prop.join.map(prop => `${this.tableName}.${prop}`).join(',')
+    : _.isArray(prop.resolver) 
+      ? prop.resolver.map(prop => `${this.tableName}.${prop}`).join(',')
+      : `${this.tableName}.${prop.alias || prop.name}`;
 }
 
 module.exports = Schema;
