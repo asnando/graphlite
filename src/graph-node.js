@@ -1,30 +1,48 @@
 const _ = require('./utils');
+const debug = require('./debugger');
+const QueryResolver = require('./query-resolver');
 class GraphNode {
+
   constructor(opts) {
     this.prevNode = null;
-    this.name = opts.node.name;
     this.nextNodes = [];
     this.node = opts.node;
-    this.resolver = opts.resolver;
+    this.resolvers = {};
   }
+
   getParent() {
     return this.prevNode ? this.prevNode() : null;
   }
+
   setPreviousNode(node) {
     return this.prevNode = node;
   }
+
   addNextNode(node) {
     return this.nextNodes.push(node);
   }
-  resolve(options) {
-    return this.resolver.apply(this, [ this.raw(), options ]);
+  
+  resolve(resolverName, options) {
+    return this.resolvers[resolverName].resolve(this, options);
   }
-  renderNextNodes(dflt) {
-    return !this.nextNodes.length ? dflt : this.nextNodes.map(nextNode => nextNode.resolve()).join('');
-  }
+
   raw() {
     return this.node;
   }
+
+  createResolver(name, resolver, usePatch, defaultValue) {
+    this.resolvers[name] = new QueryResolver(name, resolver, usePatch, defaultValue);
+  }
+
 }
 
 module.exports = GraphNode;
+
+// function pair(array) {
+//   return array.reduce((result, value, index, self) => {
+//     if (!(index % 2)) {
+//       result.push(array.slice(index, index + 2));
+//     }
+//     return result;
+//   }, []);
+// }

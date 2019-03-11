@@ -7,25 +7,26 @@ class Graph {
     this.tail = null;
     this.graph = {};
   }
-  addNode(nodeHash, node, nodeResolver) {
+  addNode(nodeHash, node, parentHash, nodeResolvers) {
     // Sets the head if not defined yet
     this.head = this.head || nodeHash;
     // Creates a node witin the hash
     node = new GraphNode({
       nodeHash,
-      resolver: nodeResolver,
+      resolvers: nodeResolvers,
       node
     });
     // Adds the new node to the graph
     this.graph[nodeHash] = node;
     if (!!this.tail) {
       // Sets tail node as previous node
-      node.setPreviousNode(this.getNode(this.tail));
+      node.setPreviousNode(this.getNode(parentHash || this.tail));
       // Add this node as the next node to the previous
-      this.getNode(this.tail).addNextNode(node);
+      this.getNode(parentHash || this.tail).addNextNode(node);
     }
     // Updates the last registered node.
     this.tail = nodeHash;
+    return node;
   }
   getNode(nodeHash) {
     return this.graph[nodeHash];
@@ -45,11 +46,8 @@ class Graph {
   getTailNodeHash() {
     return this.tail;
   }
-  resolve() {
-    return this.getHeadNode().resolve();
-  }
-  walk() {
-
+  resolve(resolver, options) {
+    return this.getHeadNode().resolve(resolver, options);
   }
 }
 
