@@ -1,4 +1,5 @@
 const _ = require('./utils');
+const debug = require('./debugger');
 const GraphNode = require('./graph-node');
 class Graph {
   constructor() {
@@ -23,11 +24,14 @@ class Graph {
       // Add this node as the next node to the previous
       this.getNode(this.tail).addNextNode(node);
     }
-    // Updates the tail
+    // Updates the last registered node.
     this.tail = nodeHash;
   }
   getNode(nodeHash) {
     return this.graph[nodeHash];
+  }
+  getRawNode(nodeHash) {
+    return this.graph[nodeHash].raw();
   }
   getHeadNode() {
     return this.graph[this.getHeadNodeHash()];

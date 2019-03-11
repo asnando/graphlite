@@ -24,6 +24,7 @@ try {
       },
       preco: {
         alias: 'PrecoProduto',
+        type: 'money',
         parse: function(value) {
           return value || 1;
         }
@@ -88,36 +89,34 @@ try {
   // });
 
   products.hasMany(aplications);
-
   products.hasOne(groups);
   groups.belongsTo(products);
-
   aplications.belongsTo(products, {
     foreignTable: 'PRODUTO_APLICACAO',
     foreignKey: 'CodigoAplicacao'
   });
-
   aplications.hasOne(automakers);
-
   automakers.belongsTo(aplications);
 
   const test = graphlite.defineQuery('test', {
     product: {
-      properties: '*',
+      properties: [
+        'DescricaoProduto'
+      ],
+      group: {
+        properties: '*'
+      },
       aplication: {
         properties: '*',
         automaker: {
           properties: '*'
         }
       },
-      // group: {
-      //   properties: '*'
-      // }
     }
   });
 
   graphlite.test('test', {
-    productId: ">=11116"
+    chaveDaMontadora: ">=11116"
   });
 
 } catch (exception) {

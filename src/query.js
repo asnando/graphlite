@@ -1,7 +1,15 @@
 const debug = require('./debugger');
 const  _ = require('./utils/');
 const Graph = require('./graph');
+const SQLFormatter = require('sql-formatter');
 
+// DONE: Support association with multiple schemas at the same graph level;
+// TODO: Create filter for root schema primary key that matches general where criteria from query;
+// TODO: Add group by json support;
+// TODO: Add fixed and global filters;
+// TODO: Accept options like: where, orderBy, size, page, groupBy;
+// TODO: Parse response with support for column value parser and data type;
+// TODO: Remove mandatory two way association connection (has and belongs);
 class Query {
 
   constructor(name, graph, schemaProvider) {
@@ -12,80 +20,101 @@ class Query {
   }
 
   _resolveGraph(graph) {
+
     let resolvedGraph = new Graph();
     const schemaProvider = this.schemaProvider;
 
-    _.jtree(graph, (node, path) => {
+    _.jtree(graph, (node, path, options) => {
 
       const isSchemaNode = !/^\$$/.test(path) && !/(?<=\.where)|(?<=\.properties)|(properties|\d|where|type|(?<=has)(\w+)|(?<=\_)\w+)$/.test(path);
+
       if (!isSchemaNode) return;
 
-      const schemaName = path.split('.').pop();
+      const schemaName = resolveSchemaName(path);
 
       // Resolves the schema graph
       const schema = schemaProvider(schemaName);
       
-      if (!schema) throw new Error(`Could not detect schema configuration for "${schemaName}".`);
-      
-      function getParentAssociation(schema, node) {
-        // Node will receive the schema node representation which will
-        // have the "getParent" method to work with.
-        const parent = node ? node.getParent() : resolvedGraph.getTailNode();
-        // No parent found for this schema.
-        if (!parent || !_.isFunction(parent.raw)) return null;
-        const raw = parent.raw();
-        return has(raw, schema.name) || getParentAssociation(schema, parent);
+      if (!schema) {
+        throw new Error(`Could not detect schema configuration for "${schemaName}".`);
+      }
+
+      function resolveParentName(path) {
+        return path.match(/\./g).length === 1 ? null : path.match(/(\w+)\.\w+$/)[1];
+      }
+
+      function resolveSchemaName(path) {
+        return path.split('.').pop();
+      }
+
+      function getAssociationFromParent(schema, parentHash) {
+        let parent = resolvedGraph.getNode(parentHash);
+        while (parent) {
+          const raw = parent.raw();
+          const hasAssociation = has(raw, schema.name);
+          if (hasAssociation) return hasAssociation;
+          parent = parent.getParent();
+        }
+      }
+
+      function getAssociationWithParent(schema, parentHash) {
+        const parent = resolvedGraph.getRawNode(parentHash);
+        return belongs(schema, parent.name);
       }
 
       function has(schema, name) {
         return schema.hasManyRelationsWith[name] || schema.hasOneRelationWith[name];
       }
 
-      function belongs(schema, parentNodeName) {
-        return schema.belongsToOneRelation[parentNodeName] ||
-          schema.belongsToManyRelations[parentNodeName];
+      function belongs(schema, name) {
+        return schema.belongsToManyRelations[name] || schema.belongsToOneRelation[name];
       }
 
-      // It must have at least one association as has(one/many) or belongsTo.
-      function hasAssociation(schema) {
-        const parent = getParentAssociation(schema);
-        const parentName = getParentNodeName();
-        // return !!parent || !!belongs(schema, parentName);
-        return !!parent && !!belongs(schema, parentName);
+      function haveAssociationWithParent() {
+        // Returns false positive when parent node is not defined yet.
+        const parentHash = options.lastNodeHash;
+        if (!parentHash) return true;
+        return !!getAssociationFromParent(schema, parentHash) &&
+          !!getAssociationWithParent(schema, parentHash);
       }
 
-      function getParentNodeName() {
-        return resolvedGraph.getTailNode().raw().name;
-      }
+      function resolveAssociation(schema, parentHash) {
+        if (!parentHash) return null;
 
-      debug.warn(path);
+        const associationFromParent = getAssociationFromParent(schema, parentHash);
+        const associationFromChild  = getAssociationWithParent(schema, parentHash);
+        const parentOptions         = associationFromParent.options;
+        const childOptions          = associationFromChild.options;
+        const parentSchema          = associationFromChild.schema;
+        const childSchema           = associationFromParent.schema;
 
-      // If tail exists, means that this node is not the root of the query.
-      // In this case it will check if the actual node have relation within the parent.
-      if (!!resolvedGraph.tail && !hasAssociation(schema)) {
-        throw new Error(`"${schema.name}" and "${getParentNodeName()}" have no association.`);
-      }
+        const targetHash      = childSchema.hash,
+              targetTable     = childSchema.tableName,
+              targetKey       = childSchema.primaryKey,
+              sourceHash      = parentSchema.hash,
+              sourceTable     = parentSchema.tableName,
+              sourceKey       = parentSchema.primaryKey,
+              foreignTable    = childOptions.foreignTable,
+              foreignKey      = childOptions.foreignKey,
+              associationType = parentOptions.associationType || childOptions.associationType || 'object';
 
-      function resolveAssociationWithParent(schema) {
-        // Ignores if no node registered.
-        if (!resolvedGraph.tail) return null;
-        const parentAssociation = getParentAssociation(schema);
-        const childAssociation = belongs(schema, getParentNodeName());
-        const parentSchema = childAssociation.schema;
-        const childSchema = parentAssociation.schema;
-        const parentOptions = parentAssociation.options;
-        const childOptions = childAssociation.options;
         return new Association({
-          targetHash: parentSchema.hash,
-          sourceHash: childSchema.hash,
-          sourceTable: childOptions.sourceTable || parentOptions.sourceTable || parentSchema.tableName,
-          targetTable: childOptions.targetTable || parentOptions.targetTable || childSchema.tableName,
-          foreignTable: childOptions.foreignTable || null,
-          sourceKey: childOptions.sourceKey || parentOptions.sourceKey || parentSchema.primaryKey,
-          targetKey: childOptions.targetKey || childSchema.primaryKey,
-          foreignKey: childOptions.foreignKey || null,
-          associationType: parentOptions.associationType || childOptions.associationType || 'object',
+          targetHash,
+          sourceHash,
+          sourceTable,
+          sourceKey,
+          targetTable,
+          targetKey,
+          foreignTable,
+          foreignKey,
+          associationType,
         });
+      }
+
+      const parentNodeName = resolveParentName(path);
+
+      if (!haveAssociationWithParent()) {
+        throw new Error(`"${schemaName}" have no relation with "${parentNodeName}".`);
       }
 
       const queryNode = new QueryNode({
@@ -98,24 +127,30 @@ class Query {
         hasOneRelationWith: schema.hasOneRelationWith,
         belongsToOneRelation: schema.belongsToOneRelation,
         belongsToManyRelations: schema.belongsToManyRelations,
-        parentAssociation: resolveAssociationWithParent(schema)
+        parentAssociation: resolveAssociation(schema, options.lastNodeHash)
       });
-      // debug.log(queryNode);
-      return resolvedGraph.addNode(schema.hash, queryNode, graphNodeResolver);
+
+      resolvedGraph.addNode(schema.hash, queryNode, graphNodeResolver);
+
+      // The returned options object will be avaiable to the next walked node.
+      return {
+        lastNodeHash: schema.hash,
+        lastNodeName: schema.name
+      };
     });
     return resolvedGraph;
   }
 
   build(options = {}) {
     debug.alert(`Building query "${this.name}" with options: ${_.jpretty(options)}`);
-    this.graph.resolve(options);
+    const query = this.graph.resolve(options);
+    debug.success('Query builded and copied to clipboard!');
+    return query;
   }
 
 }
 
 function graphNodeResolver(node, options = {}) {
-
-  let query = '';
 
   // Function that will replace the query resolved by the next nodes from
   // graph in the right  place. If no nodes in the graph then it will
@@ -127,49 +162,20 @@ function graphNodeResolver(node, options = {}) {
   const nodeAlias = node.hash;
 
   const struct = objectType === 'object'
-    ? `select
-      json_patch(
-        json_object(
-          <:fields:>
-        ),
-        <:next_nodes:>
-      )
-      from (
-        select
-          <:fields_without_hash:>
-        <:source:>
-      ) <:node_alias:>`
-    // ***
-    : `json_object(
-      <:node_name:>,
-      (
-        select
-        json_group_array(
-          json_patch(
-            json_object(
-              <:fields:>
-            ),
-            (<:next_nodes:>)
-          )
-        )
-        from (
-          select
-            <:fields_without_hash:>
-          <:source:>
-        ) <:node_alias:>
-      )
-    )`;
+    ? `select json_patch(json_object(<:fields:>), (<:next_nodes:>)) from (select <:fields_without_hash:> <:source:>) <:node_alias:>`
+    : `json_object(<:node_name:>, (select json_group_array(json_patch(json_object(<:fields:>), (<:next_nodes:>))) from (select <:fields_without_hash:> <:source:>) <:node_alias:>))`;
 
-  query = struct
+  let query = struct
     .replace(/<:fields:>/, node.resolveFields())
     .replace(/<:fields_without_hash:>/, node.resolveFields(true, false))
     .replace(/<:next_nodes:>/, renderNextNodes())
     .replace(/<:source:>/, node.resolveSource())
     .replace(/<:node_name:>/, _.quote(nodeName))
-    .replace(/<:node_alias:>/, nodeAlias)
+    .replace(/<:node_alias:>/, nodeAlias);
 
   if (!node.parentAssociation) {
-    debug.warn(query);
+    query = SQLFormatter.format(query);
+    // debug.warn(query);
     _.pbcopy(query);
   }
 
@@ -184,7 +190,6 @@ class QueryNode {
       name: opts.name,
       hash: opts.hash,
       tableName: opts.tableName,
-      // properties: opts.properties,
       hasManyRelationsWith: opts.hasManyRelationsWith,
       hasOneRelationWith: opts.hasOneRelationWith,
       belongsToOneRelation: opts.belongsToOneRelation,
@@ -194,9 +199,7 @@ class QueryNode {
     });
   }
   resolveSource() {
-    return this.parentAssociation
-      ? this.parentAssociation.resolve()
-      : ` FROM ${this.tableName}`;
+    return this.parentAssociation ? this.parentAssociation.resolve() : ` FROM ${this.tableName}`;
   }
   resolveHash() {
     return this.hash;
@@ -212,29 +215,23 @@ class QueryNode {
 class Association {
   constructor(opts = {}) {
     _.xtend(this, {
-      targetHash: opts.targetHash,
-      sourceHash: opts.sourceHash,
-      targetTable: opts.targetTable,
-      targetKey: opts.targetKey,
-      sourceTable: opts.sourceTable,
-      sourceKey: opts.sourceKey,
-      foreignTable: opts.foreignTable,
-      foreignKey: opts.foreignKey,
-      associationType: opts.associationType,
+      targetHash:       opts.targetHash,
+      sourceHash:       opts.sourceHash,
+      targetTable:      opts.targetTable,
+      targetKey:        opts.targetKey,
+      sourceTable:      opts.sourceTable,
+      sourceKey:        opts.sourceKey,
+      foreignTable:     opts.foreignTable,
+      foreignKey:       opts.foreignKey,
+      associationType:  opts.associationType,
     });
+    debug.log(this);
   }
   resolve() {
-    if (this.foreignTable && this.foreignKey) {
-      return `
-        FROM ${this.targetTable}
-        INNER JOIN ${this.foreignTable} ON ${this.foreignTable}.${this.sourceKey}=${this.targetHash}.${this.sourceKey}
-        WHERE ${this.targetTable}.${this.targetKey}=${this.foreignTable}.${this.foreignKey}
-      `.replace(/\n\s{2,}/g, ' ');
-    } else {
-      return `
-        FROM ${this.targetTable}
-        WHERE ${this.targetTable}.${this.targetKey}=${this.targetHash}.${this.targetKey}
-        `.replace(/\n\s{2,}/g, ' ');
-    }
+    const query = (this.foreignTable && this.foreignKey)
+      ? `FROM ${this.targetTable} INNER JOIN ${this.foreignTable} ON ${this.foreignTable}.${this.sourceKey}=${this.sourceHash}.${this.sourceKey} WHERE ${this.targetTable}.${this.targetKey}=${this.foreignTable}.${this.foreignKey}`
+      : `FROM ${this.targetTable} WHERE ${this.targetTable}.${this.targetKey}=${this.sourceHash}.${this.targetKey}`;
+    // debug.log(query);
+    return query;
   }
 }
