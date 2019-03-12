@@ -61,42 +61,23 @@ try {
     }
   });
 
-  // const test2 = graphlite.defineQuery('test2', {
-  //   product: {
-  //     properties: {
-  //       descricao: {
-  //         alias: 'DescricaoProduto'
-  //       },
-  //       numero: {
-  //         alias: 'NumeroProduto'
-  //       }
-  //     },
-  //     where: {
-  //       _id: 'productId'
-  //     },
-  //     // automaker: {
-  //     //   properties: {
-  //     //     DescricaoFabricante: 'string'
-  //     //   },
-  //     //   aplication: {
-  //     //     properties: {
-  //     //       DescricaoAplicacao: 'string',
-  //     //       join: ['ComplementoAplicacao', 'ComplementoAplicacao2']
-  //     //     }
-  //     //   }
-  //     // }
-  //   }
-  // });
 
-  products.hasMany(aplications);
+  products.hasMany(aplications, {
+    foreignTable: 'PRODUTO_APLICACAO',
+    foreignKey: 'CodigoAplicacao'
+  });
   products.hasOne(groups);
   groups.belongsTo(products);
   aplications.belongsTo(products, {
     foreignTable: 'PRODUTO_APLICACAO',
     foreignKey: 'CodigoAplicacao'
   });
+  //
   aplications.hasOne(automakers);
   automakers.belongsTo(aplications);
+  // 
+  automakers.hasOne(aplications);
+  aplications.belongsTo(automakers);
 
   const test = graphlite.defineQuery('test', {
     product: {
@@ -115,7 +96,20 @@ try {
     }
   });
 
-  graphlite.test('test', {
+  const test2 = graphlite.defineQuery('test2', {
+    product: {
+      properties: '*',
+      automaker: {
+        properties: '*',
+        aplication: {
+          properties: '*'
+        },
+        groupBy: "DescricaoFabricante"
+      }
+    }
+  });
+
+  graphlite.test('test2', {
     chaveDaMontadora: ">=11116"
   });
 

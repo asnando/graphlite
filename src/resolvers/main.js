@@ -1,9 +1,15 @@
 const _ = require('../utils');
+const debug = require('../debugger');
 const SQLFormatter = require('sql-formatter');
+
+const DEFAULT_OBJECT_TYPE = 'object';
 
 module.exports = function graphNodeResolver(node, options = {}, nextNodes, customResolver) {
 
-  const objectType = !node.parentAssociation ? 'object' : node.parentAssociation.associationType;
+  const objectType = (!!node.parentAssociation && !!node.parentAssociation.objectType)
+    ? node.parentAssociation.objectType
+    : DEFAULT_OBJECT_TYPE;
+
   const nodeName = node.name;
   const nodeAlias = node.hash;
 
@@ -21,14 +27,15 @@ module.exports = function graphNodeResolver(node, options = {}, nextNodes, custo
 
   // Build the filter subquery in order to select the root schema
   // identifiers that will be returned by the select.
-  if (!node.parentAssociation) {
-    const primaryKey = node.resolvePrimaryKey();
-    const filterQuery = customResolver('filterId', options);
-    query += ` WHERE ${nodeAlias}.${primaryKey} IN (${filterQuery})`;
-  }
+  // if (!node.parentAssociation) {
+  //   const primaryKey = node.resolvePrimaryKey();
+  //   const filterQuery = customResolver('filterId', options);
+  //   query += ` WHERE ${nodeAlias}.${primaryKey} IN (${filterQuery})`;
+  // }
+
+  query = SQLFormatter.format(query);
 
   if (!node.parentAssociation) {
-    query = SQLFormatter.format(query);
     // debug.warn(query);
     _.pbcopy(query);
   }
