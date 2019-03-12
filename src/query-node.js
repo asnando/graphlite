@@ -24,8 +24,11 @@ class QueryNode {
   resolveHash() {
     return this.hash;
   }
-  resolveFields(raw, useHash) {
-    return this.propertiesResolver(raw, !this.parentAssociation, useHash);
+  resolveFields(options) {
+    return this.propertiesResolver({
+      ...options,
+      withId: !this.parentAssociation
+    });
   }
   resolveOptions() {
     return '';

@@ -53,9 +53,18 @@ class Schema {
     return property;
   }
 
-  _resolveProperties(raw = false, withId = true, useHash = true) {
+  _resolveProperties(options = {}) {
+    
+    const raw     = _.defaults(options.raw, false),
+          withId  = _.defaults(options.withId, true),
+          useHash = _.defaults(options.useHash, true);
+
     const tableName = useHash ? this.hash : this.tableName;
-    if (raw) return `${tableName}.*`;
+
+    if (raw) {
+      return `${tableName}.*`;
+    }
+
     return this.properties
       // Do not bring the primary key field when "withId" is false
       .filter(prop => _.equals(withId, false) ? (prop.type !== 'primaryKey') : true)

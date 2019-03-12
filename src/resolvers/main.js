@@ -19,7 +19,7 @@ module.exports = function graphNodeResolver(node, options = {}, nextNodes, custo
 
   let query = struct
     .replace(/<:fields:>/, node.resolveFields())
-    .replace(/<:fields_without_hash:>/, node.resolveFields(true, false))
+    .replace(/<:fields_without_hash:>/, node.resolveFields({ raw: true, useHash: false }))
     .replace(/<:next_nodes:>/, nextNodes())
     .replace(/<:source:>/, node.resolveSource())
     .replace(/<:node_name:>/, _.quote(nodeName))

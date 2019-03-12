@@ -25,7 +25,6 @@ class Association {
   }
 
   resolve() {
-
     let from,
         join = [],
         where;

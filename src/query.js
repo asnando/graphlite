@@ -10,6 +10,7 @@ const graphNodeResolver = require('./resolvers/main');
 // DONE: Support association with multiple schemas at the same graph level;
 // DONE: Create associations on schema class not query;
 // DONE: Accept association throught another association;
+// TODO: Supports grouped multilevel association;
 // TODO: Get all primary key values for the main node using where condition with joins before the fields select;
 // TODO: Add group by json support;
 // TODO: Add fixed and global filters;

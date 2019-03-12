@@ -109,7 +109,7 @@ try {
     }
   });
 
-  graphlite.test('test2', {
+  graphlite.test('test', {
     chaveDaMontadora: ">=11116"
   });
 
