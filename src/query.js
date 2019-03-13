@@ -6,9 +6,9 @@ const QueryNode = require('./query-node');
 const graphNodeConditionResolver = require('./resolvers/filterId');
 const graphNodeResolver = require('./resolvers/main');
 
-// TODO: Create class for where conditions (accepts type (like equal, like, beings, ...), default value);
 // TODO: Get all primary key values for the main node using where condition with joins before the fields select;
 // TODO: Accept options like: where, orderBy, size, page, groupBy;
+// TODO: Create class for where conditions (accepts type (like equal, like, beings, ...), default value);
 // TODO: Create response object with support for column value parser and data type (creates a shadow from definition);
 class Query {
 
