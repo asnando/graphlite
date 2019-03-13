@@ -9,7 +9,7 @@ module.exports = function graphNodeResolver(node, options = {}, nextNodes, custo
   const objectType = (!!node.parentAssociation && !!node.parentAssociation.objectType)
     ? node.parentAssociation.objectType : DEFAULT_OBJECT_TYPE;
 
-  const nodeName = node.name;
+  const nodeName = node.alias || node.name;
   const nodeAlias = node.hash;
 
   const struct = objectType === 'object'

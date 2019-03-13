@@ -5,6 +5,7 @@ class QueryNode {
   constructor(opts = {}) {
     _.xtend(this, {
       name:                   opts.name,
+      alias:                  opts.alias,
       hash:                   opts.hash,
       tableName:              opts.tableName,
       primaryKey:             opts.primaryKey,

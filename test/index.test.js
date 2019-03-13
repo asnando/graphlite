@@ -96,15 +96,16 @@ try {
         }
       },
       // groupBy: 'CodigoProduto',
-      // orderBy: 'DescricaoProduto',
-      size: 30
+      orderBy: 'DescricaoProduto',
+      size: 100
     }
   });
 
   const test2 = graphlite.defineQuery('test2', {
     product: {
       properties: '*',
-      automaker: {
+      montadoras: {
+        alias: 'automaker',
         properties: '*',
         aplication: {
           properties: '*'
@@ -118,7 +119,7 @@ try {
     }
   });
 
-  graphlite.test('test', {
+  graphlite.test('test2', {
     // chaveDaMontadora: ">=11116",
     // descricaofabricante: "=AUDI"
   });

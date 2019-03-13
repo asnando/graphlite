@@ -2,7 +2,6 @@ const debug = require('./debugger');
 const  _ = require('./utils/');
 const Graph = require('./graph');
 const QueryNode = require('./query-node');
-const Association = require('./association');
 
 const graphNodeConditionResolver = require('./resolvers/filterId');
 const graphNodeResolver = require('./resolvers/main');
@@ -33,10 +32,10 @@ class Query {
         (/^\$$/.test(path)) ||
         (/(?<=\.where\.)\w+$/.test(path)) ||
         // ends with
-        (/(properties|\d|where|groupBy|size|page|orderBy|type)$/.test(path))
+        (/(alias|properties|\d|where|groupBy|size|page|orderBy|type)$/.test(path))
       ) return;
 
-      const schemaName = resolveSchemaName(path);
+      const schemaName = node.alias || resolveSchemaName(path);
 
       // Resolves the schema graph
       const schema = schemaProvider(schemaName);
@@ -78,6 +77,7 @@ class Query {
 
       const queryNode = new QueryNode({
         name: schema.name,
+        alias: node.alias && resolveSchemaName(path),
         hash: schema.hash,
         tableName: schema.tableName,
         properties: schema.properties,
