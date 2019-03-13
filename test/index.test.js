@@ -1,133 +1,76 @@
-const connectionProvider = require('./connection-provider');
 const GraphLite = require('../src');
-const chalk = require('chalk');
+const connectionProvider = require('./connection-provider');
 
-const connection = new connectionProvider('./test/databases/test.db');
+const DATABASE_FILE = './test/databases/test.db';
+const connection = new connectionProvider(DATABASE_FILE);
 
-const graphlite = new GraphLite({ connection });
+const graphlite = new GraphLite({
+  connection
+});
 
-try {
+describe('GraphLite', () => {
 
-  const products = graphlite.defineSchema('product', {
-    tableName: 'PRODUTO',
-    properties: {
-      CodigoProduto: {
-        type: 'primaryKey'
-      },
-      DescricaoProduto: 'string',
-      Numero: {
-        type: 'string',
-        alias: 'NumeroProduto'
-      },
-      FotoProduto: {
-        resolve: ['ArquivoFotoProduto', 'ArquivoFotoProduto2']
-      },
-      preco: {
-        alias: 'PrecoProduto',
-        type: 'money',
-        parse: function(value) {
-          return value || 1;
-        }
-      }
-    }
+  // #1
+  it('should define schemas', done => {
+    require('./schemas/product')(graphlite);
+    require('./schemas/vehicle')(graphlite);
+    require('./schemas/automaker')(graphlite);
+    done();
   });
 
-  const automakers = graphlite.defineSchema({
-    name: 'automaker',
-    tableName: 'FABRICANTE',
-    properties: {
-      CodigoFabricante: 'primaryKey',
-      DescricaoFabricante: 'string'
-    }
+  // #2
+  it('should define the associations', done => {
+    const product = graphlite._schemaProvider('product'),
+          automaker = graphlite._schemaProvider('automaker'),
+          vehicle = graphlite._schemaProvider('vehicle');
+
+    const PRODUCT_VEHICLE_ASSOCIATION_OPTIONS = {
+      foreignTable: 'PRODUTO_APLICACAO',
+      foreignKey: 'CodigoAplicacao'
+    };
+
+    product.hasMany(vehicle, PRODUCT_VEHICLE_ASSOCIATION_OPTIONS);
+    vehicle.belongsTo(product, PRODUCT_VEHICLE_ASSOCIATION_OPTIONS);
+
+    vehicle.hasOne(automaker);
+    automaker.belongsTo(vehicle);
+
+    done();
   });
 
-  const aplications = graphlite.defineSchema({
-    name: 'aplication',
-    tableName: 'APLICACAO',
-    properties: {
-      CodigoAplicacao: 'primaryKey',
-      DescricaoAplicacao: 'string',
-      complemento: {
-        join: ['ComplementoAplicacao']
-      }
-    }
+  // #3
+  it('should define queries', done => {
+    require('./queries/products')(graphlite);
+    require('./queries/products-with-vehicles')(graphlite);
+    done();
   });
 
-  const groups = graphlite.defineSchema('group', {
-    tableName: 'GRUPOPRODUTO',
-    properties: {
-      CodigoGrupoProduto: 'primaryKey',
-      DescricaoGrupoProduto: 'string'
-    }
+  // #4
+  it('should fetch a list with 30 products', done => {
+    graphlite.test('products')
+      .then(logresponse.bind(null, done))
+      .catch(logerror.bind(null, done));
   });
 
-
-  products.hasMany(aplications, {
-    foreignTable: 'PRODUTO_APLICACAO',
-    foreignKey: 'CodigoAplicacao'
-  });
-  products.hasOne(groups);
-  groups.belongsTo(products);
-  aplications.belongsTo(products, {
-    foreignTable: 'PRODUTO_APLICACAO',
-    foreignKey: 'CodigoAplicacao'
-  });
-  // test
-  aplications.hasOne(automakers);
-  automakers.belongsTo(aplications);
-  // test2
-  automakers.hasMany(aplications, {
-    grouped: true
-  });
-  aplications.belongsTo(automakers);
-
-  const test = graphlite.defineQuery('test', {
-    product: {
-      properties: [
-        'DescricaoProduto'
-      ],
-      group: {
-        properties: '*'
-      },
-      aplication: {
-        properties: '*',
-        automaker: {
-          properties: '*'
-        }
-      },
-      // groupBy: 'CodigoProduto',
-      orderBy: 'DescricaoProduto',
-      size: 100
-    }
+  // #5
+  it('should fetch a list with products within vehicles', done => {
+    graphlite.test('products-with-vehicles')
+      .then(logresponse.bind(null, done))
+      .catch(logerror.bind(null, done));
   });
 
-  const test2 = graphlite.defineQuery('test2', {
-    product: {
-      properties: '*',
-      montadoras: {
-        alias: 'automaker',
-        properties: '*',
-        aplication: {
-          properties: '*'
-        },
-        where: {
-          DescricaoFabricante: 'descricaofabricante'
-        },
-        groupBy: "DescricaoFabricante"
-      },
-      size: 30
-    }
-  });
+});
 
-  graphlite.test('test2', {
-    // chaveDaMontadora: ">=11116",
-    // descricaofabricante: "=AUDI"
-  });
-
-} catch (exception) {
-  console.log(chalk.red(exception));
-  console.log(exception);
+function logresponse(done, response) {
+  console.log();
+  console.log('Example:', response.rows[0]);
+  console.log();
+  console.log(`Query builded in ${response.buildedIn}s`);
+  console.log(`Query executed in ${response.executedIn}s`);
+  return done();
 }
 
-// sourceKey, targetKey
-// sourceTable, targetTable
+function logerror(done, error) {
+  console.log(error);
+  return done(error);
+}

@@ -5,11 +5,6 @@ const QueryNode = require('./query-node');
 
 const graphNodeConditionResolver = require('./resolvers/filterId');
 const graphNodeResolver = require('./resolvers/main');
-
-// TODO: Get all primary key values for the main node using where condition with joins before the fields select;
-// TODO: Accept options like: where, orderBy, size, page, groupBy;
-// TODO: Create class for where conditions (accepts type (like equal, like, beings, ...), default value);
-// TODO: Create response object with support for column value parser and data type (creates a shadow from definition);
 class Query {
 
   constructor(name, graph, schemaProvider) {
@@ -30,9 +25,10 @@ class Query {
       if (
         // root path
         (/^\$$/.test(path)) ||
+        // Not preceded by "where"
         (/(?<=\.where\.)\w+$/.test(path)) ||
         // ends with
-        (/(alias|properties|\d|where|groupBy|size|page|orderBy|type)$/.test(path))
+        (/(having|alias|properties|\d|where|groupBy|size|page|orderBy|type)$/.test(path))
       ) return;
 
       const schemaName = node.alias || resolveSchemaName(path);

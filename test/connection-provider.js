@@ -6,7 +6,8 @@ class ConnectionProvider {
 
   constructor(databasePath) {
     this.path = databasePath;
-    this._connection = null;
+    // this._connection = null;
+    this.connect();
   }
 
   connect() {

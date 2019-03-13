@@ -22,8 +22,33 @@ class GraphLite {
 
   test(queryName, queryOpts = {}) {
     const query = this._queries.find(query => query.name === queryName);
-    if (!query) throw new Error(`Undefined "${queryName}" query.`);
-    query.build(queryOpts);
+
+    if (!query) {
+      throw new Error(`Undefined "${queryName}" query.`);
+    }
+
+    let buildedQuery, perf;
+    let queryBuildTime, queryExecuteTime;
+
+    perf = Date.now();
+
+    try {
+      buildedQuery = query.build(queryOpts);
+      queryBuildTime = (Date.now() - perf) / 1000;
+    } catch (exception) {
+      throw new Error(`Caught an error building the query: ${exception}`);
+    }
+
+    perf = Date.now();
+
+    return this.executeBuildedQuery(buildedQuery).then(rows => {
+      queryExecuteTime = (Date.now() - perf) / 1000;
+      return {
+        rows,
+        buildedIn: queryBuildTime,
+        executedIn: queryExecuteTime
+      };
+    });
   }
 
   defineSchema(name, opts) {
@@ -41,6 +66,14 @@ class GraphLite {
     const query = new Query(name, graph, schemaProvider);
     this._queries.push(query);
     return query;
+  }
+
+  executeBuildedQuery(query) {
+    return this._connection.run(query).then(this.parseResponse);
+  }
+
+  parseResponse(data) {
+    return data.map(object => JSON.parse(object.response));
   }
 
   executeRawQuery(query) {

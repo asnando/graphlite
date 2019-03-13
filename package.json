@@ -4,13 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "nodemon test/index.test.js"
+    "test": "mocha --watch ./test/index.test.js ./ --timeout 1000"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "chalk": "^2.4.2",
+    "mocha": "^6.0.2",
     "nodemon": "^1.18.10",
     "sql-formatter": "^2.3.2",
     "sqlite3": "^4.0.6"
