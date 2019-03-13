@@ -53,16 +53,23 @@ class Schema {
     return property;
   }
 
-  _resolveProperties(options = {}) {
-    
-    const raw     = _.defaults(options.raw, false),
-          withId  = _.defaults(options.withId, true),
-          useHash = _.defaults(options.useHash, true);
+  _resolveProperties(options = {}, parentAssociation) {
+    const raw        = _.defaults(options.raw, false),
+          withId     = _.defaults(options.withId, true),
+          useHash    = _.defaults(options.useHash, true),
+          groupedIds = _.defaults(options.groupedIds, false);
 
     const tableName = useHash ? this.hash : this.tableName;
 
     if (raw) {
-      return `${tableName}.*`;
+      let rawed = [`${tableName}.*`];
+      // ***
+      if (groupedIds && parentAssociation && parentAssociation.throught) {
+        const associationTableName = parentAssociation.throught.targetTable;
+        const associationField = parentAssociation.throught.targetKey;
+        rawed.push(`json_group_array(${associationTableName}.${associationField}) AS exported_${associationField}`);
+      }
+      return rawed.join(',');
     }
 
     return this.properties
@@ -97,7 +104,8 @@ class Schema {
       foreignTable: options.foreignTable,
       foreignKey:   options.foreignKey,
       objectType:   /many/i.test(associationType) ? 'array' : 'object',
-      associationType
+      associationType,
+      grouped: options.grouped,
     });
   }
 
@@ -214,13 +222,5 @@ function propDefinitionWithJoin(tableName, join) {
 function propDefinition(tableName, alias, name) {
   return tableName.concat('.').concat(alias || name);
 }
-
-// function rawPropDefinition(prop) {
-//   return _.isArray(prop.join)
-//     ? prop.join.map(prop => `${this.tableName}.${prop}`).join(',')
-//     : _.isArray(prop.resolver) 
-//       ? prop.resolver.map(prop => `${this.tableName}.${prop}`).join(',')
-//       : `${this.tableName}.${prop.alias || prop.name}`;
-// }
 
 module.exports = Schema;

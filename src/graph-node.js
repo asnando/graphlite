@@ -37,12 +37,3 @@ class GraphNode {
 }
 
 module.exports = GraphNode;
-
-// function pair(array) {
-//   return array.reduce((result, value, index, self) => {
-//     if (!(index % 2)) {
-//       result.push(array.slice(index, index + 2));
-//     }
-//     return result;
-//   }, []);
-// }

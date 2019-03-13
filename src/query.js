@@ -7,16 +7,10 @@ const Association = require('./association');
 const graphNodeConditionResolver = require('./resolvers/filterId');
 const graphNodeResolver = require('./resolvers/main');
 
-// DONE: Support association with multiple schemas at the same graph level;
-// DONE: Create associations on schema class not query;
-// DONE: Accept association throught another association;
-// TODO: Supports grouped multilevel association;
+// TODO: Create class for where conditions (accepts type (like equal, like, beings, ...), default value);
 // TODO: Get all primary key values for the main node using where condition with joins before the fields select;
-// TODO: Add group by json support;
-// TODO: Add fixed and global filters;
 // TODO: Accept options like: where, orderBy, size, page, groupBy;
-// TODO: Parse response with support for column value parser and data type;
-// TODO: Remove mandatory two way association connection (has and belongs);
+// TODO: Create response object with support for column value parser and data type (creates a shadow from definition);
 class Query {
 
   constructor(name, graph, schemaProvider) {
@@ -37,8 +31,7 @@ class Query {
       if (
         // root path
         (/^\$$/.test(path)) ||
-        // (/(?<=\.where)$/.test(path)) ||
-        // (/(?<=\.properties)$/.test(path)) ||
+        (/(?<=\.where\.)\w+$/.test(path)) ||
         // ends with
         (/(properties|\d|where|groupBy|size|page|orderBy|type)$/.test(path))
       ) return;
@@ -71,11 +64,11 @@ class Query {
 
       function resolveAssociation(schema, parent) {
         if (!hasParent) return null;
-        // debug.alert(`Resolving association between ${schema.name} and ${parent.name}`);
         const fromParent = parent.getAssociationFromParent(schema);
         const fromChild = schema.getAssociationWithParent(parent);
         return mergeAssociationOptions(fromChild, {
-          objectType: fromParent ? fromParent.objectType : fromChild.objectType
+          objectType: fromParent ? fromParent.objectType : fromChild.objectType,
+          grouped: fromParent ? fromParent.grouped : fromChild.grouped
         });
       }
 
@@ -89,6 +82,19 @@ class Query {
         tableName: schema.tableName,
         properties: schema.properties,
         primaryKey: schema.primaryKey,
+        options: {
+          where: node.where,
+          page: node.page,
+          size: node.size,
+          orderBy: node.orderBy,
+          groupBy: node.groupBy,
+        },
+        staticOptions: {
+          page: node.page,
+          size: node.size,
+          orderBy: node.orderBy,
+          groupBy: node.groupBy,
+        },
         propertiesResolver: schema._resolveProperties.bind(schema),
         hasManyRelationsWith: schema.hasManyRelationsWith,
         hasOneRelationWith: schema.hasOneRelationWith,

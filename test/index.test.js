@@ -72,11 +72,13 @@ try {
     foreignTable: 'PRODUTO_APLICACAO',
     foreignKey: 'CodigoAplicacao'
   });
-  //
+  // test
   aplications.hasOne(automakers);
   automakers.belongsTo(aplications);
-  // 
-  automakers.hasOne(aplications);
+  // test2
+  automakers.hasMany(aplications, {
+    grouped: true
+  });
   aplications.belongsTo(automakers);
 
   const test = graphlite.defineQuery('test', {
@@ -93,6 +95,9 @@ try {
           properties: '*'
         }
       },
+      // groupBy: 'CodigoProduto',
+      // orderBy: 'DescricaoProduto',
+      size: 30
     }
   });
 
@@ -104,13 +109,18 @@ try {
         aplication: {
           properties: '*'
         },
+        where: {
+          DescricaoFabricante: 'descricaofabricante'
+        },
         groupBy: "DescricaoFabricante"
-      }
+      },
+      size: 30
     }
   });
 
   graphlite.test('test', {
-    chaveDaMontadora: ">=11116"
+    // chaveDaMontadora: ">=11116",
+    // descricaofabricante: "=AUDI"
   });
 
 } catch (exception) {
