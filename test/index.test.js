@@ -20,9 +20,10 @@ describe('GraphLite', () => {
 
   // #2
   it('should define the associations', done => {
-    const product = graphlite._schemaProvider('product'),
+    
+    const product   = graphlite._schemaProvider('product'),
           automaker = graphlite._schemaProvider('automaker'),
-          vehicle = graphlite._schemaProvider('vehicle');
+          vehicle   = graphlite._schemaProvider('vehicle');
 
     const PRODUCT_VEHICLE_ASSOCIATION_OPTIONS = {
       foreignTable: 'PRODUTO_APLICACAO',
