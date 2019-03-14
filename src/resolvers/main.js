@@ -32,11 +32,11 @@ module.exports = function graphNodeResolver(node, options = {}, nextNodes, custo
 
   // Build the filter subquery in order to select the root schema
   // identifiers that will be returned by the select.
-  // if (!node.parentAssociation) {
-  //   const primaryKey = node.resolvePrimaryKey();
-  //   const filterQuery = customResolver('filterId', options);
-  //   query += ` WHERE ${nodeAlias}.${primaryKey} IN (${filterQuery})`;
-  // }
+  if (!node.parentAssociation) {
+    const primaryKey = node.resolvePrimaryKey();
+    const filterQuery = customResolver('filterId', options);
+    query += ` WHERE ${nodeAlias}.${primaryKey} IN (${filterQuery})`;
+  }
 
   query = SQLFormatter.format(query);
 

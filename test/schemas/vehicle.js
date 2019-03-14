@@ -8,6 +8,10 @@ module.exports = function(graphlite) {
         type: 'string',
         alias: 'DescricaoAplicacao'
       },
+      complement: {
+        type: 'string',
+        alias: 'ComplementoAplicacao'
+      }
     }
   });
 }

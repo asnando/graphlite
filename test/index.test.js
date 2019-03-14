@@ -1,7 +1,10 @@
+const chalk = require('chalk');
 const GraphLite = require('../src');
 const connectionProvider = require('./connection-provider');
 
 const DATABASE_FILE = './test/databases/test.db';
+const SHOW_EXAMPLE_ON_LOG = true;
+
 const connection = new connectionProvider(DATABASE_FILE);
 
 const graphlite = new GraphLite({
@@ -46,28 +49,33 @@ describe('GraphLite', () => {
     done();
   });
 
-  // #4
-  it('should fetch a list with 30 products', done => {
-    graphlite.test('products')
-      .then(logresponse.bind(null, done))
-      .catch(logerror.bind(null, done));
-  });
+  // ###
+  describe('Execute queries', () => {
+    // #4
+    // it('should fetch a list with 30 products', done => {
+    //   graphlite.test('products')
+    //     .then(logresponse.bind(null, done))
+    //     .catch(logerror.bind(null, done));
+    // });
 
-  // #5
-  it('should fetch a list with products within vehicles', done => {
-    graphlite.test('products-with-vehicles')
-      .then(logresponse.bind(null, done))
-      .catch(logerror.bind(null, done));
+    // #5
+    it('should fetch a list with products within vehicles', done => {
+      graphlite.test('products-with-vehicles')
+        .then(logresponse.bind(null, done))
+        .catch(logerror.bind(null, done));
+    });
   });
 
 });
 
 function logresponse(done, response) {
-  console.log();
-  console.log('Example:', response.rows[0]);
-  console.log();
-  console.log(`Query builded in ${response.buildedIn}s`);
-  console.log(`Query executed in ${response.executedIn}s`);
+  if (!!SHOW_EXAMPLE_ON_LOG) {
+    console.log();
+    console.log('Example:', response.rows[0]);
+    console.log();
+  }
+  console.log('   ', chalk.green(`Query builded in ${response.buildedIn}s!`));
+  console.log('   ', chalk.green(`Query executed in ${response.executedIn}s!`));
   return done();
 }
 

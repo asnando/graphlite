@@ -106,7 +106,7 @@ class Query {
       );
 
       nodeGraph.createResolver('main', graphNodeResolver, true);
-      nodeGraph.createResolver('filterId', graphNodeConditionResolver);
+      nodeGraph.createResolver('filterId', graphNodeConditionResolver, false, '');
 
       // The returned options object will be avaiable to the next walked node.
       return {
@@ -119,11 +119,8 @@ class Query {
   }
 
   build(options = {}) {
-    debug.alert(`Building query "${this.name}" with options: ${_.jpretty(options)}`);
-    const query = this.graph.resolve('main', options);
-    // debug.success(query);
-    debug.success('Query copied to clipboard!');
-    return query;
+    debug.warn(`Building query "${this.name}" with options: ${_.jpretty(options)}`);
+    return this.graph.resolve('main', options);
   }
 
 }

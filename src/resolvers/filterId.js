@@ -1,7 +1,11 @@
 const _ = require('../utils');
+const debug = require('../debugger');
 
 module.exports = function graphNodeConditionResolver(node, options, nextNodes) {
-  const query = !!node.parentAssociation ? node.parentAssociation.simpleJoin()
-    : `SELECT DISTINCT ${node.tableName}.${node.resolvePrimaryKey()} ${node.resolveSource()} ${nextNodes()}`;
-  return query;
+  // Fix: Temporally fix
+  nextNodeQuery = nextNodes().replace(/json_object\(\)/g, '');
+  const resolvedOptions = node.resolveOptions(options);
+  return !!node.parentAssociation
+    ? node.parentAssociation.resolveJoin()
+    : `SELECT DISTINCT ${node.tableName}.${node.resolvePrimaryKey()} ${node.resolveSource()} ${nextNodeQuery} ${resolvedOptions}`;
 }

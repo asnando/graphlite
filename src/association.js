@@ -57,11 +57,11 @@ class Association {
     return ' '.concat(from.concat(` ${join.join(' ')}`).concat(` ${where}`));
   }
 
-  // simpleJoin() {
-  //   return (this.foreignTable && this.foreignKey)
-  //     ? ` INNER JOIN ${this.foreignTable} ON ${this.foreignTable}.${this.sourceKey}=${this.sourceTable}.${this.sourceKey} INNER JOIN ${this.targetTable} ON ${this.targetTable}.${this.targetKey}=${this.foreignTable}.${this.targetKey}`
-  //     : ` INNER JOIN ${this.targetTable} ON ${this.targetTable}.${this.targetKey}=${this.sourceTable}.${this.targetKey}`;
-  // }
+  resolveJoin() {
+    return (this.foreignTable && this.foreignKey)
+      ? ` INNER JOIN ${this.foreignTable} ON ${this.foreignTable}.${this.sourceKey}=${this.sourceTable}.${this.sourceKey} INNER JOIN ${this.targetTable} ON ${this.targetTable}.${this.targetKey}=${this.foreignTable}.${this.targetKey}`
+      : ` INNER JOIN ${this.targetTable} ON ${this.targetTable}.${this.targetKey}=${this.sourceTable}.${this.targetKey}`;
+  }
 
 }
 

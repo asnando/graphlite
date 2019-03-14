@@ -7,8 +7,10 @@ module.exports = function(graphlite) {
         properties: '*',
         automaker: {
           properties: '*'
-        }
-      }
+        },
+      },
+      size: 100,
+      orderBy: ['NumeroProduto', 'DescricaoProduto']
     }
   });
 }

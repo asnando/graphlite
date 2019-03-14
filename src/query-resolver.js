@@ -1,4 +1,5 @@
 const _ = require('./utils');
+const debug = require('./debugger');
 
 class QueryResolver {
 
@@ -10,7 +11,12 @@ class QueryResolver {
   }
 
   resolve(node, options) {
-    return this.resolver(node.raw(), options, this.resolveNextNodes.bind(this, node, options), node.resolve.bind(node));
+    return this.resolver(
+      node.raw(),
+      options,
+      this.resolveNextNodes.bind(this, node, options),
+      node.resolve.bind(node)
+    );
   }
 
   resolveNextNodes(node, options) {

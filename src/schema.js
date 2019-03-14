@@ -161,11 +161,6 @@ class Schema {
 
     const middleAssociation = schema.hasManyRelationsWith[middleAssociationMatch] || schema.hasOneRelationWith[middleAssociationMatch];
 
-    // TODO: Needs to say: This schema have relation with that other schema throught some other schema.
-    // Products has many automakers throught aplication
-    // or
-    // Aplications belongs to many products throught aplication
-
     function createMiddleAssociation(association) {
       return new Association({
         sourceHash: association.sourceHash,
