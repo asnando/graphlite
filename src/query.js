@@ -32,8 +32,10 @@ class Query {
     _.jtree(graph, (node, path, options) => {
 
       // Check if the walked path represents a schema name.
-      if ((/^\$$/.test(path)) || (/(?<=\.where\.)\w+$/.test(path)) ||
-        (/(having|alias|properties|\d|where|groupBy|size|page|orderBy|type)$/.test(path))
+      if (/^\$$/.test(path) ||
+        (/(?<=\.where\.)\w+$/.test(path)) ||
+        (/(?<=\.options)/.test(path)) ||
+        (/(options|having|alias|properties|\d|where|groupBy|size|page|orderBy|type)$/.test(path))
       ) return;
 
       const schemaName = node.alias || resolveSchemaName(path);
@@ -99,17 +101,17 @@ class Query {
           orderBy: node.orderBy,
           groupBy: node.groupBy,
         },
-        staticOptions: {
+        staticValues: {
           page: node.page,
           size: node.size,
           orderBy: node.orderBy,
           groupBy: node.groupBy,
         },
-        propertiesResolver: schema._resolveProperties.bind(schema),
-        hasManyRelationsWith: schema.hasManyRelationsWith,
-        hasOneRelationWith: schema.hasOneRelationWith,
-        belongsToOneRelation: schema.belongsToOneRelation,
-        belongsToManyRelations: schema.belongsToManyRelations,
+        // propertiesResolver: schema._resolveProperties.bind(schema),
+        // hasManyRelationsWith: schema.hasManyRelationsWith,
+        // hasOneRelationWith: schema.hasOneRelationWith,
+        // belongsToOneRelation: schema.belongsToOneRelation,
+        // belongsToManyRelations: schema.belongsToManyRelations,
         parentAssociation: resolveAssociation(schema, parentSchema)
       });
 

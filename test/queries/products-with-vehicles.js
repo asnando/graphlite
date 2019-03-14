@@ -6,8 +6,14 @@ module.exports = function(graphlite) {
         alias: 'vehicle',
         properties: '*',
         automaker: {
-          properties: '*'
+          properties: '*',
         },
+        // This is not yet supported !!
+        options: {
+          showsWhen: {
+            DescricaoFabricante: 'descricaofabricante'
+          }
+        }
       },
       size: 100,
       orderBy: ['NumeroProduto', 'DescricaoProduto']

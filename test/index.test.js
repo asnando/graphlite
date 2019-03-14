@@ -50,17 +50,19 @@ describe('GraphLite', () => {
   });
 
   // ###
-  describe('Execute queries', () => {
+  describe('findAll()', () => {
     // #4
     // it('should fetch a list with 30 products', done => {
-    //   graphlite.test('products')
+    //   graphlite.findAll('products')
     //     .then(logresponse.bind(null, done))
     //     .catch(logerror.bind(null, done));
     // });
 
     // #5
     it('should fetch a list with products within vehicles', done => {
-      graphlite.test('products-with-vehicles')
+      graphlite.findAll('products-with-vehicles', {
+        descricaofabricante: '=AUDI'
+      })
         .then(logresponse.bind(null, done))
         .catch(logerror.bind(null, done));
     });

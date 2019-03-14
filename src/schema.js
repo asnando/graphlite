@@ -28,67 +28,22 @@ class Schema {
   }
 
   _createSchemaProperty(propName, propDef) {
-    let primaryKey, primaryKeyName;
-    
-    primaryKey = (_.isString(propDef) && _.equals(propDef, 'primaryKey')) ||
-      (_.isObject(propDef) && _.equals(propDef.type, 'primaryKey'));
-
-    primaryKeyName = !primaryKey ? null : _.isString(propDef) ? propName : propDef.name || propName;
-
-    // if (!primaryKey) {
-    //   throw new Error(`Primary key column is missing for "${this.name}"`);
-    // }
+    const propType = _.isString(propDef) ? propDef : !!propDef.type ? propDef.type : 'default';
 
     const property = _.pickBy({
-      name: primaryKey ? primaryKeyName : _.defaults(propDef.name, propName),
-      type: primaryKey ? 'primaryKey' : _.defaults(propDef.type, 'default'),
-      alias: propDef.alias,
+      name:     propName,
+      type:     propType,
+      alias:    propDef.alias,
       resolver: propDef.resolve,
-      join: propDef.join,
-      parser: propDef.parse,
+      join:     propDef.join,
+      parser:   propDef.parse,
     });
 
-    if (primaryKey) this.primaryKey = property.name;
-
-    return property;
-  }
-
-  _resolveProperties(options = {}, parentAssociation) {
-    const raw        = _.defaults(options.raw, false),
-          withId     = _.defaults(options.withId, true),
-          useHash    = _.defaults(options.useHash, true),
-          groupedIds = _.defaults(options.groupedIds, false);
-
-    const tableName = useHash ? this.hash : this.tableName;
-
-    if (raw) {
-      let rawed = [`${tableName}.*`];
-      // ***
-      if (groupedIds && parentAssociation && parentAssociation.throught) {
-        const associationTableName = parentAssociation.throught.targetTable;
-        const associationField = parentAssociation.throught.targetKey;
-        rawed.push(`json_group_array(${associationTableName}.${associationField}) AS exported_${associationField}`);
-      }
-      return rawed.join(',');
+    if (propType === 'primaryKey') {
+      this.primaryKey = property.name;
     }
 
-    return this.properties
-      // Do not bring the primary key field when "withId" is false
-      .filter(prop => _.equals(withId, false) ? (prop.type !== 'primaryKey') : true)
-      .map(prop => {
-        // This function will be called by each property in the schema
-        // and will resolves the property definition that is used inside the 
-        // select section of the query.
-        return [
-          _.quote(_.equals(prop.type, 'primaryKey') ? '_id' : prop.name),
-          prop.resolver
-            ? propDefinitionWithResolver.call(this, tableName, prop.resolver)
-            : prop.join
-              ? propDefinitionWithJoin.call(this, tableName, prop.join)
-              : propDefinition.call(this, tableName, prop.alias, prop.name)
-        ].join(',');
-      })
-      .join(',');
+    return property;
   }
 
   _createAssociation(schema, options, associationType) {
@@ -214,18 +169,6 @@ function getAssociationToKeys(schema) {
 // Returns parent.has*
 function getAssociationFromKeys(schema) {
   return _.keys(schema.hasManyRelationsWith).concat(_.keys(schema.hasOneRelationWith));
-}
-
-function propDefinitionWithResolver(tableName, resolver) {
-  return `CASE ${resolver.map(prop => `WHEN ${tableName}.${prop} IS NOT NULL THEN ${tableName}.${prop}`).join(' ')} END`;
-}
-
-function propDefinitionWithJoin(tableName, join) {
-  return join.map(prop => tableName.concat('.').concat(prop)).join(' || ');
-}
-
-function propDefinition(tableName, alias, name) {
-  return tableName.concat('.').concat(alias || name);
 }
 
 module.exports = Schema;

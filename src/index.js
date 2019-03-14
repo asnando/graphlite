@@ -20,7 +20,7 @@ class GraphLite {
     return this._schema.find(schema => schema.name === schemaName);
   }
 
-  test(queryName, queryOpts = {}) {
+  findAll(queryName, options = {}) {
     const query = this._queries.find(query => query.name === queryName);
 
     if (!query) {
@@ -33,7 +33,7 @@ class GraphLite {
     perf = Date.now();
 
     try {
-      buildedQuery = query.build(queryOpts);
+      buildedQuery = query.build(options);
       queryBuildTime = (Date.now() - perf) / 1000;
     } catch (exception) {
       throw new Error(`Caught an error building the query: ${exception}`);

@@ -1,6 +1,9 @@
 const _ = require('./utils');
 const debug = require('./debugger');
 
+const DEFAULT_OBJECT_RESPONSE_NAME = 'response';
+const DEFAULT_OBJECT_TYPE = 'object';
+
 // The QueryNode represents the real value of a node
 // inside the graph of the defined query. It is responsible
 // to resolve each part of the query for that specific node.
@@ -8,115 +11,113 @@ class QueryNode {
 
   constructor(opts = {}) {
     _.xtend(this, {
-      name:                   opts.name,
-      alias:                  opts.alias,
-      hash:                   opts.hash,
-      tableName:              opts.tableName,
-      primaryKey:             opts.primaryKey,
-      hasManyRelationsWith:   opts.hasManyRelationsWith,
-      hasOneRelationWith:     opts.hasOneRelationWith,
-      belongsToOneRelation:   opts.belongsToOneRelation,
-      belongsToManyRelations: opts.belongsToManyRelations,
-      parentAssociation:      opts.parentAssociation,
-      // This resolver is a function import from the schema class.
-      // It's more easy to resolve the fields to be selected by the query
-      // in that class as it already have the full fields definition.
-      propertiesResolver:     opts.propertiesResolver,
+      name: opts.name,
+      alias: opts.alias,
+      hash: opts.hash,
+      properties: opts.properties,
+      tableName: opts.tableName,
+      primaryKey: opts.primaryKey,
+      parentAssociation: opts.parentAssociation,
       // Options definition by the query graph.
-      definedOptions:         opts.options,
+      definedOptions: opts.options,
       // Static values for options defined in the query.
-      staticOptions:          opts.staticOptions,
+      staticValues: opts.staticValues,
     });
   }
 
-  resolvePrimaryKey() {
-    return this.primaryKey;
+  getTableName() {
+    return this.tableName;
   }
 
-  resolveSource() {
-    return this.parentAssociation ? this.parentAssociation.resolve() : ` FROM ${this.tableName}`;
-  }
-
-  resolveHash() {
+  getTableAlias() {
     return this.hash;
   }
 
-  resolveFields(options, parentAssociation) {
-    return this.propertiesResolver({
-      ...options,
-      withId: !this.parentAssociation,
-    }, parentAssociation);
+  getObjectType() {
+    return !!this.parentAssociation ? this.parentAssociation.objectType : DEFAULT_OBJECT_TYPE;
   }
-  
-  resolveOptions(options = {}) {
 
-    const tableName = this.tableName;
-
-    const where   = this.definedOptions.where,
-          size    = this.definedOptions.size,
-          page    = this.definedOptions.page,
-          orderBy = this.definedOptions.orderBy,
-          groupBy = this.staticOptions.groupBy || options.groupBy;
-
-    let resolvedOptions = {
-      where: resolveConditionOptions(where, options, this.parentAssociation ? ' AND ' : null),
-      limit: resolveLimitOption(size),
-      offset: resolveOffsetOption(page, size),
-      orderBy: resolveOrderByOption(tableName, orderBy),
-      groupBy: resolveGroupByOption(tableName, groupBy)
-    };
-
-    // Put options in array to ensure that each
-    // fields are respecting query options default order.
-    return [
-      resolvedOptions.where,
-      resolvedOptions.groupBy,
-      resolvedOptions.orderBy,
-      resolvedOptions.limit,
-      resolvedOptions.offset
-    ].join(' ');
+  getPrimaryKey() {
+    return this.primaryKey;
   }
-}
 
-function resolveGroupByOption(tableName, fields) {
-  fields = _.isArray(fields)
-    ? fields.map(field => `${tableName}.${field}`).join(',')
-    : fields
-      ? tableName.concat('.').concat(fields)
-      : null;
-  return fields ? `GROUP BY ${fields}` : '';
-}
+  getFieldsAsJson() {
+    // Returns format: 'fieldName', tableAlias.(fieldAlias || fieldName)
+    const tableAlias = this.getTableAlias();
 
-function resolveOrderByOption(tableName, fields) {
-  return fields ? `ORDER BY ${tableName}.${fields}` : '';
-}
+    return this.properties.filter(prop => {
+      return !this.parentAssociation || prop.type !== 'primaryKey';
+    }).map(prop => {
 
-function resolveLimitOption(size) {
-  return _.isDef(size) ? `LIMIT ${size}` : '';
-}
+      let propName = prop.type === 'primaryKey' ? '_id' : prop.name,
+          propValue;
 
-function resolveOffsetOption(page, size) {
-  return !!page ? `offset ${(page - 1) * size}` : '';
-}
+      if (prop.resolver) {
+        propValue = '(CASE' + prop.resolver.map(name => ` WHEN ${tableAlias}.${name} IS NOT NULL THEN ${tableAlias}.${name}`).join(' ') + ' END)';
+      } else if (prop.join) {
+        propValue = prop.join.join(' || ');
+      } else {
+        propValue = tableAlias.concat('.').concat(prop.alias || prop.name);
+      }
 
-// This function receives the definitions registerd in the query
-// instance for the where clauses and a object within the options values.
-function resolveConditionOptions(definition, options, concatString) {
+      switch (prop.type) {
+        case 'boolean':
+          propValue = `(CASE WHEN ${propValue} IS NOT NULL AND ${propValue}<>0 THEN 1 ELSE 0 END)`;
+          break;
+        case 'integer':
+          propValue = `cast(${propValue} as integer)`;
+          break;
+        case 'number':
+          propValue = `cast(${propValue} as real)`;
+          break;
+      };
 
-  if (!definition || !options) return '';
+      return [
+        _.quote(propName),
+        propValue
+      ].join(',');
 
-  let conds = _.keys(options).map(option => {
-    const value = options[option];
-    const fieldName = getFieldNameFromDefinition(definition, option);
-    const valueWithQuotes = value.replace(/(^\W+)(\w+)/, '$1\'$2\'');
-    return `${fieldName}${valueWithQuotes}`;
-  }).join(' AND ');
+    }).join(',');
+  }
 
-  return conds.length ? (concatString || 'WHERE ').concat(conds) : '';
-}
+  getResponseObjectName() {
+    return !this.parentAssociation ? DEFAULT_OBJECT_RESPONSE_NAME : '';
+  }
 
-function getFieldNameFromDefinition(definition, name) {
-  return _.keys(definition).find(key => definition[key] === name);
+  getRawFields() {
+    return `${this.getTableName()}.*`;
+  }
+
+  getSource() {
+    return `FROM ${this.getTableName()} ${this.getAssociation()}`;
+  }
+
+  getAssociation() {
+    const association = this.parentAssociation;
+    if (!association) return '';
+    if (!!association.foreignTable && !!association.foreignKey) {
+      return `INNER JOIN ${association.foreignTable} ON ${association.foreignTable}.${association.sourceKey}=${association.sourceHash}.${association.sourceKey} WHERE ${association.targetTable}.${association.foreignKey}=${association.foreignTable}.${association.targetKey}`;
+    }
+    return `WHERE ${association.targetTable}.${association.targetKey}=${association.sourceHash}.${association.targetKey}`;
+  }
+
+  getOptions(options = {}) {
+    // TODO
+    return '';
+  }
+
+  getAssociationName() {
+    return _.quote(this.name);
+  }
+
+  getDistinctPrimaryKey() {
+    return `DISTINCT ${this.getTableName()}.${this.getPrimaryKey()}`;
+  }
+
+  getRawJoin() {
+    // TODO
+  }
+
 }
 
 module.exports = QueryNode;
