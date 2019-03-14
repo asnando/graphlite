@@ -119,14 +119,24 @@ class Schema {
 
   belongsTo(schema, options = {}) {
     this.belongsToOneRelation[schema.name] = this._createAssociation(schema, options, 'belongsTo');
+    // As the merge association options is not yet implemented it
+    // uses a method "extendOptions" to override the options of the parent
+    // association with this schema.
     const parentRelation = schema.hasManyRelationsWith[this.name] || schema.hasOneRelationWith[this.name];
-    if (parentRelation) parentRelation.extendOptions(options);
+    if (parentRelation) {
+      parentRelation.extendOptions(options);
+    } 
   }
 
   belongsToMany(schema, options = {}) {
     this.belongsToManyRelations[schema.name] = this._createAssociation(schema, options, 'belongsToMany');
+    // As the merge association options is not yet implemented it
+    // uses a method "extendOptions" to override the options of the parent
+    // association with this schema.
     const parentRelation = schema.hasManyRelationsWith[this.name] || schema.hasOneRelationWith[this.name];
-    if (parentRelation) parentRelation.extendOptions(options);
+    if (parentRelation) {
+      parentRelation.extendOptions(options);
+    } 
   }
 
   haveAssociationWithParent(parent) {

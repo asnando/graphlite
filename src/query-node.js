@@ -1,7 +1,11 @@
 const _ = require('./utils');
 const debug = require('./debugger');
 
+// The QueryNode represents the real value of a node
+// inside the graph of the defined query. It is responsible
+// to resolve each part of the query for that specific node.
 class QueryNode {
+
   constructor(opts = {}) {
     _.xtend(this, {
       name:                   opts.name,
@@ -14,20 +18,29 @@ class QueryNode {
       belongsToOneRelation:   opts.belongsToOneRelation,
       belongsToManyRelations: opts.belongsToManyRelations,
       parentAssociation:      opts.parentAssociation,
+      // This resolver is a function import from the schema class.
+      // It's more easy to resolve the fields to be selected by the query
+      // in that class as it already have the full fields definition.
       propertiesResolver:     opts.propertiesResolver,
+      // Options definition by the query graph.
       definedOptions:         opts.options,
+      // Static values for options defined in the query.
       staticOptions:          opts.staticOptions,
     });
   }
+
   resolvePrimaryKey() {
     return this.primaryKey;
   }
+
   resolveSource() {
     return this.parentAssociation ? this.parentAssociation.resolve() : ` FROM ${this.tableName}`;
   }
+
   resolveHash() {
     return this.hash;
   }
+
   resolveFields(options, parentAssociation) {
     return this.propertiesResolver({
       ...options,
@@ -35,7 +48,6 @@ class QueryNode {
     }, parentAssociation);
   }
   
-  // TODO: Options must receive another options values instead of only where clauses.
   resolveOptions(options = {}) {
 
     const tableName = this.tableName;

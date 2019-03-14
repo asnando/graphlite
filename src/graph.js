@@ -1,12 +1,20 @@
 const _ = require('./utils');
 const debug = require('./debugger');
 const GraphNode = require('./graph-node');
+
+// This class is a representation of a simple graph.
+// We use a graph to make the loop into the queries nodes
+// be more easy to compreend and resolve. Usually the head node
+// resolver is called until all the nodes are resolved in a 
+// recursive way.
 class Graph {
+
   constructor() {
     this.head = null;
     this.tail = null;
     this.graph = {};
   }
+
   addNode(nodeHash, node, parentHash, nodeResolvers) {
     // Sets the head if not defined yet
     this.head = this.head || nodeHash;
@@ -28,6 +36,7 @@ class Graph {
     this.tail = nodeHash;
     return node;
   }
+
   getNode(nodeHash) {
     return this.graph[nodeHash];
   }

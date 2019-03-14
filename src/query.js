@@ -7,10 +7,18 @@ const graphNodeConditionResolver = require('./resolvers/filterId');
 const graphNodeResolver = require('./resolvers/main');
 class Query {
 
+  // Query is basically a graph which nodes represents
+  // each schema declared or associated in the query definition graph.
   constructor(name, graph, schemaProvider) {
+    // Queries will be builded and resolved by their names.
     this.name = name;
+    // Save raw graph definition if it needs to be used later.
     this.rawGraph = graph;
+    // The "schemaProvider" is a function received from this main lib class
+    // which returns the schema instance using its name. All schemas
+    // are accessible in the main lib instance.
     this.schemaProvider = schemaProvider;
+    // This will be the resolved graph which will resolve the query.
     this.graph = this._resolveGraph(this.rawGraph);
   }
 
@@ -19,21 +27,17 @@ class Query {
     let resolvedGraph = new Graph();
     const schemaProvider = this.schemaProvider;
 
+    // In order to create the query graph we need to
+    // check which paths represents a schema and which do not.
     _.jtree(graph, (node, path, options) => {
 
-      // Check if node path referes to schema node name.
-      if (
-        // root path
-        (/^\$$/.test(path)) ||
-        // Not preceded by "where"
-        (/(?<=\.where\.)\w+$/.test(path)) ||
-        // ends with
+      // Check if the walked path represents a schema name.
+      if ((/^\$$/.test(path)) || (/(?<=\.where\.)\w+$/.test(path)) ||
         (/(having|alias|properties|\d|where|groupBy|size|page|orderBy|type)$/.test(path))
       ) return;
 
       const schemaName = node.alias || resolveSchemaName(path);
 
-      // Resolves the schema graph
       const schema = schemaProvider(schemaName);
       
       if (!schema) {
@@ -41,10 +45,12 @@ class Query {
       }
 
       function resolveParentName(path) {
+        // Ex.: $.some.path.(parentName).schema
         return path.match(/\./g).length === 1 ? null : path.match(/(\w+)\.\w+$/)[1];
       }
 
       function resolveSchemaName(path) {
+        // Ex.: $.some.path.parentName.(schema)
         return path.split('.').pop();
       }
 
@@ -52,7 +58,9 @@ class Query {
       const parentSchema = options.parent;
       const hasParent = !!parentSchema;
 
-      // Checks if this schema have association within the parent schema.
+      // The association with parent must be validated when a
+      // schema is not the root collection of the query. The association must
+      // be valid in two ways, parent has one/many of this and this belongs to parent.(for now)
       if (hasParent && !schema.haveAssociationWithParent(parentSchema)) {
         throw new Error(`"${schema.name}" have no relation with "${parentNodeName}".`);
       }
@@ -71,6 +79,12 @@ class Query {
         return _.xtend(withOptions, fromOptions);
       }
 
+      // A QueryNode represents the real value of the node
+      // inside the graph. This value will be avaiable in the query
+      // node resolver.
+      // In this case we are copying the schema definition and adding
+      // some extra options and methods(avaible in this class) to make
+      // our query resolution more easy.
       const queryNode = new QueryNode({
         name: schema.name,
         alias: node.alias && resolveSchemaName(path),
@@ -99,21 +113,34 @@ class Query {
         parentAssociation: resolveAssociation(schema, parentSchema)
       });
 
+      // Adds a new node to the query graph. Creating a graph node
+      // class is useful to loop throught the nodes in a automatic way.
       const nodeGraph = resolvedGraph.addNode(
         schema.hash,
         queryNode,
         options.lastNodeHash
       );
 
+      // Resolvers are functions which receives a node from the graph and
+      // returns a parsed query.
+      // Add some defined resolvers to this graph node.
+      // The "main" resolver will resolves the SQL select using the
+      // json1 extension and it respectives source and joined tables.
       nodeGraph.createResolver('main', graphNodeResolver, true);
+      // The "filterId" resolver will resolve the general where clause which
+      // is responsible in getting the distinct ids of the root collection which
+      // will be used as filter to the query.
       nodeGraph.createResolver('filterId', graphNodeConditionResolver, false, '');
 
-      // The returned options object will be avaiable to the next walked node.
+      // "jtree" function accepts a returned object that will be defined
+      // to the next walk node. In some cases these options are used to
+      // access the previous walked schema.
       return {
         lastNodeHash: schema.hash,
         lastNodeName: schema.name,
         parent: schema
-      };
+      }
+
     });
     return resolvedGraph;
   }
