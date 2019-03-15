@@ -28,6 +28,9 @@ class GraphNode {
   }
   
   resolve(resolverName, options) {
+    if (!this.resolvers[resolverName]) {
+      throw new Error(`Undefined resolver "${resolverName}".`);
+    }
     return this.resolvers[resolverName].resolve(this, options);
   }
 

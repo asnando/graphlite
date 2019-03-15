@@ -7,13 +7,16 @@ module.exports = function(graphlite) {
         properties: '*',
         automaker: {
           properties: '*',
+          where: {
+            descricaofabricante: 'DescricaoFabricante'
+          }
         },
         // This is not yet supported !!
-        options: {
-          showsWhen: {
-            DescricaoFabricante: 'descricaofabricante'
-          }
-        }
+        // options: {
+        //   showsWhen: {
+        //     DescricaoFabricante: 'descricaofabricante'
+        //   }
+        // }
       },
       size: 100,
       orderBy: ['NumeroProduto', 'DescricaoProduto']

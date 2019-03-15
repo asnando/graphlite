@@ -3,7 +3,7 @@ const GraphLite = require('../src');
 const connectionProvider = require('./connection-provider');
 
 const DATABASE_FILE = './test/databases/test.db';
-const SHOW_EXAMPLE_ON_LOG = true;
+const SHOW_EXAMPLE_ON_LOG = false;
 
 const connection = new connectionProvider(DATABASE_FILE);
 

@@ -4,8 +4,9 @@ const Graph = require('./graph');
 const QueryNode = require('./query-node');
 const QueryResponse = require('./query-response');
 
-const graphNodeConditionResolver = require('./resolvers/filterId');
 const graphNodeResolver = require('./resolvers/main');
+const graphRootNodeOptionsResolver = require('./resolvers/filterId');
+const graphNodeOptionsResolver = require('./resolvers/options');
 class Query {
 
   // Query is basically a graph which nodes represents
@@ -96,14 +97,8 @@ class Query {
         tableName: schema.tableName,
         properties: schema.properties,
         primaryKey: schema.primaryKey,
-        options: {
-          where: node.where,
-          page: node.page,
-          size: node.size,
-          orderBy: node.orderBy,
-          groupBy: node.groupBy,
-        },
-        staticValues: {
+        options: node.where,
+        staticOptions: {
           page: node.page,
           size: node.size,
           orderBy: node.orderBy,
@@ -129,7 +124,8 @@ class Query {
       // The "filterId" resolver will resolve the general where clause which
       // is responsible in getting the distinct ids of the root collection which
       // will be used as filter to the query.
-      nodeGraph.createResolver('filterId', graphNodeConditionResolver, false, '');
+      nodeGraph.createResolver('filterId', graphRootNodeOptionsResolver, false, '');
+      nodeGraph.createResolver('options', graphNodeOptionsResolver);
 
       // "jtree" function accepts a returned object that will be defined
       // to the next walk node. In some cases these options are used to

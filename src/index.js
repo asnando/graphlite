@@ -37,7 +37,7 @@ class GraphLite {
       query.parseResponse();
       queryBuildTime = (Date.now() - perf) / 1000;
     } catch (exception) {
-      throw new Error(`Caught an error building the query: ${exception}`);
+      throw new Error(`Caught an error building the query:\n\t${exception}`);
     }
 
     perf = Date.now();
