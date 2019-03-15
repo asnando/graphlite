@@ -34,6 +34,7 @@ class GraphLite {
 
     try {
       buildedQuery = query.build(options);
+      query.parseResponse();
       queryBuildTime = (Date.now() - perf) / 1000;
     } catch (exception) {
       throw new Error(`Caught an error building the query: ${exception}`);
@@ -42,11 +43,13 @@ class GraphLite {
     perf = Date.now();
 
     return this.executeBuildedQuery(buildedQuery).then(rows => {
+      rows = query.parseResponse(rows);
       queryExecuteTime = (Date.now() - perf) / 1000;
       return {
         rows,
         buildedIn: queryBuildTime,
-        executedIn: queryExecuteTime
+        executedIn: queryExecuteTime,
+        parsedIn: 0
       };
     });
   }

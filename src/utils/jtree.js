@@ -1,5 +1,6 @@
 const isArray = require('./is-array');
 const isNumber = require('./is-number');
+const isObject = require('./is-object');
 
 module.exports = function jtree(tree, handler, path, parentNode, parentPath, options) {
   path = path || '$';
@@ -11,7 +12,7 @@ module.exports = function jtree(tree, handler, path, parentNode, parentPath, opt
     tree.forEach((node, index) => {
       jtree(node, handler, path.concat('#').concat(index), tree, path, options);
     });
-  } else if (typeof tree === 'object') {
+  } else if (isObject(tree)) {
     Object.keys(tree).forEach(nodeName => {
       if (isNumber(nodeName)) return;
       jtree(tree[nodeName], handler, path.concat('.').concat(nodeName), tree, path, options);

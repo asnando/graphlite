@@ -23,7 +23,6 @@ describe('GraphLite', () => {
 
   // #2
   it('should define the associations', done => {
-    
     const product   = graphlite._schemaProvider('product'),
           automaker = graphlite._schemaProvider('automaker'),
           vehicle   = graphlite._schemaProvider('vehicle');
@@ -76,6 +75,7 @@ function logresponse(done, response) {
     console.log('Example:', response.rows[0]);
     console.log();
   }
+  console.log('   ', chalk.green(`Query returned ${response.rows.length} rows!`));
   console.log('   ', chalk.green(`Query builded in ${response.buildedIn}s!`));
   console.log('   ', chalk.green(`Query executed in ${response.executedIn}s!`));
   return done();

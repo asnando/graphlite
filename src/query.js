@@ -2,6 +2,7 @@ const debug = require('./debugger');
 const  _ = require('./utils/');
 const Graph = require('./graph');
 const QueryNode = require('./query-node');
+const QueryResponse = require('./query-response');
 
 const graphNodeConditionResolver = require('./resolvers/filterId');
 const graphNodeResolver = require('./resolvers/main');
@@ -20,6 +21,7 @@ class Query {
     this.schemaProvider = schemaProvider;
     // This will be the resolved graph which will resolve the query.
     this.graph = this._resolveGraph(this.rawGraph);
+    this.responseParser = new QueryResponse(this.graph);
   }
 
   _resolveGraph(graph) {
@@ -107,11 +109,6 @@ class Query {
           orderBy: node.orderBy,
           groupBy: node.groupBy,
         },
-        // propertiesResolver: schema._resolveProperties.bind(schema),
-        // hasManyRelationsWith: schema.hasManyRelationsWith,
-        // hasOneRelationWith: schema.hasOneRelationWith,
-        // belongsToOneRelation: schema.belongsToOneRelation,
-        // belongsToManyRelations: schema.belongsToManyRelations,
         parentAssociation: resolveAssociation(schema, parentSchema)
       });
 
@@ -150,6 +147,10 @@ class Query {
   build(options = {}) {
     debug.warn(`Building query "${this.name}" with options: ${_.jpretty(options)}`);
     return this.graph.resolve('main', options);
+  }
+
+  parseResponse(rows) {
+    return this.responseParser.parse(rows);
   }
 
 }

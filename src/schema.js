@@ -36,7 +36,7 @@ class Schema {
       alias:    propDef.alias,
       resolver: propDef.resolve,
       join:     propDef.join,
-      parser:   propDef.parse,
+      parser:   propDef.parser,
     });
 
     if (propType === 'primaryKey') {

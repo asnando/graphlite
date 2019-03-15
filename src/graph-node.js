@@ -39,6 +39,15 @@ class GraphNode {
     this.resolvers[name] = new QueryResolver(name, resolver, usePatch, defaultValue);
   }
 
+  walk(callback) {
+    callback(this.raw());
+    if (this.nextNodes.length) {
+      this.nextNodes.forEach(nextNode => {
+        if (_.isFunction(nextNode.walk)) nextNode.walk(callback)
+      });
+    }
+  }
+
 }
 
 module.exports = GraphNode;

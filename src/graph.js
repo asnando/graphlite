@@ -58,6 +58,9 @@ class Graph {
   resolve(resolver, options) {
     return this.getHeadNode().resolve(resolver, options);
   }
+  walk(callback) {
+    return this.getHeadNode().walk(callback);
+  }
 }
 
 module.exports = Graph;

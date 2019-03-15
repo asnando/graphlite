@@ -102,8 +102,9 @@ class QueryNode {
   }
 
   getOptions(options = {}) {
+    debug.log('Options object', options);
     // TODO
-    return '';
+    return ' LIMIT 1000';
   }
 
   getAssociationName() {
