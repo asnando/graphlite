@@ -58,11 +58,9 @@ class QueryResponse {
   }
 
   parse(rows) {
-    if (!rows || !rows.length) return rows;
-
-    debug.debug(this.shadow);
-
-    rows = rows.map(row => {
+    return (!rows || !rows.length)
+      ? rows
+      : rows.map(row => {
       // Call resolvers
       _.keys(this.shadow).forEach(path => {
         const resolver = this.shadow[path];
@@ -72,8 +70,6 @@ class QueryResponse {
       });
       return row;
     });
-
-    return rows;
   }
 
 }

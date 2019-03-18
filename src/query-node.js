@@ -3,6 +3,7 @@ const debug = require('./debugger');
 
 const DEFAULT_OBJECT_RESPONSE_NAME = 'response';
 const DEFAULT_OBJECT_TYPE = 'object';
+const DEFAULT_PAGE_DATA_LIMIT = 100;
 
 // The QueryNode represents the real value of a node
 // inside the graph of the defined query. It is responsible
@@ -171,8 +172,8 @@ class QueryNode {
     }
 
     function resolveLimit(size) {
-      size = size || 100;
-      return `LIMIT ${size}`;
+      return (!size && !!self.parentAssociation) ? ''
+        : `LIMIT ${size || DEFAULT_PAGE_DATA_LIMIT}`;
     }
 
     const clauses = {
@@ -182,6 +183,7 @@ class QueryNode {
       limit: resolveLimit(this.staticOptions.size),
       offset: resolveOffset(this.staticOptions.page, resolveLimit(this.staticOptions.size)),
     };
+    
 
     // Renders only is a array within all the keys
     // from "clauses" object above which will be present

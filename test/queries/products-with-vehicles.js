@@ -9,14 +9,18 @@ module.exports = function(graphlite) {
       vehicle: {
         alias: 'vehicle',
         properties: '*',
+        size: 3,
+        // orderBy: {
+        //   descricaoveiculo: 'DescricaoVeiculo'
+        // },
         automaker: {
           properties: '*',
           where: {
             descricaofabricante: '=DescricaoFabricante'
           },
-          shows: {
-            descricaofabricante: '=DescricaoFabricante'
-          }
+          // shows: {
+          //   descricaofabricante: '=DescricaoFabricante'
+          // }
         },
         // shows: {
         //   descricaoveiculo: '=DescricaoAplicacao'
