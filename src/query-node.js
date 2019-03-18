@@ -137,7 +137,7 @@ class QueryNode {
   }
 
   getShowOptions(options) {
-    options = resolveOptionsWithValues.call(this, this.nodeOptions, options);
+    options = this.resolveOptionsWithValues(this.nodeOptions, options);
     return !options.length ? '' : `AND ${options.join(' AND ')}`;
   }
 
@@ -145,7 +145,7 @@ class QueryNode {
 
     const self = this;
 
-    const resolvedOptions = resolveOptionsWithValues.call(this, this.definedOptions, options);
+    const resolvedOptions = this.resolveOptionsWithValues(this.definedOptions, options);
 
     function resolveWhere(options) {
       return (options && options.length)
@@ -195,6 +195,61 @@ class QueryNode {
     }
   }
 
+  resolveOptionsWithValues(def, options) {
+
+    const definedOptionKeys = _.keys(options)
+      .filter(optionName => !!def.hasOwnProperty(optionName))
+
+    if (!definedOptionKeys.length) return '';
+
+    const optionValues = definedOptionKeys.map(optionName => {
+      const propName = def[optionName].replace(/\W/g, '');
+      const propDefinitionFromSchema = this.schemaProperties.find(prop => prop.name === propName);
+      const definition = def[optionName];
+      const value = options[optionName];
+      const resolvedPropName = propDefinitionFromSchema.alias || propDefinitionFromSchema.name;
+      const operator = /\W/.test(definition) ? definition.match(/\W/)[0] : '=';
+
+      if (!propDefinitionFromSchema) {
+        throw new Error(`"${propName}" property from where clause not found in "${this.name}" schema properties.`);
+      }
+
+      const resolve = function() {
+        const operator = this.operator,
+              value    = this.value;
+        switch (operator) {
+          case '=':
+            return `=${_.quote(value)}`;
+          case '<>':
+            return `<>${_.quote(value)}`;
+          case '>':
+            return `>${value}`;
+          case '<':
+            return `<${value}`;
+          case '%':
+            return `LIKE ${_.quote(value)}`;
+          case '#':
+            return `GLOB ${_.quote(_.glob(value))}`;
+          default:
+            return '';
+        };
+      }
+
+      return {
+        name: resolvedPropName,
+        definition,
+        value,
+        operator,
+        resolve
+      };
+
+    }).map(opt => {
+      return `${this.getTableName()}.${opt.name} ${opt.resolve()}`;
+    });
+
+    return optionValues;
+  }
+
   getAssociationName() {
     return _.quote(this.name);
   }
@@ -206,43 +261,3 @@ class QueryNode {
 }
 
 module.exports = QueryNode;
-
-function resolveOptionsWithValues(def, options) {
-  return _.keys(options)
-    .filter(optionName => !!def.hasOwnProperty(optionName))
-    .map(optionName => {
-      const definition = def[optionName];
-      const name = definition.replace(/\W/g, '');
-      const value = options[optionName];
-      const operator = /\W/.test(definition) ? definition.match(/\W/)[0] : '=';
-      return {
-        name,
-        definition,
-        value,
-        operator,
-        resolve: function() {
-          const operator = this.operator,
-                value    = this.value;
-          switch (operator) {
-            case '=':
-              return `=${_.quote(value)}`;
-            case '<>':
-              return `<>${_.quote(value)}`;
-            case '>':
-              return `>${value}`;
-            case '<':
-              return `<${value}`;
-            case '%':
-              return `LIKE ${_.quote(value)}`;
-            case '#':
-              return `GLOB ${_.quote(_.glob(value))}`;
-            default:
-              return '';
-          };
-        }
-      }
-    })
-    .map(opt => {
-      return `${this.getTableName()}.${opt.name} ${opt.resolve()}`;
-    });
-}

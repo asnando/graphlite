@@ -21,7 +21,7 @@ module.exports = function graphNodeResolver(node, options = {}, nextNodes, custo
       .replace(/\$show_options/,    node.getShowOptions(options))
       .replace(/\$options/,         node.getOptions(options, ['group', 'order', 'limit', 'offset']))
 
-    // debug.debug(node.getOptions(options, ['group', 'order', 'limit', 'offset']));
+  // debug.debug(node.getOptions(options, ['group', 'order', 'limit', 'offset']));
 
   // Build the filter subquery in order to select the root schema
   // identifiers that will be returned by the select.

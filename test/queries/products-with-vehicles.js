@@ -16,7 +16,7 @@ module.exports = function(graphlite) {
         automaker: {
           properties: '*',
           where: {
-            descricaofabricante: '=DescricaoFabricante'
+            descricaofabricante: '=automakerDescription'
           },
           // shows: {
           //   descricaofabricante: '=DescricaoFabricante'
