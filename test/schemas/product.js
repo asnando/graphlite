@@ -19,7 +19,10 @@ module.exports = function(graphlite) {
           'ArquivoFotoProduto2'
         ]
       },
-      FlagLancamento: 'boolean',
+      release: {
+        alias: 'FlagLancamento',
+        type: 'boolean'
+      },
       FlagPontaEstoque: 'boolean'
     }
   });

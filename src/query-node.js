@@ -160,15 +160,25 @@ class QueryNode {
     }
 
     function resolveGroupBy(gp) {
-      return (gp && gp.length)
-        ? ' GROUP BY '.concat(gp.map(prop => self.getTableName().concat('.').concat(prop)))
-        : '';
+      if (!gp || !gp.length) return '';
+      return ' GROUP BY ' + gp.map(prop => {
+        prop = self.getSchemaPropertyConfig(prop);
+        if (!prop) {
+          throw new Error(`Undefined "${prop}" property configuration on "${self.name}" schema for grouping.`);
+        }
+        return prop.alias || prop.name;
+      }).map(prop => self.getTableName().concat('.').concat(prop));
     }
 
     function resolveOrderBy(order) {
-      return (order && order.length)
-        ? ' ORDER BY '.concat(order.map(prop => self.getTableName().concat('.').concat(prop)))
-        : '';
+      if (!order || !order.length) return '';
+      return ' ORDER BY ' + order.map(prop => {
+        prop = self.getSchemaPropertyConfig(prop);
+        if (!prop) {
+          throw new Error(`Undefined "${prop}" property configuration on "${self.name}" schema for ordering.`);
+        }
+        return prop.alias || prop.name;
+      }).map(prop => self.getTableName().concat('.').concat(prop));
     }
 
     function resolveLimit(size) {
@@ -248,6 +258,10 @@ class QueryNode {
     });
 
     return optionValues;
+  }
+
+  getSchemaPropertyConfig(propName) {
+    return this.schemaProperties.find(prop => prop.name === propName);
   }
 
   getAssociationName() {

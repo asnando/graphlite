@@ -1,36 +1,29 @@
 module.exports = function(graphlite) {
   return graphlite.defineQuery('products-with-vehicles', {
     product: {
-      // properties: [
-      //   'description',
-      //   'number',
-      // ],
-      properties: '*',
+      properties: [
+        'description',
+        'number',
+        'release'
+      ],
       vehicle: {
         alias: 'vehicle',
         properties: '*',
-        size: 3,
-        // orderBy: {
-        //   descricaoveiculo: 'DescricaoVeiculo'
-        // },
         automaker: {
           properties: '*',
-          where: {
-            descricaofabricante: '=automakerDescription'
-          },
+          size: 3,
+          // where: {
+          //   descricaofabricante: '=automakerDescription'
+          // },
           // shows: {
-          //   descricaofabricante: '=DescricaoFabricante'
-          // }
+          //   descricaofabricante: '=automakerDescription'
+          // },
+          groupBy: ['automakerDescription'],
+          orderBy: ['automakerDescription']
         },
-        // shows: {
-        //   descricaoveiculo: '=DescricaoAplicacao'
-        // },
-        // where: {
-        //   descricaoveiculo: '=DescricaoAplicacao'
-        // },
       },
       size: 100,
-      orderBy: ['NumeroProduto', 'DescricaoProduto']
+      orderBy: ['number', 'description'],
     }
   });
 }
