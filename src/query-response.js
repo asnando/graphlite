@@ -18,7 +18,13 @@ class QueryResponse {
       path = path ? objectType === 'array'
           ? path.concat('.').concat(node.name) : path
           : '$';
-      
+
+      // When data from node is in array format, will try
+      // parse this node data removing the null rows.
+      if (objectType === 'array') {
+        shadow[path] = resolver.bind(this, [stripNulls]);
+      }
+  
       node.definedProperties.filter(prop => {
         return prop.type === 'primaryKey' ? !parentAssociation : true;
       }).map(prop => {
@@ -54,6 +60,8 @@ class QueryResponse {
   parse(rows) {
     if (!rows || !rows.length) return rows;
 
+    debug.debug(this.shadow);
+
     rows = rows.map(row => {
       // Call resolvers
       _.keys(this.shadow).forEach(path => {
@@ -86,4 +94,8 @@ function toNumber(value) {
 
 function toBoolean(value) {
   return !!value;
+}
+
+function stripNulls(value) {
+  return value.filter(val => val);
 }
