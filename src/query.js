@@ -36,9 +36,9 @@ class Query {
 
       // Check if the walked path represents a schema name.
       if (/^\$$/.test(path) ||
-        (/(?<=\.where\.)\w+$/.test(path)) ||
+        (/(?<=\.(where|shows)\.)\w+$/.test(path)) ||
         (/(?<=\.options)/.test(path)) ||
-        (/(options|having|alias|properties|\d|where|groupBy|size|page|orderBy|type)$/.test(path))
+        (/(shows|options|alias|properties|\d|where|groupBy|size|page|orderBy|type)$/.test(path))
       ) return;
 
       const schemaName = node.alias || resolveSchemaName(path);
@@ -99,6 +99,7 @@ class Query {
         schemaProperties: schema.properties,
         primaryKey: schema.primaryKey,
         options:    node.where,
+        shows:      node.shows,
         staticOptions: {
           page:     node.page,
           size:     node.size,

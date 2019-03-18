@@ -45,6 +45,7 @@ describe('GraphLite', () => {
   it('should define queries', done => {
     require('./queries/products')(graphlite);
     require('./queries/products-with-vehicles')(graphlite);
+    // require('./queries/products-automakers-vehicles')(graphlite);
     done();
   });
 
@@ -60,7 +61,8 @@ describe('GraphLite', () => {
     // #5
     it('should fetch a list with products within vehicles', done => {
       graphlite.findAll('products-with-vehicles', {
-        descricaofabricante: 'AUDI'
+        descricaofabricante: 'AUDI',
+        descricaoveiculo: 'A3'
       })
         .then(logresponse.bind(null, done))
         .catch(logerror.bind(null, done));

@@ -10,13 +10,13 @@ const DEFAULT_OBJECT_TYPE = 'object';
 class QueryNode {
 
   constructor(opts = {}) {
-    // TODO: Check if properties array have at least one property.
     _.xtend(this, {
       name: opts.name,
       alias: opts.alias,
       hash: opts.hash,
       properties: opts.properties,
       schemaProperties: _.defaults(opts.schemaProperties, []),
+      // Merged options array.
       definedProperties: this._resolvePropertiesDefinition(
         opts.schemaProperties,
         opts.properties
@@ -32,6 +32,7 @@ class QueryNode {
       // Static values defined for [size, orderBy, groupBy, page]
       // inside the query graph.
       staticOptions: opts.staticOptions,
+      nodeOptions: _.defaults(opts.shows, {}),
     });
   }
 
@@ -134,51 +135,16 @@ class QueryNode {
     return `INNER JOIN ${association.targetTable} ON ${association.targetTable}.${association.targetKey}=${association.sourceTable}.${association.targetKey}`;
   }
 
+  getShowOptions(options) {
+    options = resolveOptionsWithValues.call(this, this.nodeOptions, options);
+    return !options.length ? '' : `AND ${options.join(' AND ')}`;
+  }
+
   getOptions(options = {}, rendersOnly = []) {
 
     const self = this;
 
-    function resolveOptions(def, options) {
-      return _.keys(options)
-        .filter(optionName => !!def.hasOwnProperty(optionName))
-        .map(optionName => {
-          const definition = def[optionName];
-          const name = definition.replace(/\W/g, '');
-          const value = options[optionName];
-          const operator = /\W/.test(definition) ? definition.match(/\W/)[0] : '=';
-          return {
-            name,
-            definition,
-            value,
-            operator,
-            resolve: function() {
-              const operator = this.operator,
-                    value    = this.value;
-              switch (operator) {
-                case '=':
-                  return `=${_.quote(value)}`;
-                case '<>':
-                  return `<>${_.quote(value)}`;
-                case '>':
-                  return `>${value}`;
-                case '<':
-                  return `<${value}`;
-                case '%':
-                  return `LIKE ${_.quote(value)}`;
-                case '#':
-                  return `GLOB ${_.quote(_.glob(value))}`;
-                default:
-                  return '';
-              };
-            }
-          }
-        })
-        .map(opt => {
-          return `${self.getTableName()}.${opt.name} ${opt.resolve()}`;
-        });
-    }
-
-    const resolvedOptions = resolveOptions(this.definedOptions, options);
+    const resolvedOptions = resolveOptionsWithValues.call(this, this.definedOptions, options);
 
     function resolveWhere(options) {
       return (options && options.length)
@@ -209,20 +175,17 @@ class QueryNode {
       return `LIMIT ${size}`;
     }
 
-    const where  = resolveWhere(resolvedOptions),
-          group  = resolveGroupBy(this.staticOptions.groupBy),
-          order  = resolveOrderBy(this.staticOptions.orderBy),
-          limit  = resolveLimit(this.staticOptions.size),
-          offset = resolveOffset(this.staticOptions.page, limit);
-
     const clauses = {
-      where,
-      group,
-      order,
-      limit,
-      offset,
+      where: resolveWhere(resolvedOptions),
+      group: resolveGroupBy(this.staticOptions.groupBy),
+      order: resolveOrderBy(this.staticOptions.orderBy),
+      limit: resolveLimit(this.staticOptions.size),
+      offset: resolveOffset(this.staticOptions.page, resolveLimit(this.staticOptions.size)),
     };
 
+    // Renders only is a array within all the keys
+    // from "clauses" object above which will be present
+    // in the query.
     if (rendersOnly.length) {
       return rendersOnly.map(key => clauses[key]).join(' ');
     } else {
@@ -241,3 +204,43 @@ class QueryNode {
 }
 
 module.exports = QueryNode;
+
+function resolveOptionsWithValues(def, options) {
+  return _.keys(options)
+    .filter(optionName => !!def.hasOwnProperty(optionName))
+    .map(optionName => {
+      const definition = def[optionName];
+      const name = definition.replace(/\W/g, '');
+      const value = options[optionName];
+      const operator = /\W/.test(definition) ? definition.match(/\W/)[0] : '=';
+      return {
+        name,
+        definition,
+        value,
+        operator,
+        resolve: function() {
+          const operator = this.operator,
+                value    = this.value;
+          switch (operator) {
+            case '=':
+              return `=${_.quote(value)}`;
+            case '<>':
+              return `<>${_.quote(value)}`;
+            case '>':
+              return `>${value}`;
+            case '<':
+              return `<${value}`;
+            case '%':
+              return `LIKE ${_.quote(value)}`;
+            case '#':
+              return `GLOB ${_.quote(_.glob(value))}`;
+            default:
+              return '';
+          };
+        }
+      }
+    })
+    .map(opt => {
+      return `${this.getTableName()}.${opt.name} ${opt.resolve()}`;
+    });
+}

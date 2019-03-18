@@ -6,21 +6,24 @@ module.exports = function(graphlite) {
       //   'number',
       // ],
       properties: '*',
-      vehicles: {
+      vehicle: {
         alias: 'vehicle',
         properties: '*',
         automaker: {
           properties: '*',
           where: {
             descricaofabricante: '=DescricaoFabricante'
+          },
+          shows: {
+            descricaofabricante: '=DescricaoFabricante'
           }
         },
-        // This is not yet supported !!
-        // options: {
-        //   showsWhen: {
-        //     DescricaoFabricante: 'descricaofabricante'
-        //   }
-        // }
+        // shows: {
+        //   descricaoveiculo: '=DescricaoAplicacao'
+        // },
+        // where: {
+        //   descricaoveiculo: '=DescricaoAplicacao'
+        // },
       },
       size: 100,
       orderBy: ['NumeroProduto', 'DescricaoProduto']
