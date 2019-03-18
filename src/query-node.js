@@ -16,6 +16,11 @@ class QueryNode {
       alias: opts.alias,
       hash: opts.hash,
       properties: opts.properties,
+      schemaProperties: _.defaults(opts.schemaProperties, []),
+      definedProperties: this._resolvePropertiesDefinition(
+        opts.schemaProperties,
+        opts.properties
+      ),
       tableName: opts.tableName,
       primaryKey: opts.primaryKey,
       parentAssociation: opts.parentAssociation,
@@ -28,6 +33,21 @@ class QueryNode {
       // inside the query graph.
       staticOptions: opts.staticOptions,
     });
+  }
+
+  // Merge the options array defined in the query graph and
+  // properties from schema. After the merge it translate
+  // the properties to the final model which will be used
+  // in the query construction.
+  _resolvePropertiesDefinition(schemaProperties, props) {
+    function matchSchemaProp(propName, schemaProperties) {
+      return schemaProperties.find(prop => prop.name === propName);
+    }
+    return (!props || _.isString(props))
+      ? schemaProperties
+      : props
+        .filter(propName => matchSchemaProp(propName, schemaProperties))
+        .map(propName => matchSchemaProp(propName, schemaProperties));
   }
 
   getTableName() {
@@ -50,7 +70,7 @@ class QueryNode {
     // Returns format: 'fieldName', tableAlias.(fieldAlias || fieldName)
     const tableAlias = this.getTableAlias();
 
-    return this.properties.filter(prop => {
+    return this.definedProperties.filter(prop => {
       return !this.parentAssociation || prop.type !== 'primaryKey';
     }).map(prop => {
 
@@ -120,29 +140,42 @@ class QueryNode {
 
     function resolveOptions(def, options) {
       return _.keys(options)
-      // First check if option has a defined definition.
-      .map(key => {
-        return {
-          definition: def[key],
-          value: options[key]
-        }
-      })
-      // Removes the options which have not definition.
-      .filter(opt => !!opt.definition)
-      // Resolve the comparison operator.
-      .map(opt => {
-        const operator = opt.value.match(/\W/);
-        const value = opt.value.replace(/^\=/, '');
-        return {
-          propName: opt.definition,
-          value: _.quote(value),
-          operator: operator[0] || null
-        }
-      })
-      // Resolves the query comparison.
-      .map(opt => {
-        return `${self.getTableName()}.${opt.propName} ${opt.operator}${opt.value} `;
-      });
+        .filter(optionName => !!def.hasOwnProperty(optionName))
+        .map(optionName => {
+          const definition = def[optionName];
+          const name = definition.replace(/\W/g, '');
+          const value = options[optionName];
+          const operator = /\W/.test(definition) ? definition.match(/\W/)[0] : '=';
+          return {
+            name,
+            definition,
+            value,
+            operator,
+            resolve: function() {
+              const operator = this.operator,
+                    value    = this.value;
+              switch (operator) {
+                case '=':
+                  return `=${_.quote(value)}`;
+                case '<>':
+                  return `<>${_.quote(value)}`;
+                case '>':
+                  return `>${value}`;
+                case '<':
+                  return `<${value}`;
+                case '%':
+                  return `LIKE ${_.quote(value)}`;
+                case '#':
+                  return `GLOB ${_.quote(_.glob(value))}`;
+                default:
+                  return '';
+              };
+            }
+          }
+        })
+        .map(opt => {
+          return `${self.getTableName()}.${opt.name} ${opt.resolve()}`;
+        });
     }
 
     const resolvedOptions = resolveOptions(this.definedOptions, options);

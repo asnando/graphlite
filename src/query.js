@@ -91,18 +91,19 @@ class Query {
       // some extra options and methods(avaible in this class) to make
       // our query resolution more easy.
       const queryNode = new QueryNode({
-        name: schema.name,
-        alias: node.alias && resolveSchemaName(path),
-        hash: schema.hash,
-        tableName: schema.tableName,
-        properties: schema.properties,
+        name:       schema.name,
+        alias:      node.alias && resolveSchemaName(path),
+        hash:       schema.hash,
+        tableName:  schema.tableName,
+        properties: node.properties,
+        schemaProperties: schema.properties,
         primaryKey: schema.primaryKey,
-        options: node.where,
+        options:    node.where,
         staticOptions: {
-          page: node.page,
-          size: node.size,
-          orderBy: node.orderBy,
-          groupBy: node.groupBy,
+          page:     node.page,
+          size:     node.size,
+          orderBy:  node.orderBy,
+          groupBy:  node.groupBy,
         },
         parentAssociation: resolveAssociation(schema, parentSchema)
       });

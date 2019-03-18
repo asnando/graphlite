@@ -1,6 +1,10 @@
 module.exports = function(graphlite) {
   return graphlite.defineQuery('products-with-vehicles', {
     product: {
+      // properties: [
+      //   'description',
+      //   'number',
+      // ],
       properties: '*',
       vehicles: {
         alias: 'vehicle',
@@ -8,7 +12,7 @@ module.exports = function(graphlite) {
         automaker: {
           properties: '*',
           where: {
-            descricaofabricante: 'DescricaoFabricante'
+            descricaofabricante: '=DescricaoFabricante'
           }
         },
         // This is not yet supported !!

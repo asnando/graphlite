@@ -3,7 +3,7 @@ const GraphLite = require('../src');
 const connectionProvider = require('./connection-provider');
 
 const DATABASE_FILE = './test/databases/test.db';
-const SHOW_EXAMPLE_ON_LOG = false;
+const SHOW_EXAMPLE_ON_LOG = true;
 
 const connection = new connectionProvider(DATABASE_FILE);
 
@@ -60,7 +60,7 @@ describe('GraphLite', () => {
     // #5
     it('should fetch a list with products within vehicles', done => {
       graphlite.findAll('products-with-vehicles', {
-        descricaofabricante: '=AUDI'
+        descricaofabricante: 'AUDI'
       })
         .then(logresponse.bind(null, done))
         .catch(logerror.bind(null, done));

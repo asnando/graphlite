@@ -19,7 +19,7 @@ class QueryResponse {
           ? path.concat('.').concat(node.name) : path
           : '$';
       
-      node.properties.filter(prop => {
+      node.definedProperties.filter(prop => {
         return prop.type === 'primaryKey' ? !parentAssociation : true;
       }).map(prop => {
         const resolvers = [];
