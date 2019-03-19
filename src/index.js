@@ -1,97 +1,89 @@
-class Graphlite {
+const _ = require('./utils');
+const Schema = require('./schema');
+const Query = require('./query');
+const debug = require('./debugger');
+class GraphLite {
 
   constructor(opts) {
     this._connection = opts.connection;
-    this._schema = opts.schema;
+    const options = {};
+    this._schema = _.defaults(opts.schema, [], (schemas) => {
+      return schemas.map(schema => this.defineSchema(schema));
+    });
+    this._queries = _.defaults(opts.queries, [], (queries) => {
+      return queries.map(query => this.defineQuery(query));
+    });
+    this._options = options;
   }
 
-  getSchema(schemaName) {
+  _schemaProvider(schemaName) {
     return this._schema.find(schema => schema.name === schemaName);
   }
 
-  findAll(schemaName) {
-    debug(`Finding all ${schemaName}(s)`);
-    let schema = this.getSchema(schemaName);
-    if (!schema) throw new Error(`Undefined schema for ${schemaName}`);
-    this._translateGraph(schema);
-  }
+  findAll(queryName, options = {}) {
+    const query = this._queries.find(query => query.name === queryName);
 
-  findOne(schemaName) {
+    if (!query) {
+      throw new Error(`Undefined "${queryName}" query.`);
+    }
 
-  }
+    let buildedQuery, perf;
+    let queryBuildTime, queryExecuteTime;
 
-  _translateGraph(graph) {
-    let g;
-    let lastNodeName = null;
+    perf = Date.now();
 
-    jtree(graph, (node, path, parentPath) => {
-      if (path === '$') {
-        g = {};
-      } else if (/\.name$/.test(path)) {
-        g[node] = {};
-        lastNodeName = node;
-      } else if (/\.properties$/.test(path)) {
-        g[lastNodeName].properties = {};
-      } else if (/\.alias$/.test(path)) {
-        const propertyName = path.match(/(\w+)\.\w+$/)[1];
-        g[lastNodeName].properties[propertyName]._fieldName = node;
-      } else if (/\.type$/.test(path)) {
-        const propertyName = path.match(/(\w+)\.\w+$/)[1];
-        g[lastNodeName].properties[propertyName].type = node;
-      } else {
-        const propertyName = path.match(/\w+$/)[0];
-        g[lastNodeName].properties[propertyName] = type(node) === 'string'
-          ? { type: node, _fieldName: propertyName }
-          : {...node, _fieldName: propertyName };
-        // console.log('*', path, node);
-      }
-    });
-    console.log(JSON.stringify(g, null, 2));
-    return g;
-  }
+    try {
+      buildedQuery = query.build(options);
+      query.parseResponse();
+      queryBuildTime = (Date.now() - perf) / 1000;
+    } catch (exception) {
+      throw new Error(`Caught an error building the query:\n\t${exception}`);
+    }
 
-}
+    perf = Date.now();
 
-module.exports = Graphlite;
-
-function debug() {
-  const m = Array
-    .from(arguments)
-    .map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg)
-    .join(' ');
-  console.log(m);
-}
-
-function jtree(tree, handler, path, parentPath) {
-  path = path || '$';
-  if (typeof handler === 'function') {
-    handler(tree, path, parentPath);
-  }
-  if (isArray(tree)) {
-    tree.forEach((node, index) => {
-      jtree(node, handler, path.concat('#').concat(index), path);
-    });
-  } else if (typeof tree === 'object') {
-    Object.keys(tree).forEach(nodeName => {
-      if (isNumber(nodeName)) return;
-      jtree(tree[nodeName], handler, path.concat('.').concat(nodeName), path);
+    return this.executeBuildedQuery(buildedQuery).then(rows => {
+      rows = query.parseResponse(rows);
+      queryExecuteTime = (Date.now() - perf) / 1000;
+      return {
+        rows,
+        buildedIn: queryBuildTime,
+        executedIn: queryExecuteTime,
+        parsedIn: 0
+      };
     });
   }
+
+  defineSchema(name, opts) {
+    opts = _.isObject(name) ? name : opts;
+    name = _.isObject(name) ? name.name : name;
+    const schema = new Schema(name, opts);
+    this._schema.push(schema);
+    return schema;
+  }
+
+  defineQuery(name, graph) {
+    const schemaProvider = this._schemaProvider.bind(this);
+    graph = _.isObject(name) ? name : graph;
+    name = _.isObject(name) ? name.name : name;
+    const query = new Query(name, graph, schemaProvider);
+    this._queries.push(query);
+    return query;
+  }
+
+  executeBuildedQuery(query) {
+    return this._connection.run(query).then(this.parseResponse);
+  }
+
+  parseResponse(data) {
+    return data.map(object => JSON.parse(object.response));
+  }
+
+  executeRawQuery(query) {
+    return this.connection.run(query);
+  }
+
 }
 
-function createHashCode() {
-  let h = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-  return /^\d/.test(h) ? hashCode() : h;
-}
+module.exports = GraphLite;
 
-function type(a) {
-  return Object.prototype.toString.call(a).replace(/^\[object (.+)\]$/, '$1').toLowerCase();
-}
-
-function isArray(array) {
-  return type(array) === 'array';
-}
-
-function isNumber(number) {
-  return type(number) === 'number';
-}
