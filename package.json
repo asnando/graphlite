@@ -2,7 +2,7 @@
   "name": "graphlite",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
     "test": "mocha --watch ./test/index.test.js ./ --timeout 1000"
   },
