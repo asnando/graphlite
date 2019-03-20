@@ -1,6 +1,5 @@
 const _ = require('../utils');
 const debug = require('../debugger');
-const SQLFormatter = require('sql-formatter');
 
 module.exports = function graphNodeResolver(node, options = {}, nextNodes, customResolver) {
 
@@ -30,10 +29,9 @@ module.exports = function graphNodeResolver(node, options = {}, nextNodes, custo
     query += ` WHERE ${node.getTableAlias()}.${node.getPrimaryKey()} IN (${filterQuery})`;
   }
 
-  query = SQLFormatter.format(query);
+  query = _.query(query);
 
   if (!node.parentAssociation) {
-    // debug.log(query);
     _.pbcopy(query);
   }
 

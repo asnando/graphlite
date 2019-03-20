@@ -20,7 +20,8 @@ const	jtree           = require('./jtree'),
       omit            = require('./omit'),
       get             = require('./get'),
       set             = require('./set'),
-      glob            = require('./glob');
+      glob            = require('./glob'),
+      query           = require('./query');
 
 module.exports = {
   jtree,
@@ -46,4 +47,5 @@ module.exports = {
   get,
   set,
   glob,
+  query,
 }

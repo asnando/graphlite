@@ -1,20 +1,25 @@
 {
   "name": "graphlite",
   "version": "1.0.0",
-  "description": "",
+  "description": "SQLite query builder that supports json",
   "main": "src/index.js",
   "scripts": {
-    "test": "mocha --watch ./test/index.test.js ./ --timeout 1000"
+    "test": "mocha --watch ./test/index.test.js ./ --timeout 1000",
+    "build": "webpack"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@babel/core": "^7.4.0",
+    "babel-core": "7.0.0-bridge.0",
+    "babel-loader": "^8.0.5",
     "chalk": "^2.4.2",
     "mocha": "^6.0.2",
     "nodemon": "^1.18.10",
     "sql-formatter": "^2.3.2",
-    "sqlite3": "^4.0.6"
-  },
-  "dependencies": {}
+    "sqlite3": "^4.0.6",
+    "webpack": "^4.29.6",
+    "webpack-cli": "^3.3.0"
+  }
 }
