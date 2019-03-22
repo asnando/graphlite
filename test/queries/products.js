@@ -3,6 +3,5 @@ module.exports = function(graphlite, schemas) {
     product: {
       properties: '*'
     },
-    size: 30
   });
 };

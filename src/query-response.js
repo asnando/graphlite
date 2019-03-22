@@ -58,9 +58,7 @@ class QueryResponse {
   }
 
   parse(rows) {
-    return (!rows || !rows.length)
-      ? rows
-      : rows.map(row => {
+    return (!rows || !rows.length) ? [] : rows.map(row => {
       // Call resolvers
       _.keys(this.shadow).forEach(path => {
         const resolver = this.shadow[path];

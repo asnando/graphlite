@@ -190,10 +190,9 @@ class QueryNode {
       where: resolveWhere(resolvedOptions),
       group: resolveGroupBy(this.staticOptions.groupBy),
       order: resolveOrderBy(this.staticOptions.orderBy),
-      limit: resolveLimit(this.staticOptions.size),
-      offset: resolveOffset(this.staticOptions.page, resolveLimit(this.staticOptions.size)),
+      limit: resolveLimit(options.size || this.staticOptions.size),
+      offset: resolveOffset(options.page || this.staticOptions.page, options.size || this.staticOptions.size),
     };
-    
 
     // Renders only is a array within all the keys
     // from "clauses" object above which will be present

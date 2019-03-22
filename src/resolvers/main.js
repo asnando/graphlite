@@ -10,9 +10,11 @@ module.exports = function graphNodeResolver(node, options = {}, nextNodes, custo
     : `(select json_object($node_name, (select json_group_array(json_patch(json_object($fields_as_json), ($next_nodes))) from (select $raw_fields $source $show_options $options) $table_alias)))`;
 
   let nodeOptions = node.getOptions(options, ['group', 'order', 'limit', 'offset']);
-
+  
   if (!node.parentAssociation) {
-    nodeOptions = nodeOptions.replace(/LIMIT\s\d+/, '');
+    nodeOptions = nodeOptions
+      .replace(/LIMIT\s\d+/, '')
+      .replace(/OFFSET\s\d+/, '');
   }
 
   let query = struct

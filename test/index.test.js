@@ -52,30 +52,28 @@ describe('GraphLite', () => {
   // ###
   describe('findAll()', () => {
     // #4
-    // it('should fetch a list with 30 products', done => {
-    //   graphlite.findAll('products')
-    //     .then(logresponse.bind(null, done))
-    //     .catch(logerror.bind(null, done));
-    // });
-
-    // #5
-    it('should fetch a list with products within vehicles', done => {
-      graphlite.findAll('products-with-vehicles', {
-        descricaofabricante: 'AUDI',
-        descricaoveiculo: 'A3'
-      })
+    it('should fetch a list with 30 products', done => {
+      graphlite.findAll('products', {}, { size: 30, page: 2 })
         .then(logresponse.bind(null, done))
         .catch(logerror.bind(null, done));
     });
+
+    // #5
+    // it('should fetch a list with products within vehicles', done => {
+    //   graphlite.findAll('products-with-vehicles', {
+    //     descricaofabricante: 'AUDI',
+    //     descricaoveiculo: 'A3'
+    //   })
+    //     .then(logresponse.bind(null, done))
+    //     .catch(logerror.bind(null, done));
+    // });
   });
 
 });
 
 function logresponse(done, response) {
   if (!!SHOW_EXAMPLE_ON_LOG) {
-    console.log();
-    console.log('Example:', response.rows[0]);
-    console.log();
+    console.log('Example:', response.rows.length ? response.rows[0] : null);
   }
   console.log('   ', chalk.green(`Query returned ${response.rows.length} rows!`));
   console.log('   ', chalk.green(`Query builded in ${response.buildedIn}s!`));

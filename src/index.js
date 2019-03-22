@@ -20,7 +20,15 @@ class GraphLite {
     return this._schema.find(schema => schema.name === schemaName);
   }
 
-  findAll(queryName, options = {}) {
+  findAll(queryName, filter = {}, options = {}) {
+
+    // Merge filter options and options object(with
+    // page and size extra options).
+    options = Object.assign({}, {
+      page: options.page,
+      size: options.size
+    }, filter);
+
     const query = this._queries.find(query => query.name === queryName);
 
     if (!query) {
