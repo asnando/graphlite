@@ -2,7 +2,7 @@
   "name": "graphlite",
   "version": "1.0.0",
   "description": "SQLite query builder that supports json",
-  "main": "src/index.js",
+  "main": "dist/graphlite.js",
   "scripts": {
     "test": "mocha --watch ./test/index.test.js ./ --timeout 1000",
     "build": "webpack"
