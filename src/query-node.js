@@ -236,7 +236,7 @@ class QueryNode {
           case '<':
             return `<${value}`;
           case '%':
-            return `LIKE ${_.quote(value)}`;
+            return `LIKE ${_.quote('%' + value + '%')}`;
           case '#':
             return `GLOB ${_.quote(_.glob(value))}`;
           default:
