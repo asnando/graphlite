@@ -143,6 +143,7 @@ class Query {
   }
 
   build(options = {}) {
+    options = _.pickBy(options);
     debug.warn(`Building query "${this.name}" with options: ${_.jpretty(options)}`);
     return this.graph.resolve('main', options);
   }
