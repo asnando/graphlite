@@ -33,6 +33,7 @@ module.exports = function graphNodeResolver(node, options = {}, nextNodes, custo
   if (!node.parentAssociation) {
     const filterQuery = customResolver('filterId', options);
     query += ` WHERE ${node.getTableAlias()}.${node.getPrimaryKey()} IN (${filterQuery})`;
+    query += ` AND ${node.getResponseObjectName()} IS NOT NULL;`;
   }
 
   query = _.query(query);
