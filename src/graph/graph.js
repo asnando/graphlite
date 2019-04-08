@@ -1,5 +1,5 @@
-const _ = require('./utils');
-const debug = require('./debugger');
+const _ = require('../utils');
+const debug = require('../debugger');
 const GraphNode = require('./graph-node');
 
 // This class is a representation of a simple graph.

@@ -1,6 +1,6 @@
 const _ = require('./utils');
 const Schema = require('./schema');
-const Query = require('./query');
+const Query = require('./query/query');
 const debug = require('./debugger');
 class GraphLite {
 

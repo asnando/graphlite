@@ -1,5 +1,5 @@
-const _ = require('../utils');
-const debug = require('../debugger');
+const _ = require('../../utils');
+const debug = require('../../debugger');
 
 module.exports = function graphRootNodeOptionsResolver(node, options, nextNodes, customResolver) {
   const nextNodeQuery = nextNodes().replace(/json_object\(\)/g, '');

@@ -6,6 +6,7 @@ const DATABASE_FILE = './test/databases/test.db';
 const SHOW_EXAMPLE_ON_LOG = true;
 
 const connection = new connectionProvider(DATABASE_FILE);
+connection.attach('./test/databases/images.db', 'images');
 
 const graphlite = new GraphLite({
   connection
@@ -18,6 +19,7 @@ describe('GraphLite', () => {
     require('./schemas/product')(graphlite);
     require('./schemas/vehicle')(graphlite);
     require('./schemas/automaker')(graphlite);
+    require('./schemas/image')(graphlite);
     done();
   });
 
@@ -25,12 +27,20 @@ describe('GraphLite', () => {
   it('should define the associations', done => {
     const product   = graphlite._schemaProvider('product'),
           automaker = graphlite._schemaProvider('automaker'),
-          vehicle   = graphlite._schemaProvider('vehicle');
+          vehicle   = graphlite._schemaProvider('vehicle'),
+          image     = graphlite._schemaProvider('image');
 
     const PRODUCT_VEHICLE_ASSOCIATION_OPTIONS = {
       foreignTable: 'PRODUTO_APLICACAO',
       foreignKey: 'CodigoAplicacao'
     };
+
+    product.hasOne(image, {
+      foreignKey: 'ArquivoFotoProduto'
+    });
+    image.belongsTo(product, {
+      foreignKey: 'ArquivoFotoProduto'
+    });
 
     product.hasMany(vehicle, PRODUCT_VEHICLE_ASSOCIATION_OPTIONS);
     vehicle.belongsTo(product, PRODUCT_VEHICLE_ASSOCIATION_OPTIONS);

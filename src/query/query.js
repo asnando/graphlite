@@ -1,6 +1,6 @@
-const debug = require('./debugger');
-const  _ = require('./utils/');
-const Graph = require('./graph');
+const debug = require('../debugger');
+const  _ = require('../utils/');
+const Graph = require('../graph/graph');
 const QueryNode = require('./query-node');
 const QueryResponse = require('./query-response');
 

@@ -1,6 +1,6 @@
-const _ = require('./utils');
-const debug = require('./debugger');
-const QueryResolver = require('./query-resolver');
+const _ = require('../utils');
+const debug = require('../debugger');
+const QueryResolver = require('../query/query-resolver');
 
 // This class represents the nodes of a graph in a unique way.
 // This basically expose a resolver which is called by the graph

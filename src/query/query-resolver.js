@@ -1,5 +1,5 @@
-const _ = require('./utils');
-const debug = require('./debugger');
+const _ = require('../utils');
+const debug = require('../debugger');
 
 // This class is responsible to call the respective resolve
 // functions and loop thought the next nodes to fully resolves

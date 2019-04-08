@@ -1,5 +1,5 @@
-const _ = require('./utils');
-const debug = require('./debugger');
+const _ = require('../utils');
+const debug = require('../debugger');
 
 const DEFAULT_OBJECT_RESPONSE_NAME = 'response';
 const DEFAULT_OBJECT_TYPE = 'object';
