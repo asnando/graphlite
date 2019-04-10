@@ -13,7 +13,7 @@ class QueryResolver {
     this.defaultValue = defaultValue;
   }
 
-  resolve(node, options) {
+  resolve(node, options, parent) {
     // The function defined as resolver will receive the raw
     // node(e.g QueryNode), options object(containing the where
     // clause from user), a function which will render the next nodes,
@@ -22,12 +22,13 @@ class QueryResolver {
     return this.resolver(
       node.raw(),
       options,
-      this.resolveNextNodes.bind(this, node, options),
-      node.resolve.bind(node)
+      this.resolveNextNodes.bind(this, node, options, node.raw()),
+      node.resolve.bind(node),
+      parent,
     );
   }
 
-  resolveNextNodes(node, options) {
+  resolveNextNodes(node, options, parent) {
 
     const nextNodes = node.nextNodes;
 
@@ -44,7 +45,7 @@ class QueryResolver {
     }
 
     let resolvedNodes = nextNodes.map(node =>
-      _.isFunction(node) ? node() : node.resolve(this.name, options))
+      _.isFunction(node) ? node() : node.resolve(this.name, options, parent))
       .map(node => this.usePatch ? `(${node})` : node)
       .join(this.usePatch ? ',' : ' ');
 

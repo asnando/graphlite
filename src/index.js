@@ -5,26 +5,30 @@ const debug = require('./debugger');
 class GraphLite {
 
   constructor(opts) {
-    this._connection = opts.connection;
-    const options = {};
-    this._schema = _.defaults(opts.schema, [], (schemas) => {
-      return schemas.map(schema => this.defineSchema(schema));
+    _.xtend(this, {
+      _connection: opts.connection,
+      _schema: _.defaults(opts.schema, [], (schemas) => {
+        return schemas.map(schema => this.defineSchema(schema));
+      }),
+      _queries: _.defaults(opts.queries, [], (queries) => {
+        return queries.map(query => this.defineQuery(query));
+      }),
+      _options: {},
     });
-    this._queries = _.defaults(opts.queries, [], (queries) => {
-      return queries.map(query => this.defineQuery(query));
-    });
-    this._options = options;
   }
 
   _schemaProvider(schemaName) {
     return this._schema.find(schema => schema.name === schemaName);
   }
 
+  findOne(queryName, filter = {}) {
+    
+  }
+
   findAll(queryName, filter = {}, options = {}) {
 
-    // Merge filter options and options object(with
-    // page and size extra options).
-    options = Object.assign({}, {
+    // Merge filter options and options object(with page, size and some extra options).
+    options = _.xtend({}, {
       page: options.page,
       size: options.size
     }, filter);
@@ -63,9 +67,10 @@ class GraphLite {
   }
 
   defineSchema(name, opts) {
+    const schemaProvider = this._schemaProvider.bind(this);
     opts = _.isObject(name) ? name : opts;
     name = _.isObject(name) ? name.name : name;
-    const schema = new Schema(name, opts);
+    const schema = new Schema(name, opts, schemaProvider);
     this._schema.push(schema);
     return schema;
   }

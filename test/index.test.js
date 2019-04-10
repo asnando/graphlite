@@ -30,23 +30,37 @@ describe('GraphLite', () => {
           vehicle   = graphlite._schemaProvider('vehicle'),
           image     = graphlite._schemaProvider('image');
 
-    const PRODUCT_VEHICLE_ASSOCIATION_OPTIONS = {
-      foreignTable: 'PRODUTO_APLICACAO',
-      foreignKey: 'CodigoAplicacao'
-    };
+    // const PRODUCT_VEHICLE_ASSOCIATION_OPTIONS = {
+    //   foreignTable: 'PRODUTO_APLICACAO',
+    //   foreignKey: 'CodigoAplicacao'
+    // };
 
+    // product.hasOne(image, {
+    //   foreignKey: 'ArquivoFotoProduto'
+    // });
     product.hasOne(image, {
-      foreignKey: 'ArquivoFotoProduto'
+      type: 'left'
     });
-    image.belongsTo(product, {
-      foreignKey: 'ArquivoFotoProduto'
+    // image.belongsTo(product, {
+    //   foreignKey: 'ArquivoFotoProduto'
+    // });
+
+    product.hasMany(vehicle, {
+      foreignTable: 'PRODUTO_APLICACAO',
+      foreignKey: 'CodigoProduto'
     });
 
-    product.hasMany(vehicle, PRODUCT_VEHICLE_ASSOCIATION_OPTIONS);
-    vehicle.belongsTo(product, PRODUCT_VEHICLE_ASSOCIATION_OPTIONS);
+    product.hasMany(automaker, {
+      using: ['vehicle']
+    });
 
-    vehicle.hasOne(automaker);
-    automaker.belongsTo(vehicle);
+    // vehicle.belongsTo(product, {
+    //   foreignTable: 'PRODUTO_APLICACAO',
+    //   foreignKey: 'CodigoAplicacao'
+    // });
+
+    vehicle.hasMany(automaker);
+    automaker.belongsToMany(vehicle);
 
     done();
   });
@@ -54,7 +68,7 @@ describe('GraphLite', () => {
   // #3
   it('should define queries', done => {
     require('./queries/products')(graphlite);
-    require('./queries/products-with-vehicles')(graphlite);
+    // require('./queries/products-with-vehicles')(graphlite);
     // require('./queries/products-automakers-vehicles')(graphlite);
     done();
   });
@@ -63,7 +77,7 @@ describe('GraphLite', () => {
   describe('findAll()', () => {
     // #4
     it('should fetch a list with 30 products', done => {
-      graphlite.findAll('products', {}, { size: 30, page: 2 })
+      graphlite.findAll('products', {}, { size: 30, page: 1 })
         .then(logresponse.bind(null, done))
         .catch(logerror.bind(null, done));
     });

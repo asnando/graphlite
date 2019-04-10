@@ -27,11 +27,11 @@ class GraphNode {
     return this.nextNodes.push(node);
   }
   
-  resolve(resolverName, options) {
+  resolve(resolverName, options, parent) {
     if (!this.resolvers[resolverName]) {
       throw new Error(`Undefined resolver "${resolverName}".`);
     }
-    return this.resolvers[resolverName].resolve(this, options);
+    return this.resolvers[resolverName].resolve(this, options, parent);
   }
 
   raw() {

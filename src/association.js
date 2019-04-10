@@ -1,17 +1,22 @@
 const _ = require('./utils');
 const debug = require('./debugger');
 
+const DEFAULT_ASSOCIATION_JOIN_TYPE = 'inner';
+
 // Associations contains the names from source, target 
 // and foreign tables and primary keys. The methods of this class are
 // responsible to resume the associations returning a SQL query
 // within its respective joins.
 class Association {
+
   constructor(opts = {}) {
     // For reference: 
     // target = the actual table which it have relation from.
     // source = the parent table which it is related to.
     // foreign = the table between the source and target.
     _.xtend(this, {
+      schemaFrom:       opts.schemaFrom,
+      schemaTo:         opts.schemaTo,
       sourceHash:       opts.sourceHash,
       sourceTable:      opts.sourceTable,
       sourceKey:        opts.sourceKey,
@@ -22,17 +27,16 @@ class Association {
       foreignKey:       opts.foreignKey,
       associationType:  opts.associationType,
       objectType:       opts.objectType,
-      throught:         opts.throught,
+      type:             opts.type || DEFAULT_ASSOCIATION_JOIN_TYPE,
+      using:            opts.using || [],
       // {Boolean} Tells if any group by is defined in the
       // query definition that uses this association.
-      grouped:          !!opts.grouped,
+      // grouped:          !!opts.grouped,
     });
   }
 
-  extendOptions(options) {
-    if (_.keys(options).length) {
-      _.xtend(this, options);
-    }
+  resolveJoinType() {
+    return this.type.toUpperCase();
   }
 
 }

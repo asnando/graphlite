@@ -4,9 +4,11 @@ const Graph = require('../graph/graph');
 const QueryNode = require('./query-node');
 const QueryResponse = require('./query-response');
 
-const graphNodeResolver = require('./resolvers/main');
-const graphRootNodeOptionsResolver = require('./resolvers/filterId');
-const graphNodeOptionsResolver = require('./resolvers/options');
+const graphNodeResolver             = require('./resolvers/main');
+const graphNodeOptionsResolver      = require('./resolvers/options');
+const graphNodeGroupIdsResolver     = require('./resolvers/groupId');
+const graphRootNodeOptionsResolver  = require('./resolvers/filterId');
+
 class Query {
 
   // Query is basically a graph which nodes represents
@@ -38,7 +40,7 @@ class Query {
       if (/^\$$/.test(path) ||
         (/(?<=\.(where|shows)\.)\w+$/.test(path)) ||
         (/(?<=\.options)/.test(path)) ||
-        (/(shows|options|alias|properties|\d|where|groupBy|size|page|orderBy|type)$/.test(path))
+        (/(using|throught|shows|options|alias|properties|\d|where|groupBy|size|page|orderBy|type)$/.test(path))
       ) return;
 
       const schemaName = node.alias || resolveSchemaName(path);
@@ -66,22 +68,12 @@ class Query {
       // The association with parent must be validated when a
       // schema is not the root collection of the query. The association must
       // be valid in two ways, parent has one/many of this and this belongs to parent.(for now)
-      if (hasParent && !schema.haveAssociationWithParent(parentSchema)) {
+      if (hasParent && !schema.haveAssociationWith(parentSchema)) {
         throw new Error(`"${schema.name}" have no relation with "${parentNodeName}".`);
       }
 
-      function resolveAssociation(schema, parent) {
-        if (!hasParent) return null;
-        const fromParent = parent.getAssociationFromParent(schema);
-        const fromChild = schema.getAssociationWithParent(parent);
-        return mergeAssociationOptions(fromChild, {
-          objectType: fromParent ? fromParent.objectType : fromChild.objectType,
-          grouped: fromParent ? fromParent.grouped : fromChild.grouped
-        });
-      }
-
-      function mergeAssociationOptions(withOptions = {}, fromOptions = {}) {
-        return _.xtend(withOptions, fromOptions);
+      function resolveAssociationOptions(schema, parent) {
+        return !hasParent ? null : schema.getAssociationOptionsWith(parent);
       }
 
       // A QueryNode represents the real value of the node
@@ -106,7 +98,7 @@ class Query {
           orderBy:  node.orderBy,
           groupBy:  node.groupBy,
         },
-        parentAssociation: resolveAssociation(schema, parentSchema)
+        parentAssociation: resolveAssociationOptions(schema, parentSchema)
       });
 
       // Adds a new node to the query graph. Creating a graph node
@@ -127,7 +119,10 @@ class Query {
       // is responsible in getting the distinct ids of the root collection which
       // will be used as filter to the query.
       nodeGraph.createResolver('filterId', graphRootNodeOptionsResolver, false, '');
+      // #
       nodeGraph.createResolver('options', graphNodeOptionsResolver);
+      // 
+      nodeGraph.createResolver('groupId', graphNodeGroupIdsResolver);
 
       // "jtree" function accepts a returned object that will be defined
       // to the next walk node. In some cases these options are used to

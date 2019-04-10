@@ -91,5 +91,5 @@ function toBoolean(value) {
 }
 
 function stripNulls(value) {
-  return value.filter(val => val);
+  return _.isArray(value) ? value.filter(val => val) : value;
 }

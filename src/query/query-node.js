@@ -112,28 +112,61 @@ class QueryNode {
   }
 
   getRawFields() {
+    return '*';
     return `${this.getTableName()}.*`;
   }
 
-  getSource() {
-    return `FROM ${this.getTableName()} ${this.getAssociation()}`;
+  getSource(parentUseGroup) {
+    return `FROM ${this.getTableName()} ${this.getAssociation(parentUseGroup)}`;
   }
 
-  getAssociation() {
-    const association = this.parentAssociation;
-    if (!association) return '';
-    if (!!association.foreignTable && !!association.foreignKey) {
-      return `INNER JOIN ${association.foreignTable} ON ${association.foreignTable}.${association.sourceKey}=${association.sourceHash}.${association.sourceKey} WHERE ${association.targetTable}.${association.foreignKey}=${association.foreignTable}.${association.targetKey}`;
-    }
-    return `WHERE ${association.targetTable}.${association.targetKey}=${association.sourceHash}.${association.targetKey}`;
+  // Will render the respective associations joins inside each node of the query.
+  getAssociation(parentUseGroup = false) {
+    return !this.parentAssociation ? '' : _.toArray(this.parentAssociation).map((association, index, self) => {
+      const bolFK = !!association.foreignTable && !!association.foreignKey;
+      const joinType = association.resolveJoinType();
+
+      if (bolFK) {
+        return [
+          `${joinType} JOIN ${association.foreignTable} ON ${association.foreignTable}.${association.sourceKey}=${association.sourceHash}.${association.sourceKey}`,
+          self.length > 1
+            ? `${joinType} JOIN ${association.targetTable} ON ${association.targetTable}.${association.targetKey}=${association.foreignTable}.${association.targetKey}`
+            : `WHERE ${association.targetTable}.${association.targetKey}=${association.foreignTable}.${association.targetKey}`
+        ].join(' ');
+      }
+
+      // ###
+      if (parentUseGroup) {
+        return `, json_each(${association.sourceHash}.id_${association.targetKey}) WHERE ${association.targetTable}.${association.targetKey}=json_each.value`;
+      }
+
+      // Note.: When association of type "belongs" then use the sourceHash (which
+      // represents the previous node data) instead of the root table name.
+      const sourceTableRef = /^belongs/.test(association.associationType) ? association.sourceHash : association.sourceTable;
+      return `WHERE ${association.targetTable}.${association.targetKey}=${sourceTableRef}.${association.targetKey}`;
+    }).join(' ');
   }
 
+  // This join will be rendered in the root of the query (where we fetch the root
+  // collection schema ids).
   getJoin() {
-    const association = this.parentAssociation;
-    if (!!association.foreignTable && !!association.foreignKey) {
-        return `INNER JOIN ${association.foreignTable} ON ${association.foreignTable}.${association.sourceKey}=${association.sourceTable}.${association.sourceKey} INNER JOIN ${association.targetTable} ON ${association.targetTable}.${association.foreignKey}=${association.foreignTable}.${association.targetKey}`;
+    if (this.parentAssociation) {
+      return _.toArray(this.parentAssociation).map(association => {
+        const bolFK = !!association.foreignTable && !!association.foreignKey;
+        const joinType = association.resolveJoinType();
+        // Quick Fix: Ignore join when it is a belongs association.
+        // Gererally in that cases the asssociation have already been rendered
+        // by the parent/association that have the "has" association type.
+        if (/^belongs/.test(association.associationType)) {
+          return '';
+        } else if (bolFK) {
+          return `${joinType} JOIN ${association.foreignTable} ON ${association.foreignTable}.${association.sourceKey}=${association.sourceTable}.${association.sourceKey} ${joinType} JOIN ${association.targetTable} ON ${association.targetTable}.${association.targetKey}=${association.foreignTable}.${association.targetKey}`;
+        } else {
+          return `${joinType} JOIN ${association.targetTable} ON ${association.targetTable}.${association.targetKey}=${association.sourceTable}.${association.targetKey}`;
+        }
+      }).join(' ');
     }
-    return `INNER JOIN ${association.targetTable} ON ${association.targetTable}.${association.targetKey}=${association.sourceTable}.${association.targetKey}`;
+    return '';
   }
 
   getShowOptions(options) {
@@ -269,6 +302,10 @@ class QueryNode {
 
   getDistinctPrimaryKey() {
     return `DISTINCT ${this.getTableName()}.${this.getPrimaryKey()}`;
+  }
+
+  haveGroupByOption() {
+    return !!this.staticOptions.groupBy;
   }
 
 }
