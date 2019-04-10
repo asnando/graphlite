@@ -18,10 +18,10 @@ class Schema {
     props = _.keys(props).map(keyName => {
       return this._createSchemaProperty(keyName, props[keyName])
     });
-    // // Schema must always declare one primary key property.
-    // if (!props.find(prop => prop.type === 'primaryKey')) {
-    //   throw new Error(`Missing primary key definition for "${this.name}" schema.`);
-    // }
+    // Schema must always declare one primary key property.
+    if (!props.find(prop => prop.type === 'primaryKey')) {
+      throw new Error(`Missing primary key definition for "${this.name}" schema.`);
+    }
     return props;
   }
 
