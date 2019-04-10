@@ -122,11 +122,15 @@ class QueryNode {
 
   // Will render the respective associations joins inside each node of the query.
   getAssociation(parentUseGroup = false) {
+
+    let usedFK = false;
+    
     return !this.parentAssociation ? '' : _.toArray(this.parentAssociation).map((association, index, self) => {
       const bolFK = !!association.foreignTable && !!association.foreignKey;
       const joinType = association.resolveJoinType();
 
       if (bolFK) {
+        usedFK = true;
         return [
           `${joinType} JOIN ${association.foreignTable} ON ${association.foreignTable}.${association.sourceKey}=${association.sourceHash}.${association.sourceKey}`,
           self.length > 1
@@ -135,14 +139,18 @@ class QueryNode {
         ].join(' ');
       }
 
-      // ###
+      // When parent node have groupBy option defined in the query schema it
+      // will use the json_each built in SQLite function to resolve the relation
+      // between this node ids and the previous grouped ids.
       if (parentUseGroup) {
         return `, json_each(${association.sourceHash}.id_${association.targetKey}) WHERE ${association.targetTable}.${association.targetKey}=json_each.value`;
       }
 
       // Note.: When association of type "belongs" then use the sourceHash (which
-      // represents the previous node data) instead of the root table name.
-      const sourceTableRef = /^belongs/.test(association.associationType) ? association.sourceHash : association.sourceTable;
+      // represents the previous node data) instead of the root table name. It is
+      // used when there it does not have foreignKey at any point of this association too.
+      const sourceTableRef = (/^belongs/.test(association.associationType) || !usedFK)
+        ? association.sourceHash : association.sourceTable;
       return `WHERE ${association.targetTable}.${association.targetKey}=${sourceTableRef}.${association.targetKey}`;
     }).join(' ');
   }

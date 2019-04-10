@@ -59,7 +59,7 @@ describe('GraphLite', () => {
     //   foreignKey: 'CodigoAplicacao'
     // });
 
-    vehicle.hasMany(automaker);
+    vehicle.hasOne(automaker);
     automaker.belongsToMany(vehicle);
 
     done();

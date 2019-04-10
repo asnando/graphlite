@@ -91,10 +91,5 @@ function toBoolean(value) {
 }
 
 function stripNulls(value) {
-  return _.isObject(value)
-    ? _.pickBy(value)
-    : _.isArray(value)
-      ? value.filter(val => val)
-      : value
-        ? value : null;
+  return _.isObject(value) ? _.pickBy(value) : _.isArray(value) ? value.filter(val => val) : value ? value : null;
 }
