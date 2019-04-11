@@ -12,6 +12,9 @@ class Schema {
     this.properties = this._createSchemaProperties(opts.properties);
     this.has = {};
     this.belongs = {};
+    if (!this.tableName) {
+      throw new Error(`Missing table name definition for "${this.name}" schema.`);
+    }
   }
 
   _createSchemaProperties(props) {
