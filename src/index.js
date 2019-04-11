@@ -2,6 +2,10 @@ const _ = require('./utils');
 const Schema = require('./schema');
 const Query = require('./query/query');
 const debug = require('./debugger');
+
+const DEFAULT_OBJECT_RESPONSE_NAME = 'response';
+const DEFAULT_CONNECTION_PROVIDER_QUERY_RUNNER_NAME = 'run';
+
 class GraphLite {
 
   constructor(opts) {
@@ -21,49 +25,66 @@ class GraphLite {
     return this._schema.find(schema => schema.name === schemaName);
   }
 
-  findOne(queryName, filter = {}) {
-    
+  // Extra options(b) represents the second object received by the find
+  // functions. In this object there are page, size and some extra params.
+  _mergeOptions(a = {}, b = {}) {
+    return _.pickBy(_.xtend({}, a, {
+      page: b.page,
+      size: b.size
+    }));
+  }
+
+  _getQueryByName(queryName) {
+    return this._queries.find(query => query.name === queryName);
+  }
+
+  _parseRows(rows) {
+    return rows.map(object => JSON.parse(object[DEFAULT_OBJECT_RESPONSE_NAME]));
+  }
+
+  _translateToResponseObject(rows) {
+    return {
+      rows,
+      buildedIn: 0,
+      executedIn: 0,
+      parsedIn: 0,
+    };
+  }
+
+  _executeQuery(query) {
+    return this._connection[DEFAULT_CONNECTION_PROVIDER_QUERY_RUNNER_NAME](query)
+      .then(this._parseRows.bind(this))
+      .then(this._translateToResponseObject.bind(this));
+  }
+
+  _executeQueryWithOptions(queryName, options = {}) {
+    return new Promise((resolve, reject) => {
+
+      // Resolve query schema from the list.
+      const query = this._getQueryByName(queryName);
+      if (!query) return reject(`Undefined "${queryName}" query`);
+
+      let buildedQuery;
+
+      // Try to build the query.
+      try {
+        buildedQuery = query.build();
+      } catch (exception) {
+        return reject(exception);
+      }
+
+      return this._executeQuery(buildedQuery).then(resolve);
+    });
+  }
+
+  // ## Public methods
+  findOne(queryName, filter = {}, options = {}) {
+    options.size = 1;
+    return this._executeQueryWithOptions(queryName, this._mergeOptions(filter, options));
   }
 
   findAll(queryName, filter = {}, options = {}) {
-
-    // Merge filter options and options object(with page, size and some extra options).
-    options = _.xtend({}, {
-      page: options.page,
-      size: options.size
-    }, filter);
-
-    const query = this._queries.find(query => query.name === queryName);
-
-    if (!query) {
-      throw new Error(`Undefined "${queryName}" query.`);
-    }
-
-    let buildedQuery, perf;
-    let queryBuildTime, queryExecuteTime;
-
-    perf = Date.now();
-
-    try {
-      buildedQuery = query.build(options);
-      query.parseResponse();
-      queryBuildTime = (Date.now() - perf) / 1000;
-    } catch (exception) {
-      throw new Error(`Caught an error building the query:\n\t${exception}`);
-    }
-
-    perf = Date.now();
-
-    return this.executeBuildedQuery(buildedQuery).then(rows => {
-      rows = query.parseResponse(rows);
-      queryExecuteTime = (Date.now() - perf) / 1000;
-      return {
-        rows,
-        buildedIn: queryBuildTime,
-        executedIn: queryExecuteTime,
-        parsedIn: 0
-      };
-    });
+    return this._executeQueryWithOptions(queryName, this._mergeOptions(filter, options));
   }
 
   defineSchema(name, opts) {
@@ -82,18 +103,6 @@ class GraphLite {
     const query = new Query(name, graph, schemaProvider);
     this._queries.push(query);
     return query;
-  }
-
-  executeBuildedQuery(query) {
-    return this._connection.run(query).then(this.parseResponse);
-  }
-
-  parseResponse(data) {
-    return data.map(object => JSON.parse(object.response));
-  }
-
-  executeRawQuery(query) {
-    return this.connection.run(query);
   }
 
 }
