@@ -29,9 +29,7 @@ class Association {
       objectType:       opts.objectType,
       type:             opts.type || DEFAULT_ASSOCIATION_JOIN_TYPE,
       using:            opts.using || [],
-      // {Boolean} Tells if any group by is defined in the
-      // query definition that uses this association.
-      // grouped:          !!opts.grouped,
+      useSourceKey:     opts.useSourceKey,
     });
   }
 

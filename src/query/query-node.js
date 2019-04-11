@@ -151,30 +151,30 @@ class QueryNode {
       // used when there it does not have foreignKey at any point of this association too.
       const sourceTableRef = (/^belongs/.test(association.associationType) || !usedFK)
         ? association.sourceHash : association.sourceTable;
-      return `WHERE ${association.targetTable}.${association.targetKey}=${sourceTableRef}.${association.targetKey}`;
+      // Custom source key.
+      const sourceKeyRef = association.useSourceKey || association.targetKey;
+      return `WHERE ${association.targetTable}.${association.targetKey}=${sourceTableRef}.${sourceKeyRef}`;
     }).join(' ');
   }
 
   // This join will be rendered in the root of the query (where we fetch the root
   // collection schema ids).
   getJoin() {
-    if (this.parentAssociation) {
-      return _.toArray(this.parentAssociation).map(association => {
-        const bolFK = !!association.foreignTable && !!association.foreignKey;
-        const joinType = association.resolveJoinType();
-        // Quick Fix: Ignore join when it is a belongs association.
-        // Gererally in that cases the asssociation have already been rendered
-        // by the parent/association that have the "has" association type.
-        if (/^belongs/.test(association.associationType)) {
-          return '';
-        } else if (bolFK) {
-          return `${joinType} JOIN ${association.foreignTable} ON ${association.foreignTable}.${association.sourceKey}=${association.sourceTable}.${association.sourceKey} ${joinType} JOIN ${association.targetTable} ON ${association.targetTable}.${association.targetKey}=${association.foreignTable}.${association.targetKey}`;
-        } else {
-          return `${joinType} JOIN ${association.targetTable} ON ${association.targetTable}.${association.targetKey}=${association.sourceTable}.${association.targetKey}`;
-        }
-      }).join(' ');
-    }
-    return '';
+    return !this.parentAssociation ? '' :  _.toArray(this.parentAssociation).map(association => {
+      const bolFK = !!association.foreignTable && !!association.foreignKey;
+      const joinType = association.resolveJoinType();
+      // Quick Fix: Ignore join when it is a belongs association.
+      // Gererally in that cases the asssociation have already been rendered
+      // by the parent/association that have the "has" association type.
+      if (/^belongs/.test(association.associationType)) {
+        return '';
+      } else if (bolFK) {
+        return `${joinType} JOIN ${association.foreignTable} ON ${association.foreignTable}.${association.sourceKey}=${association.sourceTable}.${association.sourceKey} ${joinType} JOIN ${association.targetTable} ON ${association.targetTable}.${association.targetKey}=${association.foreignTable}.${association.targetKey}`;
+      } else {
+        const sourceKeyRef = association.useSourceKey || association.targetKey;
+        return `${joinType} JOIN ${association.targetTable} ON ${association.targetTable}.${association.targetKey}=${association.sourceTable}.${sourceKeyRef}`;
+      }
+    }).join(' ');
   }
 
   getShowOptions(options) {
