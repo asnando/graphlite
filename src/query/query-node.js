@@ -202,10 +202,10 @@ class QueryNode {
 
     function resolveGroupBy(gp) {
       if (!gp || !gp.length) return '';
-      return ' GROUP BY ' + gp.map(prop => {
-        prop = self.getSchemaPropertyConfig(prop);
+      return ' GROUP BY ' + gp.map(propName => {
+        const prop = self.getSchemaPropertyConfig(propName);
         if (!prop) {
-          throw new Error(`Undefined "${prop}" property configuration on "${self.name}" schema for grouping.`);
+          throw new Error(`Undefined "${propName}" property configuration on "${self.name}" schema for grouping.`);
         }
         return prop.alias || prop.name;
       }).map(prop => self.getTableName().concat('.').concat(prop));
@@ -213,10 +213,10 @@ class QueryNode {
 
     function resolveOrderBy(order) {
       if (!order || !order.length) return '';
-      return ' ORDER BY ' + order.map(prop => {
-        prop = self.getSchemaPropertyConfig(prop);
+      return ' ORDER BY ' + order.map(propName => {
+        const prop = self.getSchemaPropertyConfig(propName);
         if (!prop) {
-          throw new Error(`Undefined "${prop}" property configuration on "${self.name}" schema for ordering.`);
+          throw new Error(`Undefined "${propName}" property configuration on "${self.name}" schema for ordering.`);
         }
         return prop.alias || prop.name;
       }).map(prop => self.getTableName().concat('.').concat(prop));
@@ -226,13 +226,18 @@ class QueryNode {
       return (!size && !!self.parentAssociation) ? ''
         : `LIMIT ${size || DEFAULT_PAGE_DATA_LIMIT}`;
     }
+    const where = resolvedOptions,
+          group = _.toArray(this.staticOptions.groupBy),
+          order = _.toArray(this.staticOptions.orderBy),
+          page  = options.page || this.staticOptions.page,
+          size  = options.size || this.staticOptions.size;
 
     const clauses = {
-      where: resolveWhere(resolvedOptions),
-      group: resolveGroupBy(this.staticOptions.groupBy),
-      order: resolveOrderBy(this.staticOptions.orderBy),
-      limit: resolveLimit(options.size || this.staticOptions.size),
-      offset: resolveOffset(options.page || this.staticOptions.page, options.size || this.staticOptions.size),
+      where:  resolveWhere(resolvedOptions),
+      group:  resolveGroupBy(group),
+      order:  resolveOrderBy(order),
+      limit:  resolveLimit(size),
+      offset: resolveOffset(page, size),
     };
 
     // Renders only is a array within all the keys

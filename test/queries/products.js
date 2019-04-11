@@ -11,7 +11,7 @@ module.exports = function(graphlite, schemas) {
       // },
       automaker: {
         vehicle: '*',
-        groupBy: ['automakerDescription']
+        groupBy: ['automakerDescription'],
       }
     },
   });
