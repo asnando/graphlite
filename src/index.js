@@ -38,8 +38,8 @@ class GraphLite {
     return this._queries.find(query => query.name === queryName);
   }
 
-  _parseRows(rows) {
-    return rows.map(object => JSON.parse(object[DEFAULT_OBJECT_RESPONSE_NAME]));
+  _parseRows(usedQuery, rows) {
+    return usedQuery.parseRows(rows.map(object => JSON.parse(object[DEFAULT_OBJECT_RESPONSE_NAME])));
   }
 
   _translateToResponseObject(rows) {
@@ -51,10 +51,14 @@ class GraphLite {
     };
   }
 
-  _executeQuery(query) {
-    return this._connection[DEFAULT_CONNECTION_PROVIDER_QUERY_RUNNER_NAME](query)
-      .then(this._parseRows.bind(this))
-      .then(this._translateToResponseObject.bind(this));
+  _executeQueryOnDatabase(query) {
+    return this._connection[DEFAULT_CONNECTION_PROVIDER_QUERY_RUNNER_NAME](query);
+  }
+
+  _executeQuery(rawQuery, query) {
+    return this._executeQueryOnDatabase(rawQuery)
+        .then(this._parseRows.bind(this, query))
+        .then(this._translateToResponseObject.bind(this));
   }
 
   _executeQueryWithOptions(queryName, options = {}) {
@@ -73,7 +77,7 @@ class GraphLite {
         return reject(exception);
       }
 
-      return this._executeQuery(buildedQuery).then(resolve);
+      return this._executeQuery(buildedQuery, query).then(resolve);
     });
   }
 

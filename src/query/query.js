@@ -24,7 +24,7 @@ class Query {
     this.schemaProvider = schemaProvider;
     // This will be the resolved graph which will resolve the query.
     this.graph = this._resolveGraph(this.rawGraph);
-    this.responseParser = new QueryResponse(this.graph);
+    this.rowsParser = new QueryResponse(this.graph);
   }
 
   _resolveGraph(graph) {
@@ -141,8 +141,8 @@ class Query {
     return this.graph.resolve('main', _.pickBy(options));
   }
 
-  parseResponse(rows) {
-    return this.responseParser.parse(rows);
+  parseRows(rows) {
+    return this.rowsParser.parse(rows);
   }
 
 }
