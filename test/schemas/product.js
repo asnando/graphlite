@@ -6,7 +6,7 @@ module.exports = function(graphlite) {
       CodigoProduto: 'primaryKey',
       description: {
         type: 'string',
-        alias: 'DescricaoProduto'
+        alias: 'DescricaoProduto',
       },
       number: {
         type: 'string',

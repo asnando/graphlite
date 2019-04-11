@@ -5,9 +5,12 @@ module.exports = function(graphlite) {
       automaker: {
         properties: '*',
         vehicle: {
-          properties: '*'
-        }
-      }
+          properties: '*',
+          size: 2
+        },
+        groupBy: 'automakerDescription'
+      },
+      orderBy: 'description'
     }
   });
 }

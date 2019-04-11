@@ -30,78 +30,64 @@ describe('GraphLite', () => {
           vehicle   = graphlite._schemaProvider('vehicle'),
           image     = graphlite._schemaProvider('image');
 
-    // const PRODUCT_VEHICLE_ASSOCIATION_OPTIONS = {
-    //   foreignTable: 'PRODUTO_APLICACAO',
-    //   foreignKey: 'CodigoAplicacao'
-    // };
-
-    // product.hasOne(image, {
-    //   foreignKey: 'ArquivoFotoProduto'
-    // });
-    product.hasOne(image, {
-      type: 'left'
-    });
-    // image.belongsTo(product, {
-    //   foreignKey: 'ArquivoFotoProduto'
-    // });
-
+    product.hasOne(image, { type: 'left' });
     product.hasMany(vehicle, {
       foreignTable: 'PRODUTO_APLICACAO',
       foreignKey: 'CodigoProduto'
     });
-
     product.hasMany(automaker, {
       using: ['vehicle']
     });
-
-    // vehicle.belongsTo(product, {
-    //   foreignTable: 'PRODUTO_APLICACAO',
-    //   foreignKey: 'CodigoAplicacao'
-    // });
-
     vehicle.hasOne(automaker);
     automaker.belongsToMany(vehicle);
-
     done();
   });
 
   // #3
   it('should define queries', done => {
     require('./queries/products')(graphlite);
-    // require('./queries/products-with-vehicles')(graphlite);
-    // require('./queries/products-automakers-vehicles')(graphlite);
+    require('./queries/products-with-vehicles')(graphlite);
+    require('./queries/products-automakers-vehicles')(graphlite);
     done();
+  });
+
+  describe('findOne()', () => {
+    // #4
+    it('should fetch one product', done => {
+      graphlite.findOne('products')
+        .then(logresponse.bind(null, done))
+        .catch(logerror.bind(null, done));
+    });
   });
 
   // ###
   describe('findAll()', () => {
-    // #4
-    it('should fetch a list with 30 products', done => {
-      graphlite.findAll('products', {}, { size: 30, page: 1 })
+    // #5
+    it('should fetch a list with products within vehicles', done => {
+      graphlite.findAll('products-with-vehicles', { })
         .then(logresponse.bind(null, done))
         .catch(logerror.bind(null, done));
     });
 
-    // #5
-    // it('should fetch a list with products within vehicles', done => {
-    //   graphlite.findAll('products-with-vehicles', {
-    //     descricaofabricante: 'AUDI',
-    //     descricaoveiculo: 'A3'
-    //   })
-    //     .then(logresponse.bind(null, done))
-    //     .catch(logerror.bind(null, done));
-    // });
+    // #6
+    it('should fetch a list with products within automakers and it respective vehicles', done => {
+      graphlite.findAll('products-automakers-vehicles', { })
+        .then(logresponse.bind(null, done))
+        .catch(logerror.bind(null, done));
+    });
   });
-
 });
 
 function logresponse(done, response) {
-  if (!!SHOW_EXAMPLE_ON_LOG) {
-    console.log('Example:', response.rows.length ? response.rows[0] : null);
+  if (SHOW_EXAMPLE_ON_LOG && response.rows && response.rows.length) {
+    const object = response.rows[0];
+    console.log('---');
+    console.log(chalk.green('Object:'));
+    console.log(object);
+    console.log(chalk.green('Resume:'));
+    console.log(`  Query returned ${response.rows.length} rows! \n  Query builded in ${response.buildedIn}s! \n  Query executed in ${response.executedIn}s!`);
+    console.log('---');
   }
-  console.log('   ', chalk.green(`Query returned ${response.rows.length} rows!`));
-  console.log('   ', chalk.green(`Query builded in ${response.buildedIn}s!`));
-  console.log('   ', chalk.green(`Query executed in ${response.executedIn}s!`));
   return done();
 }
 
