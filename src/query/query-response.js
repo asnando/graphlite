@@ -66,7 +66,8 @@ class QueryResponse {
         const resolvedValue = resolver(_.get(row, path));
         _.set(row, path, resolvedValue);
       });
-      return row;
+      // Remove undefined or nullable values from row object.
+      return _.pickBy(row);
     });
   }
 
@@ -91,5 +92,6 @@ function toBoolean(value) {
 }
 
 function stripNulls(value) {
-  return _.isObject(value) ? _.pickBy(value) : _.isArray(value) ? value.filter(val => val) : value ? value : null;
+  return _.isArray(value) ? value.filter(v => v) : value;
+  // return _.isObject(value) ? _.pickBy(value) : _.isArray(value) ? value.filter(val => val) : value ? value : null;
 }
