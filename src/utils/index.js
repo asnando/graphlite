@@ -22,7 +22,9 @@ const	jtree           = require('./jtree'),
       set             = require('./set'),
       glob            = require('./glob'),
       query           = require('./query'),
-      toArray         = require('./to-array');
+      toArray         = require('./to-array'),
+      pair            = require('./pair'),
+      hash            = require('./hash');
 
 module.exports = {
   jtree,
@@ -50,4 +52,6 @@ module.exports = {
   glob,
   query,
   toArray,
+  pair,
+  hash,
 };

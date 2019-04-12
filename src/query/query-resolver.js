@@ -30,7 +30,10 @@ class QueryResolver {
 
   resolveNextNodes(node, options, parent) {
 
-    const nextNodes = node.nextNodes;
+    let nextNodes = node.nextNodes;
+
+    const usePatch = this.usePatch;
+    const defaultValue = this.defaultValue;
 
     // Usually the nextNodes function is always called (if when there is no next nodes).
     // In this cases, we return a default value to prevent th query from breaking.
@@ -40,19 +43,34 @@ class QueryResolver {
 
     // "json_patch" function only works with paired objects.
     // Adds a extra empty node if it is not yet paired.
-    if (nextNodes.length % 2) {
-      nextNodes.push(() => this.defaultValue);
+    // const paired = !(nextNodes.length % 2);
+    // Create paired array ignoring missing data on each pair.
+    nextNodes = _.pair(nextNodes, false, defaultValue);
+
+    // Resolve the query value of each node.
+    let resolvedNodes = nextNodes.map(pair => {
+      return pair.map(node => {
+        return _.isFunction(node.resolve) ? node.resolve(this.name, options, parent) : node;
+      });
+    });
+
+    if (!usePatch) {
+      resolvedNodes = resolvedNodes.map(value => value.join(' ')).join(' ');
+    } else {
+      resolvedNodes = resolvedNodes.map(nodes => {
+        const nodesLength = nodes.length;
+        nodes = nodes.map(node => {
+          return (!/^\(/.test(node) && !/\)$/.test(node)) ? `(${node})` : node;
+        });
+        if (nodes.length > 1) {
+          return `json_patch(${nodes.join(',')})`;
+        } else {
+          return nodes[0];
+        }
+      });
+      resolvedNodes = (resolvedNodes.length > 1) ? `json_patch(${resolvedNodes})` : resolvedNodes[0];
     }
-
-    let resolvedNodes = nextNodes.map(node =>
-      _.isFunction(node) ? node() : node.resolve(this.name, options, parent))
-      .map(node => this.usePatch ? `(${node})` : node)
-      .join(this.usePatch ? ',' : ' ');
-
-    if (this.usePatch) {
-      resolvedNodes = `select json_patch(${resolvedNodes})`;
-    }
-
+      
     return resolvedNodes;
   }
 
