@@ -72,7 +72,7 @@ class GraphLite {
 
       // Try to build the query.
       try {
-        buildedQuery = query.build();
+        buildedQuery = query.build(options);
       } catch (exception) {
         return reject(exception);
       }

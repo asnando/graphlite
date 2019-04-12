@@ -5,17 +5,14 @@ module.exports = function graphNodeResolver(node, options = {}, nextNodes, custo
 
   const objectType = node.getObjectType();
 
-  // const jsonPatchBegin = `/* begin json_patch(${node.name}) */`;
-  // const jsonPatchEnd   = `/* end json_patch(${node.name}) */`;
-  const jsonPatchBegin = ``;
-  const jsonPatchEnd   = ``;
-
   const struct = objectType === 'object'
-    ? `select ${jsonPatchBegin} json_patch(json_object($fields_as_json), ($next_nodes))${jsonPatchEnd} $object_name from (select $raw_fields $grouped_ids $source $show_options $options) $table_alias`
-    : `(select json_object($node_name, (select json_group_array(${jsonPatchBegin}json_patch(json_object($fields_as_json), ($next_nodes))${jsonPatchEnd}) from (select $raw_fields $grouped_ids $source $show_options $options) $table_alias)))`;
+    ? `select json_patch(json_object($fields_as_json), ($next_nodes)) $object_name from (select $raw_fields $grouped_ids $source $show_options $options) $table_alias`
+    : `(select json_object($node_name, (select json_group_array(json_patch(json_object($fields_as_json), ($next_nodes))) from (select $raw_fields $grouped_ids $source $show_options $options) $table_alias)))`;
 
   let nodeOptions = node.getOptions(options, ['group', 'order', 'limit', 'offset']);
-  
+
+  // Fix: Root schema can not have "limit" nor "offset" options (this options)
+  // are filtered inside the specific where clauses condition outside this node.
   if (!node.parentAssociation) {
     nodeOptions = nodeOptions.replace(/LIMIT\s\d+/, '').replace(/OFFSET\s\d+/, '');
   }

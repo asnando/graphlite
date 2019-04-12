@@ -195,9 +195,7 @@ class QueryNode {
     }
 
     function resolveOffset(page, size) {
-      return (page && size)
-        ? ' OFFSET '.concat(((page - 1) * size))
-        : '';
+      return (!self.parentAssociation && page && size) ? ' OFFSET '.concat(((page - 1) * size)) : '';
     }
 
     function resolveGroupBy(gp) {
@@ -223,8 +221,14 @@ class QueryNode {
     }
 
     function resolveLimit(size) {
-      return (!size && !!self.parentAssociation) ? ''
-        : `LIMIT ${size || DEFAULT_PAGE_DATA_LIMIT}`;
+      const staticSize = self.staticOptions.size;
+      if (self.parentAssociation && staticSize) {
+        return `LIMIT ${staticSize}`;
+      } else if (self.parentAssociation) {
+        return ``;
+      } else {
+        return size ? `LIMIT ${size}` : ``;
+      }
     }
     const where = resolvedOptions,
           group = _.toArray(this.staticOptions.groupBy),
@@ -236,7 +240,7 @@ class QueryNode {
       where:  resolveWhere(resolvedOptions),
       group:  resolveGroupBy(group),
       order:  resolveOrderBy(order),
-      limit:  resolveLimit(size),
+      limit:  resolveLimit(options.size),
       offset: resolveOffset(page, size),
     };
 

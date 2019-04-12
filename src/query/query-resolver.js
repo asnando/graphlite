@@ -43,7 +43,6 @@ class QueryResolver {
 
     // "json_patch" function only works with paired objects.
     // Adds a extra empty node if it is not yet paired.
-    // const paired = !(nextNodes.length % 2);
     // Create paired array ignoring missing data on each pair.
     nextNodes = _.pair(nextNodes, false, defaultValue);
 
@@ -58,7 +57,6 @@ class QueryResolver {
       resolvedNodes = resolvedNodes.map(value => value.join(' ')).join(' ');
     } else {
       resolvedNodes = resolvedNodes.map(nodes => {
-        const nodesLength = nodes.length;
         nodes = nodes.map(node => {
           return (!/^\(/.test(node) && !/\)$/.test(node)) ? `(${node})` : node;
         });
