@@ -4,6 +4,10 @@ module.exports = function(graphlite) {
     properties: {
       ArquivoFoto: {
         type: 'primaryKey',
+      },
+      source: {
+        alias: 'URIP',
+        type: 'string',
       }
     }
   })

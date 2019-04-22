@@ -12,13 +12,13 @@ module.exports = function(graphlite) {
         type: 'string',
         alias: 'NumeroProduto'
       },
-      image: {
-        type: 'string',
-        resolve: [
-          'ArquivoFotoProduto',
-          'ArquivoFotoProduto2'
-        ]
-      },
+      // image: {
+      //   type: 'string',
+      //   resolve: [
+      //     'ArquivoFotoProduto',
+      //     'ArquivoFotoProduto2'
+      //   ]
+      // },
       release: {
         alias: 'FlagLancamento',
         type: 'boolean'

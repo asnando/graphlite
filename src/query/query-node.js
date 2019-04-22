@@ -117,62 +117,114 @@ class QueryNode {
   }
 
   getSource(parentUseGroup) {
+    // const resolvedAssociations = this.getAssociation(parentUseGroup);
+    // if (!!resolvedAssociations) {
+    //   return `FROM ${this.getTableName()} ${resolvedAssociations}`;
+    // } else {
+    //   return `FROM ${this.getTableName()} ${this.hash}`;
+    // }
     return `FROM ${this.getTableName()} ${this.getAssociation(parentUseGroup)}`;
   }
 
   // Will render the respective associations joins inside each node of the query.
   getAssociation(parentUseGroup = false) {
 
-    let usedFK = false;
-    
-    return !this.parentAssociation ? '' : _.toArray(this.parentAssociation).map((association, index, self) => {
-      const bolFK = !!association.foreignTable && !!association.foreignKey;
+    let associations = this.parentAssociation;
+
+    if (!associations) {
+      return '';
+    }
+
+    // Transform to array (in some cases the association is already a list of associations).
+    associations = _.toArray(associations);
+
+    return associations.map((association, index, self) => {
+      const lastAssociation = (index === self.length - 1);
       const joinType = association.resolveJoinType();
+      const useFK = !!association.foreignTable && !!association.foreignKey;
+      const {
+        sourceTable,
+        sourceHash,
+        targetTable,
+        targetHash,
+        foreignTable,
+        foreignKey,
+      } = association;
 
-      if (bolFK) {
-        usedFK = true;
-        return [
-          `${joinType} JOIN ${association.foreignTable} ON ${association.foreignTable}.${association.sourceKey}=${association.sourceHash}.${association.sourceKey}`,
-          self.length > 1
-            ? `${joinType} JOIN ${association.targetTable} ON ${association.targetTable}.${association.targetKey}=${association.foreignTable}.${association.targetKey}`
-            : `WHERE ${association.targetTable}.${association.targetKey}=${association.foreignTable}.${association.targetKey}`
-        ].join(' ');
-      }
+      const targetKey = association.useTargetKey || association.targetKey;
+      const sourceKey = association.useSourceKey || association.sourceKey;
 
-      // When parent node have groupBy option defined in the query schema it
-      // will use the json_each built in SQLite function to resolve the relation
-      // between this node ids and the previous grouped ids.
       if (parentUseGroup) {
-        return `, json_each(${association.sourceHash}.id_${association.targetKey}) WHERE ${association.targetTable}.${association.targetKey}=json_each.value`;
+        // When parent node have groupBy option defined in the query schema it
+        // will use the json_each builtin SQLite function to resolve the relation
+        // between this node ids and the previous grouped ids.
+        return `, json_each(${sourceHash}.id_${targetKey}) WHERE ${targetTable}.${targetKey}=json_each.value`;
+      } else if (!lastAssociation) {
+        if (useFK) {
+          return `${joinType} JOIN ${foreignTable} ON ${foreignTable}.${foreignKey}=${sourceHash}.${foreignKey}
+            ${joinType} JOIN ${targetTable} ON ${targetTable}.${targetKey}=${foreignTable}.${targetKey}`;
+        } else {
+          return `${joinType} JOIN ${targetTable} ON ${targetTable}.${targetKey}=${sourceHash}.${sourceKey}`;
+        }
+      } else {
+        // When not first association from the array means that this association
+        // represents the final relation between the list of tables. In that case,
+        // use the 'where' clause to join the tables.
+        if (useFK) {
+          return `/* missing #1 */ /* missing #1 */`;
+        } else {
+            // When association of type "belongs" then use the sourceHash (which
+            // represents the previous node data) instead of the root table name. It is
+            // used when there it does not have foreignKey at any point of this association too.
+          if (/^belongs/.test(association.associationType)) {
+            return `WHERE ${sourceTable}.${sourceKey}=${targetTable}.${sourceKey}`;
+          } else {
+            const sourceAlias = (self.length > 1) ? sourceTable : sourceHash ;
+            return `WHERE ${targetTable}.${targetKey}=${sourceAlias}.${targetKey}`;
+          }
+        }
       }
-
-      // Note.: When association of type "belongs" then use the sourceHash (which
-      // represents the previous node data) instead of the root table name. It is
-      // used when there it does not have foreignKey at any point of this association too.
-      const sourceTableRef = (/^belongs/.test(association.associationType) || !usedFK)
-        ? association.sourceHash : association.sourceTable;
-      // Custom source key.
-      const sourceKeyRef = association.useSourceKey || association.targetKey;
-      return `WHERE ${association.targetTable}.${association.targetKey}=${sourceTableRef}.${sourceKeyRef}`;
     }).join(' ');
   }
 
   // This join will be rendered in the root of the query (where we fetch the root
   // collection schema ids).
   getJoin() {
-    return !this.parentAssociation ? '' :  _.toArray(this.parentAssociation).map(association => {
-      const bolFK = !!association.foreignTable && !!association.foreignKey;
+
+    return '';
+
+    let associations = this.parentAssociation;
+
+    if (!associations) {
+      return '';
+    }
+
+    associations = _.toArray(associations);
+
+    return associations.map(association => {
       const joinType = association.resolveJoinType();
+      const {
+        sourceTable,
+        sourceHash,
+        targetTable,
+        targetHash,
+        foreignTable,
+        foreignKey,
+        associationType,
+      } = association;
+
+      const targetKey = association.useTargetKey || association.targetKey;
+      const sourceKey = association.useSourceKey || association.sourceKey;
+      
       // Quick Fix: Ignore join when it is a belongs association.
       // Gererally in that cases the asssociation have already been rendered
       // by the parent/association that have the "has" association type.
-      if (/^belongs/.test(association.associationType)) {
-        return '';
-      } else if (bolFK) {
-        return `${joinType} JOIN ${association.foreignTable} ON ${association.foreignTable}.${association.sourceKey}=${association.sourceTable}.${association.sourceKey} ${joinType} JOIN ${association.targetTable} ON ${association.targetTable}.${association.targetKey}=${association.foreignTable}.${association.targetKey}`;
+      if (/^belongs/.test(associationType)) {
+        return ``;
+      } else if (!!foreignTable && !!foreignKey) {
+        return `${joinType} JOIN ${foreignTable} ON ${foreignTable}.${foreignKey}=${sourceTable}.${foreignKey} ${joinType} JOIN ${targetTable} ON ${targetTable}.${targetKey}=${foreignTable}.${targetKey}`;
       } else {
-        const sourceKeyRef = association.useSourceKey || association.targetKey;
-        return `${joinType} JOIN ${association.targetTable} ON ${association.targetTable}.${association.targetKey}=${association.sourceTable}.${sourceKeyRef}`;
+        return `${joinType} JOIN ${targetTable} ON ${targetTable}.${targetKey}=${sourceTable}.${sourceKey}`;
       }
     }).join(' ');
   }
@@ -256,55 +308,57 @@ class QueryNode {
 
   resolveOptionsWithValues(def, options) {
 
-    const definedOptionKeys = _.keys(options)
-      .filter(optionName => !!def.hasOwnProperty(optionName))
+    const definedOptionKeys = _.keys(options).filter(optionName => !!def.hasOwnProperty(optionName));
 
     if (!definedOptionKeys.length) return '';
 
     const optionValues = definedOptionKeys.map(optionName => {
-      const propName = def[optionName].replace(/\W/g, '');
-      const propDefinitionFromSchema = this.schemaProperties.find(prop => prop.name === propName);
-      const definition = def[optionName];
-      const value = options[optionName];
-      const resolvedPropName = propDefinitionFromSchema.alias || propDefinitionFromSchema.name;
-      const operator = /\W/.test(definition) ? definition.match(/\W/)[0] : '=';
+    const propName = def[optionName].replace(/\W/g, '');
+    const propDefinitionFromSchema = this.schemaProperties.find(prop => prop.name === propName);
+    const definition = def[optionName];
+    const value = options[optionName];
+    const resolvedPropName = propDefinitionFromSchema.alias || propDefinitionFromSchema.name;
+    const operator = /\W/.test(definition) ? definition.match(/\W/)[0] : '=';
 
-      if (!propDefinitionFromSchema) {
-        throw new Error(`"${propName}" property from where clause not found in "${this.name}" schema properties.`);
-      }
+    if (!propDefinitionFromSchema) {
+      throw new Error(`"${propName}" property from where clause not found in "${this.name}" schema properties.`);
+    }
 
-      const resolve = function() {
-        const operator = this.operator,
-              value    = this.value;
-        switch (operator) {
-          case '=':
-            return `=${_.quote(value)}`;
-          case '<>':
-            return `<>${_.quote(value)}`;
-          case '>':
-            return `>${value}`;
-          case '<':
-            return `<${value}`;
-          case '%':
-            return `LIKE ${_.quote('%' + value + '%')}`;
-          case '#':
-            return `GLOB ${_.quote(_.glob(value))}`;
-          default:
-            return '';
-        };
-      }
-
-      return {
-        name: resolvedPropName,
-        definition,
-        value,
-        operator,
-        resolve
+    const resolve = function() {
+      const operator = this.operator,
+            value    = this.value;
+      switch (operator) {
+        case '=':
+          return `=${_.quote(value)}`;
+        case '<>':
+          return `<>${_.quote(value)}`;
+        case '>':
+          return `>${value}`;
+        case '<':
+          return `<${value}`;
+        case '%':
+          return `LIKE ${_.quote('%' + value + '%')}`;
+        case '#':
+          return `GLOB ${_.quote(_.glob(value))}`;
+        case '|':
+          return ``;
+        case '&':
+          return ``;
+        default:
+          return '';
       };
+    }
 
-    }).map(opt => {
-      return `${this.getTableName()}.${opt.name} ${opt.resolve()}`;
-    });
+    return {
+      name: resolvedPropName,
+      definition,
+      value,
+      operator,
+      resolve
+    };
+  }).map(opt => {
+    return `${this.getTableName()}.${opt.name} ${opt.resolve()}`;
+  });
 
     return optionValues;
   }
@@ -318,6 +372,9 @@ class QueryNode {
   }
 
   getDistinctPrimaryKey() {
+    // // UPDATE: Return distinct primary key with table hash instead of table name
+    // // inside the root where clause.
+    // return `DISTINCT ${this.hash}.${this.getPrimaryKey()}`;
     return `DISTINCT ${this.getTableName()}.${this.getPrimaryKey()}`;
   }
 

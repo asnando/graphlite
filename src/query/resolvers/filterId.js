@@ -6,6 +6,9 @@ module.exports = function graphRootNodeOptionsResolver(node, options, nextNodes,
   const nextNodeQuery     = nextNodes().replace(/json_object\(\)/g, '');
   const conditionClauses  = customResolver('options', options).replace(/json_object\(\)/g, '');
   const resolvedOptions   = node.getOptions(options, [ 'group', 'order', 'limit', 'offset' ]);
-  return !!node.parentAssociation ? `${node.getJoin()} ${nextNodeQuery}`
-    : `SELECT ${node.getDistinctPrimaryKey()} ${node.getSource()} ${nextNodeQuery} ${conditionClauses} ${resolvedOptions}`;
+  if (node.parentAssociation) {
+    return `${node.getJoin()} ${nextNodeQuery}`;
+  } else {
+    return `SELECT ${node.getDistinctPrimaryKey()} ${node.getSource()} ${nextNodeQuery} ${conditionClauses} ${resolvedOptions}`;
+  }
 }

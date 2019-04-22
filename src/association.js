@@ -30,6 +30,7 @@ class Association {
       type:             opts.type || DEFAULT_ASSOCIATION_JOIN_TYPE,
       using:            opts.using || [],
       useSourceKey:     opts.useSourceKey,
+      useTargetKey:     opts.useTargetKey,
     });
   }
 

@@ -52,7 +52,7 @@ class Schema {
     const belongs = /^belongs/.test(associationType);
     const source = has ? this : belongs ? this : schema;
     const target = has ? schema : belongs ? schema : this;
-    const association = new Association({
+    const associationOptions = {
       schemaFrom:   this.name,
       schemaTo:     schema.name,
       targetHash:   target.hash,
@@ -63,13 +63,15 @@ class Schema {
       sourceKey:    source.primaryKey,
       foreignTable: options.foreignTable,
       foreignKey:   options.foreignKey,
+      useKey:       options.useKey,
       useSourceKey: options.useSourceKey,
+      useTargetKey: options.useTargetKey,
       type:         options.type,
       objectType:   /many/i.test(associationType) ? 'array' : 'object',
       using:        (options.using || []).map(schemaName => this.schemaProvider(schemaName)),
       associationType,
-    });
-    return association;
+    };
+    return new Association(associationOptions);
   }
 
   hasMany(schema, options = {}) {
@@ -95,18 +97,19 @@ class Schema {
   }
 
   getAssociationOptionsWith(schema) {
-    const association = this._getAssociation(schema, this);
+    let association = this._getAssociation(schema, this);
     if (!association) {
       throw new Error(`No association found between "${schema.name}" and "${this.name}".`);
     }
-    return !association.using.length ? association
+    association = !association.using.length
+      ? association
       : this._resolveAssociationTree(schema, this, association);
+    return association;
   }
 
   _getAssociation(a, b) {
     // Directly access the external schema associations object.
     return (a.has[b.name] || a.belongs[b.name]) || (b.has[a.name] || b.belongs[a.name]);
-    // return (a.has[b.name] || b.belongs[a.name]) || (b.has[a.name] || a.belongs[b.name]);
   }
 
   // Used when the association options contains the "using" key that must
@@ -122,21 +125,6 @@ class Schema {
         return value.concat(association);
       }
     }, []);
-  }
-
-  _createAssociationShadow(association) {
-    return {
-      sourceHash:   association.sourceHash,
-      sourceTable:  association.sourceTable,
-      sourceKey:    association.sourceKey,
-      targetHash:   association.targetHash,
-      targetTable:  association.targetTable,
-      targetKey:    association.targetKey,
-      foreignTable: association.foreignTable,
-      foreignKey:   association.foreignKey,
-      objectType:   association.objectType,
-      type:         association.type
-    };
   }
 
   _getAssociationKeys(schema = this) {
