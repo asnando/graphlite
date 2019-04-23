@@ -18,6 +18,9 @@ module.exports = function(graphlite, schemas) {
       automaker: {
         using: 'vehicle',
         groupBy: 'automakerDescription',
+        where: {
+          maker: '%automakerDescription'
+        },
         vehicle: {
           // size: 2
         }

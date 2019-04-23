@@ -188,7 +188,7 @@ class QueryNode {
 
   // This join will be rendered in the root of the query (where we fetch the root
   // collection schema ids).
-  getJoin() {
+  getJoin(hasConditionClauses) {
 
     let associations = this.parentAssociation;
 
@@ -217,7 +217,7 @@ class QueryNode {
       // Quick Fix: Ignore join when it is a belongs association.
       // Gererally in that cases the asssociation have already been rendered
       // by the parent/association that have the "has" association type.
-      if (/^left/i.test(joinType) || /^belongs/.test(associationType)) {
+      if (!hasConditionClauses || /^left/i.test(joinType) || /^belongs/.test(associationType)) {
         return `/* begin breakpoint #8 (empty) */ /* end breakpoint #8 (empty) */`;
       } else if (!!foreignTable && !!foreignKey) {
         return `/* begin breakpoint #6 */ ${joinType} JOIN ${foreignTable} ON ${foreignTable}.${foreignKey}=${sourceTable}.${foreignKey} ${joinType} JOIN ${targetTable} ON ${targetTable}.${targetKey}=${foreignTable}.${targetKey} /* end breakpoint #6 */`;
