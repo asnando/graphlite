@@ -1,9 +1,9 @@
 const _ = require('../utils');
 const debug = require('../debugger');
 
-const DEFAULT_OBJECT_RESPONSE_NAME = 'response';
 const DEFAULT_OBJECT_TYPE = 'object';
 const DEFAULT_PAGE_DATA_LIMIT = 100;
+const DEFAULT_ROW_OBJECT_NAME = 'response';
 
 // The QueryNode represents the real value of a node
 // inside the graph of the defined query. It is responsible
@@ -35,6 +35,10 @@ class QueryNode {
       staticOptions: opts.staticOptions,
       nodeOptions: _.defaults(opts.shows, {}),
     });
+    // // Fix:
+    // if (!this.parentAssociation) {
+    //   this.staticOptions.size = DEFAULT_PAGE_DATA_LIMIT;
+    // }
   }
 
   // Merge the options array defined in the query graph and
@@ -108,21 +112,14 @@ class QueryNode {
   }
 
   getResponseObjectName() {
-    return !this.parentAssociation ? DEFAULT_OBJECT_RESPONSE_NAME : '';
+    return !this.parentAssociation ? DEFAULT_ROW_OBJECT_NAME : '';
   }
 
   getRawFields() {
     return '*';
-    return `${this.getTableName()}.*`;
   }
 
   getSource(parentUseGroup) {
-    // const resolvedAssociations = this.getAssociation(parentUseGroup);
-    // if (!!resolvedAssociations) {
-    //   return `FROM ${this.getTableName()} ${resolvedAssociations}`;
-    // } else {
-    //   return `FROM ${this.getTableName()} ${this.hash}`;
-    // }
     return `FROM ${this.getTableName()} ${this.getAssociation(parentUseGroup)}`;
   }
 
@@ -214,11 +211,15 @@ class QueryNode {
         associationType,
       } = association;
 
+      // Left join(s) or when there is nothing to filter from the actual node
+      // will return empty strings as it do not need to be rendered in the root
+      // collection filter id clause. It would make the query a little bit slower.
       // Quick Fix: Ignore join when it is a belongs association.
       // Gererally in that cases the asssociation have already been rendered
       // by the parent/association that have the "has" association type.
       if (!hasConditionClauses || /^left/i.test(joinType) || /^belongs/.test(associationType)) {
-        return `/* begin breakpoint #8 (empty) */ /* end breakpoint #8 (empty) */`;
+        return ``;
+        // return `/* begin breakpoint #8 (empty) */ /* end breakpoint #8 (empty) */`;
       } else if (!!foreignTable && !!foreignKey) {
         return `/* begin breakpoint #6 */ ${joinType} JOIN ${foreignTable} ON ${foreignTable}.${foreignKey}=${sourceTable}.${foreignKey} ${joinType} JOIN ${targetTable} ON ${targetTable}.${targetKey}=${foreignTable}.${targetKey} /* end breakpoint #6 */`;
       } else {
@@ -276,10 +277,13 @@ class QueryNode {
         return `LIMIT ${staticSize}`;
       } else if (self.parentAssociation) {
         return ``;
+      } else if (size) {
+        return `LIMIT ${size}`;
       } else {
-        return size ? `LIMIT ${size}` : ``;
+        return `LIMIT ${DEFAULT_PAGE_DATA_LIMIT}`;
       }
     }
+
     const where = resolvedOptions,
           group = _.toArray(this.staticOptions.groupBy),
           order = _.toArray(this.staticOptions.orderBy),
@@ -370,9 +374,6 @@ class QueryNode {
   }
 
   getDistinctPrimaryKey() {
-    // // UPDATE: Return distinct primary key with table hash instead of table name
-    // // inside the root where clause.
-    // return `DISTINCT ${this.hash}.${this.getPrimaryKey()}`;
     return `DISTINCT ${this.getTableName()}.${this.getPrimaryKey()}`;
   }
 

@@ -8,7 +8,7 @@ module.exports = function graphRootNodeOptionsResolver(node, options, nextNodes,
   const resolvedOptions = node.getOptions(options, [ 'group', 'order', 'limit', 'offset' ]);
   const hasCondition = !!conditionClauses && !/^\s{0,}$/.test(conditionClauses);
 
-  // Quick fix: Remove duplicated 'where' keyword.
+  // Quick fix: Remove duplicated 'where' keyword(s).
   if (hasCondition && /WHERE/.test(conditionClauses) && (conditionClauses.match(/WHERE/g).length > 1)) {
     conditionClauses = conditionClauses.trim().replace(/(?!^)(WHERE)/g, ' AND ');
   }

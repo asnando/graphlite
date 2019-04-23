@@ -82,7 +82,7 @@ describe('GraphLite', () => {
   describe('findOne()', () => {
     // #4
     it('should fetch one product', done => {
-      graphlite.findOne('full-product', { number: '82350' })
+      graphlite.findAll('full-product', { }, { withCount: true })
         .then(logresponse.bind(null, done))
         .catch(logerror.bind(null, done));
     });
@@ -95,15 +95,16 @@ const log = console.log.bind(console, '   ');
 
 function logresponse(done, response) {
   if (SHOW_EXAMPLE_ON_LOG) {
-    const object = response.rows[0];
-    log('---');
-    log(chalk.green('Object:'));
-    log(object);
-    log(chalk.green('Resume:'));
-    log(`  Query returned ${response.rows.length} rows!`);
-    log(`  Query builded in ${response.buildedIn}s!`);
-    log(`  Query executed in ${response.executedIn}s!`);
-    log('---');
+    log(response);
+    // const object = response.rows[0];
+    // log('---');
+    // log(chalk.green('Object:'));
+    // log(object);
+    // log(chalk.green('Resume:'));
+    // log(`  Query returned ${response.rows.length} rows!`);
+    // log(`  Query builded in ${response.buildedIn}s!`);
+    // log(`  Query executed in ${response.executedIn}s!`);
+    // log('---');
   }
   return done();
 }

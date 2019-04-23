@@ -3,8 +3,12 @@ const Schema = require('./schema');
 const Query = require('./query/query');
 const debug = require('./debugger');
 
-const DEFAULT_OBJECT_RESPONSE_NAME = 'response';
+const DEFAULT_ROW_NAME = 'response';
+const DEFAULT_ROW_COUNT_NAME = 'count';
+const DEFAULT_OBJECT_RESPONSE_NAME = 'rows';
+const DEFAULT_COUNT_OBJECT_RESPONSE_NAME = 'total';
 const DEFAULT_CONNECTION_PROVIDER_QUERY_RUNNER_NAME = 'run';
+const DEFAULT_OPTIONS_PAGE = 1;
 
 class GraphLite {
 
@@ -29,8 +33,9 @@ class GraphLite {
   // functions. In this object there are page, size and some extra params.
   _mergeOptions(a = {}, b = {}) {
     return _.pickBy(_.xtend({}, a, {
-      page: b.page,
-      size: b.size
+      page: b.page || DEFAULT_OPTIONS_PAGE,
+      size: b.size,
+      withCount: b.withCount
     }));
   }
 
@@ -38,57 +43,74 @@ class GraphLite {
     return this._queries.find(query => query.name === queryName);
   }
 
-  _parseRows(usedQuery, rows) {
-    return usedQuery.parseRows(rows.map(object => JSON.parse(object[DEFAULT_OBJECT_RESPONSE_NAME])));
-  }
-
-  _translateToResponseObject(rows) {
-    return {
-      rows,
-      buildedIn: 0,
-      executedIn: 0,
-      parsedIn: 0,
-    };
-  }
-
   _executeQueryOnDatabase(query) {
-    return this._connection[DEFAULT_CONNECTION_PROVIDER_QUERY_RUNNER_NAME](query);
+    const connectionProviderQueryRunnerName = DEFAULT_CONNECTION_PROVIDER_QUERY_RUNNER_NAME;
+    if (!this._connection) {
+      throw new Error(`There is no database connection to run the query!`);
+    } else if (!_.isFunction(this._connection[connectionProviderQueryRunnerName])) {
+      throw new Error(`Unknown "${connectionProviderQueryRunnerName}" method on the connection provider instance!`);
+    }
+    return this._connection[connectionProviderQueryRunnerName](query);
   }
 
-  _executeQuery(rawQuery, query) {
-    return this._executeQueryOnDatabase(rawQuery)
-        .then(this._parseRows.bind(this, query))
-        .then(this._translateToResponseObject.bind(this));
+  _parseRowsFromDatabase(rows, rowObjectName) {
+    rows = rows.map(row => JSON.parse(row[rowObjectName]));
+    // Specific: When rows represent the total count of the collection,
+    // it just return the first row value (which contains the count).
+    return (rowObjectName === DEFAULT_ROW_COUNT_NAME) ? rows[0] : rows;
+  }
+
+  _translateRowsToObject(rows, responseObjectName) {
+    return { [responseObjectName]: rows };
   }
 
   _executeQueryWithOptions(queryName, options = {}) {
-    return new Promise((resolve, reject) => {
+    // Resolve query schema from the list.
+    const query = this._getQueryByName(queryName);
 
-      // Resolve query schema from the list.
-      const query = this._getQueryByName(queryName);
-      if (!query) return reject(`Undefined "${queryName}" query`);
+    // Check if query really exists.
+    if (!query) throw new Error(`Undefined ${queryName} query!`);
 
-      let buildedQuery;
+    // Must build and run a specific query for total count?
+    const withCount = (_.isBoolean(options.count) && !options.count) ? false : (options.page === 1) ? true : false;
 
-      // Try to build the query.
-      try {
-        buildedQuery = query.build(options);
-      } catch (exception) {
-        return reject(exception);
-      }
+    // #
+    const buildAndRunQuery = () => {
+      const buildedQuery = query.buildQuery(options);
+      return this._executeQueryOnDatabase(buildedQuery)
+        .then(rows => this._parseRowsFromDatabase(rows, DEFAULT_ROW_NAME))
+        .then(rows => query.parseRows(rows))
+        .then(rows => this._translateRowsToObject(rows, DEFAULT_OBJECT_RESPONSE_NAME));
+    }
 
-      return this._executeQuery(buildedQuery, query).then(resolve);
-    });
+    // #
+    const buildAndRunCountQuery = (data) => {
+      const buildedCountQuery = query.buildCountQuery(options);
+      return this._executeQueryOnDatabase(buildedCountQuery)
+        .then(rows => this._parseRowsFromDatabase(rows, DEFAULT_ROW_COUNT_NAME))
+        .then(rows => this._translateRowsToObject(rows, DEFAULT_COUNT_OBJECT_RESPONSE_NAME))
+        .then(rows => _.xtend(rows, data));
+    }
+
+    const tasks = [
+      buildAndRunQuery,
+      withCount ? buildAndRunCountQuery : null
+    ];
+
+    // Execute query list sync then return.
+    return tasks.reduce((promise, task) => {
+      return promise = promise.then(task);
+    }, Promise.resolve());
   }
 
   // ## Public methods
-  findOne(queryName, filter = {}, options = {}) {
-    options.size = 1;
-    return this._executeQueryWithOptions(queryName, this._mergeOptions(filter, options));
+  findOne(queryName, options = {}, extraOptions = {}) {
+    extraOptions.size = 1;
+    return this._executeQueryWithOptions(queryName, this._mergeOptions(options, extraOptions));
   }
 
-  findAll(queryName, filter = {}, options = {}) {
-    return this._executeQueryWithOptions(queryName, this._mergeOptions(filter, options));
+  findAll(queryName, options = {}, extraOptions = {}) {
+    return this._executeQueryWithOptions(queryName, this._mergeOptions(options, extraOptions));
   }
 
   defineSchema(name, opts) {

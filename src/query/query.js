@@ -8,6 +8,7 @@ const graphNodeResolver             = require('./resolvers/main');
 const graphNodeOptionsResolver      = require('./resolvers/options');
 const graphNodeGroupIdsResolver     = require('./resolvers/groupId');
 const graphRootNodeOptionsResolver  = require('./resolvers/filterId');
+const graphCountResolver            = require('./resolvers/count');
 
 class Query {
 
@@ -121,8 +122,10 @@ class Query {
       nodeGraph.createResolver('filterId', graphRootNodeOptionsResolver, false, '');
       // #
       nodeGraph.createResolver('options', graphNodeOptionsResolver);
-      // 
+      // #
       nodeGraph.createResolver('groupId', graphNodeGroupIdsResolver);
+      // # count
+      nodeGraph.createResolver('count', graphCountResolver);
 
       // "jtree" function accepts a returned object that will be defined
       // to the next walk node. In some cases these options are used to
@@ -137,8 +140,12 @@ class Query {
     return resolvedGraph;
   }
 
-  build(options = {}) {
+  buildQuery(options = {}) {
     return this.graph.resolve('main', _.pickBy(options));
+  }
+
+  buildCountQuery(options = {}) {
+    return this.graph.resolve('count', _.pickBy(options));
   }
 
   parseRows(rows) {
