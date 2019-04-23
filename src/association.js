@@ -1,7 +1,8 @@
 const _ = require('./utils');
 const debug = require('./debugger');
 
-const DEFAULT_ASSOCIATION_JOIN_TYPE = 'inner';
+const _const = require('./constants');
+const DEFAULT_ASSOCIATION_JOIN_TYPE = _const.DEFAULT_ASSOCIATION_JOIN_TYPE;
 
 // Associations contains the names from source, target 
 // and foreign tables and primary keys. The methods of this class are

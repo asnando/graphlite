@@ -1,9 +1,10 @@
 const _ = require('../utils');
 const debug = require('../debugger');
 
-const DEFAULT_OBJECT_TYPE = 'object';
-const DEFAULT_PAGE_DATA_LIMIT = 100;
-const DEFAULT_ROW_OBJECT_NAME = 'response';
+const _const = require('../constants');
+const DEFAULT_OBJECT_TYPE = _const.DEFAULT_OBJECT_TYPE;
+const DEFAULT_PAGE_DATA_LIMIT = _const.DEFAULT_PAGE_DATA_LIMIT;
+const DEFAULT_ROW_NAME = _const.DEFAULT_ROW_NAME;
 
 // The QueryNode represents the real value of a node
 // inside the graph of the defined query. It is responsible
@@ -112,7 +113,7 @@ class QueryNode {
   }
 
   getResponseObjectName() {
-    return !this.parentAssociation ? DEFAULT_ROW_OBJECT_NAME : '';
+    return !this.parentAssociation ? DEFAULT_ROW_NAME : '';
   }
 
   getRawFields() {

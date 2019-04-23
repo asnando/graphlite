@@ -3,12 +3,13 @@ const Schema = require('./schema');
 const Query = require('./query/query');
 const debug = require('./debugger');
 
-const DEFAULT_ROW_NAME = 'response';
-const DEFAULT_ROW_COUNT_NAME = 'count';
-const DEFAULT_OBJECT_RESPONSE_NAME = 'rows';
-const DEFAULT_COUNT_OBJECT_RESPONSE_NAME = 'total';
-const DEFAULT_CONNECTION_PROVIDER_QUERY_RUNNER_NAME = 'run';
-const DEFAULT_OPTIONS_PAGE = 1;
+const _const = require('./constants');
+const DEFAULT_ROW_NAME = _const.DEFAULT_ROW_NAME;
+const DEFAULT_ROW_COUNT_NAME = _const.DEFAULT_ROW_COUNT_NAME;
+const DEFAULT_OBJECT_RESPONSE_NAME = _const.DEFAULT_OBJECT_RESPONSE_NAME;
+const DEFAULT_COUNT_OBJECT_RESPONSE_NAME = _const.DEFAULT_COUNT_OBJECT_RESPONSE_NAME;
+const DEFAULT_CONNECTION_PROVIDER_QUERY_RUNNER_NAME = _const.DEFAULT_CONNECTION_PROVIDER_QUERY_RUNNER_NAME;
+const DEFAULT_OPTIONS_PAGE = _const.DEFAULT_OPTIONS_PAGE;
 
 class GraphLite {
 
