@@ -37,14 +37,18 @@ describe('GraphLite', () => {
           productmaker  = graphlite._schemaProvider('productmaker');
 
     product.hasOne(image, {
-      useSourceKey: 'ArquivoFotoProduto',
-      useTargetKey: 'ArquivoFoto'
+      type: 'left',
+      useSourceKey: 'ArquivoFotoProduto'
+      // useTargetKey: 'ArquivoFoto'
     });
 
-    product.hasOne(group);
+    product.hasOne(group, {
+      useSourceKey: 'CodigoGrupoProduto'
+    });
 
     product.hasMany(reference, {
-      useSourceKey: 'CodigoProduto'
+      type: 'left',
+      useTargetKey: 'CodigoProduto'
     });
     // reference.hasMany(productmaker);
 
@@ -67,7 +71,9 @@ describe('GraphLite', () => {
       using: ['vehicle']
     });
 
-    vehicle.hasOne(automaker);
+    vehicle.hasOne(automaker, {
+      useSourceKey: 'CodigoFabricante'
+    });
     automaker.belongsToMany(vehicle);
 
     done();

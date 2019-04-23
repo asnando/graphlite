@@ -144,44 +144,43 @@ class QueryNode {
       const useFK = !!association.foreignTable && !!association.foreignKey;
       const {
         sourceTable,
+        sourceKey,
         sourceHash,
         targetTable,
+        targetKey,
         targetHash,
         foreignTable,
         foreignKey,
+        useTargetKey,
+        useSourceKey,
+        associationType,
       } = association;
 
-      const targetKey = association.useTargetKey || association.targetKey;
-      const sourceKey = association.useSourceKey || association.sourceKey;
+      const lastNodeHash = /^belongs/.test(associationType) ? targetHash : sourceHash;
 
       if (parentUseGroup) {
         // When parent node have groupBy option defined in the query schema it
         // will use the json_each builtin SQLite function to resolve the relation
         // between this node ids and the previous grouped ids.
-        return `, json_each(${sourceHash}.id_${targetKey}) WHERE ${targetTable}.${targetKey}=json_each.value`;
+        // return `/* begin breakpoint #1 */, json_each(${sourceHash}.id_${targetKey}) WHERE ${targetTable}.${targetKey}=json_each.value /* end breakpoint #1 */`;
+        
+        return `/* begin breakpoint #1 */, json_each(${lastNodeHash}.id_${sourceKey}) WHERE ${sourceTable}.${sourceKey}=json_each.value /* end breakpoint #1 */`;
       } else if (!lastAssociation) {
         if (useFK) {
-          return `${joinType} JOIN ${foreignTable} ON ${foreignTable}.${foreignKey}=${sourceHash}.${foreignKey}
-            ${joinType} JOIN ${targetTable} ON ${targetTable}.${targetKey}=${foreignTable}.${targetKey}`;
+          return `/* begin breakpoint #2 */ ${joinType} JOIN ${foreignTable} ON ${foreignTable}.${foreignKey}=${sourceHash}.${foreignKey}
+            ${joinType} JOIN ${targetTable} ON ${targetTable}.${targetKey}=${foreignTable}.${targetKey} /* end breakpoint #2 */`;
         } else {
-          return `${joinType} JOIN ${targetTable} ON ${targetTable}.${targetKey}=${sourceHash}.${sourceKey}`;
+          return `/* begin breakpoint #3 */ ${joinType} JOIN ${targetTable} ON ${targetTable}.${useTargetKey || targetKey}=${sourceHash}.${useSourceKey || sourceKey} /* end breakpoint #3 */`;
         }
       } else {
         // When not first association from the array means that this association
         // represents the final relation between the list of tables. In that case,
         // use the 'where' clause to join the tables.
         if (useFK) {
-          return `/* missing #1 */ /* missing #1 */`;
+          return `/* begin breakpoint #4 (missing) */ /* end breakpoint #4 (missing) */`;
         } else {
-            // When association of type "belongs" then use the sourceHash (which
-            // represents the previous node data) instead of the root table name. It is
-            // used when there it does not have foreignKey at any point of this association too.
-          if (/^belongs/.test(association.associationType)) {
-            return `WHERE ${sourceTable}.${sourceKey}=${targetTable}.${sourceKey}`;
-          } else {
-            const sourceAlias = (self.length > 1) ? sourceTable : sourceHash ;
-            return `WHERE ${targetTable}.${targetKey}=${sourceAlias}.${targetKey}`;
-          }
+          const canUseLastNodeHash = !index;
+          return `/* begin breakpoint #5 */ WHERE ${targetTable}.${targetKey}=${canUseLastNodeHash ? lastNodeHash : sourceTable}.${useSourceKey || targetKey} /* end breakpoint #5 */`;
         }
       }
     }).join(' ');
@@ -220,11 +219,11 @@ class QueryNode {
       // Gererally in that cases the asssociation have already been rendered
       // by the parent/association that have the "has" association type.
       if (/^belongs/.test(associationType)) {
-        return ``;
+        return `/* begin breakpoint #8 (empty) */ /* end breakpoint #8 (empty) */`;
       } else if (!!foreignTable && !!foreignKey) {
-        return `${joinType} JOIN ${foreignTable} ON ${foreignTable}.${foreignKey}=${sourceTable}.${foreignKey} ${joinType} JOIN ${targetTable} ON ${targetTable}.${targetKey}=${foreignTable}.${targetKey}`;
+        return `/* begin breakpoint #6 */ ${joinType} JOIN ${foreignTable} ON ${foreignTable}.${foreignKey}=${sourceTable}.${foreignKey} ${joinType} JOIN ${targetTable} ON ${targetTable}.${targetKey}=${foreignTable}.${targetKey} /* end breakpoint #6 */`;
       } else {
-        return `${joinType} JOIN ${targetTable} ON ${targetTable}.${targetKey}=${sourceTable}.${sourceKey}`;
+        return `/* begin breakpoint #7 */ ${joinType} JOIN ${targetTable} ON ${targetTable}.${targetKey}=${sourceTable}.${sourceKey} /* end breakpoint #7 */`;
       }
     }).join(' ');
   }
