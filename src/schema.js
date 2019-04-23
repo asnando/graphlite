@@ -50,9 +50,7 @@ class Schema {
   _createAssociation(schema, options, associationType) {
     const h = /^has/.test(associationType);
     const b = /^belongs/.test(associationType);
-    // const source = h ? this : b ? this : schema;
     const source = h ? this : schema;
-    // const target = h ? schema : b ? schema : this;
     const target = h ? schema : this;
     const associationOptions = {
       schemaFrom:   this.name,

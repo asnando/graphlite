@@ -46,9 +46,9 @@ class QueryResponse {
 
         const propPath = path.concat('.').concat(propName);
 
-        return resolvers.length ? {
+        return !resolvers.length ? {} : {
           [propPath]: resolver.bind(this, resolvers)
-        } : {};
+        };
       }).forEach(prop => {
         shadow = _.xtend(shadow, prop);
       });
@@ -58,16 +58,16 @@ class QueryResponse {
   }
 
   parse(rows) {
-    return (!rows || !rows.length) ? [] : rows.map(row => {
-      // Call resolvers
-      _.keys(this.shadow).forEach(path => {
-        const resolver = this.shadow[path];
-        path = path.replace(/^\$\./, '');
-        const resolvedValue = resolver(_.get(row, path));
-        _.set(row, path, resolvedValue);
+    const shadow = this.shadow;
+    return rows.map(row => {
+      _.keys(shadow).forEach(shadowPath => {
+        const rawShadowPath = shadowPath.replace(/^\$\./, '');
+        const rowShadowPathValue = _.get(row, rawShadowPath);
+        if (_.isDef(rowShadowPathValue)) {
+          _.set(row, rawShadowPath, shadow[shadowPath](rowShadowPathValue));
+        }
       });
-      // Remove undefined or nullable values from row object.
-      return _.pickBy(row);
+      return row;
     });
   }
 
