@@ -39,7 +39,6 @@ describe('GraphLite', () => {
     product.hasOne(image, {
       type: 'left',
       useSourceKey: 'ArquivoFotoProduto'
-      // useTargetKey: 'ArquivoFoto'
     });
 
     product.hasOne(group, {
@@ -50,12 +49,7 @@ describe('GraphLite', () => {
       type: 'left',
       useTargetKey: 'CodigoProduto'
     });
-    // reference.hasMany(productmaker);
 
-    // TODO: TEST THIS!
-    // reference.belongsTo(product);
-
-    // productmaker.hasMany(reference);
     productmaker.belongsToMany(reference);
 
     product.hasMany(productmaker, {

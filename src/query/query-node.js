@@ -190,8 +190,6 @@ class QueryNode {
   // collection schema ids).
   getJoin() {
 
-    return '';
-
     let associations = this.parentAssociation;
 
     if (!associations) {
@@ -204,17 +202,18 @@ class QueryNode {
       const joinType = association.resolveJoinType();
       const {
         sourceTable,
+        sourceKey,
+        useSourceKey,
         sourceHash,
         targetTable,
+        targetKey,
+        useTargetKey,
         targetHash,
         foreignTable,
         foreignKey,
         associationType,
       } = association;
 
-      const targetKey = association.useTargetKey || association.targetKey;
-      const sourceKey = association.useSourceKey || association.sourceKey;
-      
       // Quick Fix: Ignore join when it is a belongs association.
       // Gererally in that cases the asssociation have already been rendered
       // by the parent/association that have the "has" association type.
@@ -223,7 +222,7 @@ class QueryNode {
       } else if (!!foreignTable && !!foreignKey) {
         return `/* begin breakpoint #6 */ ${joinType} JOIN ${foreignTable} ON ${foreignTable}.${foreignKey}=${sourceTable}.${foreignKey} ${joinType} JOIN ${targetTable} ON ${targetTable}.${targetKey}=${foreignTable}.${targetKey} /* end breakpoint #6 */`;
       } else {
-        return `/* begin breakpoint #7 */ ${joinType} JOIN ${targetTable} ON ${targetTable}.${targetKey}=${sourceTable}.${sourceKey} /* end breakpoint #7 */`;
+        return `/* begin breakpoint #7 */ ${joinType} JOIN ${targetTable} ON ${targetTable}.${useTargetKey || targetKey}=${sourceTable}.${useSourceKey || sourceKey} /* end breakpoint #7 */`;
       }
     }).join(' ');
   }

@@ -1,7 +1,7 @@
 module.exports = function(graphlite, schemas) {
   return graphlite.defineQuery('full-product', {
     product: {
-      // image: 1,
+      image: 1,
       group: 1,
       // code: {
       //   productmaker: {
