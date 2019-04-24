@@ -61,12 +61,12 @@ class QueryResolver {
           return (!/^\(/.test(node) && !/\)$/.test(node)) ? `(${node})` : node;
         });
         if (nodes.length > 1) {
-          return `json_patch(${nodes.join(',')})`;
+          return `/* begin json_patch #3 */ json_patch(${nodes.join(',')}) /* end json_patch #3 */`;
         } else {
           return nodes[0];
         }
       });
-      resolvedNodes = (resolvedNodes.length > 1) ? `json_patch(${resolvedNodes})` : resolvedNodes[0];
+      resolvedNodes = (resolvedNodes.length > 1) ? `/* begin json_patch #4 */ json_patch(${resolvedNodes}) /* end json_patch #4 */` : resolvedNodes[0];
     }
       
     return resolvedNodes;

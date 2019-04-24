@@ -105,10 +105,11 @@ class GraphLite {
     // Execute query list sync then return.
     return tasks.reduce((promise, task) => {
       return promise = promise.then(task);
-    }, Promise.resolve()).then(data => {
+    }, Promise.resolve())
+    .then(data => {
       // Manual add 'count' property within the data rows length;
       return _.xtend(data, {
-        [DEFAULT_COUNT_OBJECT_RESPONSE_NAME]: data.rows.length
+        [DEFAULT_COUNT_OBJECT_RESPONSE_NAME]: data[DEFAULT_OBJECT_RESPONSE_NAME].length
       });
     });
   }

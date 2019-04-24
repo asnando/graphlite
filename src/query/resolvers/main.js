@@ -5,16 +5,34 @@ module.exports = function graphNodeResolver(node, options = {}, nextNodes, custo
 
   const objectType = node.getObjectType();
 
-  const struct = objectType === 'object'
-    ? `select json_patch(json_object($fields_as_json), ($next_nodes)) $object_name from (select $raw_fields $grouped_ids $source $show_options $options) $table_alias`
-    : `(select json_object($node_name, (select json_group_array(json_patch(json_object($fields_as_json), ($next_nodes))) from (select $raw_fields $grouped_ids $source $show_options $options) $table_alias)))`;
-
   let nodeOptions = node.getOptions(options, ['group', 'order', 'limit', 'offset']);
 
   // Fix: Root schema can not have "limit" nor "offset" options (this options)
   // are filtered inside the specific where clauses condition outside this node.
   if (!node.parentAssociation) {
-    nodeOptions = nodeOptions.replace(/LIMIT\s\d+/, '').replace(/OFFSET\s\d+/, '');
+    nodeOptions = nodeOptions
+      .replace(/LIMIT\s\d+/, '')
+      .replace(/OFFSET\s\d+/, '');
+  }
+
+  const resolvedNextNodes = nextNodes(options);
+
+  let struct;
+
+  // Remove unecessary json patches. This approach is used when the next nodes
+  // string contains an empty object string eg: 'json_object()'.
+  if (/object/.test(objectType)) {
+    if (/^json_object\(\)$/.test(resolvedNextNodes)) {
+      struct = `select json_object($fields_as_json) $object_name $grouped_ids $source $show_options $options`;
+    } else {
+      struct = `select /* begin json_patch #1 */ json_patch(json_object($fields_as_json), ($next_nodes)) /* end json_patch #1 */ $object_name from (select $raw_fields $grouped_ids $source $show_options $options) $table_alias`;
+    }
+  } else {
+    if (/^json_object\(\)$/.test(resolvedNextNodes)) {
+      struct = `(select json_object($node_name, (select json_group_array(json_object($fields_as_json)) from (select $raw_fields $grouped_ids $source $show_options $options) $table_alias)))`;
+    } else {
+      struct = `(select json_object($node_name, (select json_group_array(/* begin json_patch #2 */json_patch(json_object($fields_as_json), ($next_nodes))/* end json_patch #2 */) from (select $raw_fields $grouped_ids $source $show_options $options) $table_alias)))`;
+    }
   }
 
   let query = struct
@@ -25,7 +43,7 @@ module.exports = function graphNodeResolver(node, options = {}, nextNodes, custo
       .replace(/\$fields_as_json/,  node.getFieldsAsJson())
       .replace(/\$object_name/,     node.getResponseObjectName())
       .replace(/\$node_name/,       node.getAssociationName())
-      .replace(/\$next_nodes/,      nextNodes(options))
+      .replace(/\$next_nodes/,      resolvedNextNodes)
       .replace(/\$show_options/,    node.getShowOptions(options))
       .replace(/\$options/,         nodeOptions)
 

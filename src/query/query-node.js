@@ -38,10 +38,6 @@ class QueryNode {
       staticOptions: opts.staticOptions,
       nodeOptions: _.defaults(opts.shows, {}),
     });
-    // // Fix:
-    // if (!this.parentAssociation) {
-    //   this.staticOptions.size = DEFAULT_PAGE_DATA_LIMIT;
-    // }
   }
 
   // Merge the options array defined in the query graph and
@@ -123,6 +119,13 @@ class QueryNode {
   }
 
   getSource(parentUseGroup) {
+    // When association is defined and it have size equals to one, it should
+    // ignore the table name. This step support the directly 'join(s)' over the nested
+    // nodes of the query.
+    const association = this.parentAssociation;
+    if (association && !parentUseGroup && (_.isObject(association) || association.length === 1)) {
+      return `FROM ${this.getAssociation(parentUseGroup)}`;
+    } 
     return `FROM ${this.getTableName()} ${this.getAssociation(parentUseGroup)}`;
   }
 
@@ -158,12 +161,14 @@ class QueryNode {
 
       const lastNodeHash = /^belongs/.test(associationType) ? targetHash : sourceHash;
 
-      if (parentUseGroup) {
+      // Update: Nested associations with size equals to one are now joinned within the respective
+      // tables directly(without using the 'where' clause);
+      if (self.length === 1 && !parentUseGroup) {
+        return `/* begin breakpoint #8 */ (SELECT ${sourceHash}.${useSourceKey || sourceKey}) AS ${sourceHash} ${joinType} JOIN ${targetTable} ${targetHash} ON ${targetHash}.${useTargetKey || targetKey}=${sourceHash}.${useSourceKey || sourceKey} /* end breakpoint #8 */`;
+      } else if (parentUseGroup) {
         // When parent node have groupBy option defined in the query schema it
         // will use the json_each builtin SQLite function to resolve the relation
         // between this node ids and the previous grouped ids.
-        // return `/* begin breakpoint #1 */, json_each(${sourceHash}.id_${targetKey}) WHERE ${targetTable}.${targetKey}=json_each.value /* end breakpoint #1 */`;
-        
         return `/* begin breakpoint #1 */, json_each(${lastNodeHash}.id_${sourceKey}) WHERE ${sourceTable}.${sourceKey}=json_each.value /* end breakpoint #1 */`;
       } else if (!lastAssociation) {
         if (useFK) {
