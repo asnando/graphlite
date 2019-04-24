@@ -4,12 +4,16 @@ const Query = require('./query/query');
 const debug = require('./debugger');
 
 const _const = require('./constants');
-const DEFAULT_ROW_NAME = _const.DEFAULT_ROW_NAME;
-const DEFAULT_ROW_COUNT_NAME = _const.DEFAULT_ROW_COUNT_NAME;
-const DEFAULT_OBJECT_RESPONSE_NAME = _const.DEFAULT_OBJECT_RESPONSE_NAME;
-const DEFAULT_COUNT_OBJECT_RESPONSE_NAME = _const.DEFAULT_COUNT_OBJECT_RESPONSE_NAME;
-const DEFAULT_CONNECTION_PROVIDER_QUERY_RUNNER_NAME = _const.DEFAULT_CONNECTION_PROVIDER_QUERY_RUNNER_NAME;
-const DEFAULT_OPTIONS_PAGE = _const.DEFAULT_OPTIONS_PAGE;
+
+const {
+  DEFAULT_ROW_NAME,
+  DEFAULT_ROW_COUNT_NAME,
+  DEFAULT_OBJECT_RESPONSE_NAME,
+  DEFAULT_COUNT_OBJECT_RESPONSE_NAME,
+  DEFAULT_TOTAL_COUNT_OBJECT_RESPONSE_NAME,
+  DEFAULT_CONNECTION_PROVIDER_QUERY_RUNNER_NAME,
+  DEFAULT_OPTIONS_PAGE,
+} = _const;
 
 class GraphLite {
 
@@ -89,7 +93,7 @@ class GraphLite {
       const buildedCountQuery = query.buildCountQuery(options);
       return this._executeQueryOnDatabase(buildedCountQuery)
         .then(rows => this._parseRowsFromDatabase(rows, DEFAULT_ROW_COUNT_NAME))
-        .then(rows => this._translateRowsToObject(rows, DEFAULT_COUNT_OBJECT_RESPONSE_NAME))
+        .then(rows => this._translateRowsToObject(rows, DEFAULT_TOTAL_COUNT_OBJECT_RESPONSE_NAME))
         .then(rows => _.xtend(rows, data));
     }
 
@@ -101,7 +105,12 @@ class GraphLite {
     // Execute query list sync then return.
     return tasks.reduce((promise, task) => {
       return promise = promise.then(task);
-    }, Promise.resolve());
+    }, Promise.resolve()).then(data => {
+      // Manual add 'count' property within the data rows length;
+      return _.xtend(data, {
+        [DEFAULT_COUNT_OBJECT_RESPONSE_NAME]: data.rows.length
+      });
+    });
   }
 
   // ## Public methods

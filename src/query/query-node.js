@@ -2,9 +2,11 @@ const _ = require('../utils');
 const debug = require('../debugger');
 
 const _const = require('../constants');
-const DEFAULT_OBJECT_TYPE = _const.DEFAULT_OBJECT_TYPE;
-const DEFAULT_PAGE_DATA_LIMIT = _const.DEFAULT_PAGE_DATA_LIMIT;
-const DEFAULT_ROW_NAME = _const.DEFAULT_ROW_NAME;
+const {
+  DEFAULT_OBJECT_TYPE,
+  DEFAULT_PAGE_DATA_LIMIT,
+  DEFAULT_ROW_NAME,
+} = _const;
 
 // The QueryNode represents the real value of a node
 // inside the graph of the defined query. It is responsible
