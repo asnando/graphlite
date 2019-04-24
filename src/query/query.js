@@ -4,11 +4,11 @@ const Graph = require('../graph/graph');
 const QueryNode = require('./query-node');
 const QueryResponse = require('./query-response');
 
-const graphNodeResolver             = require('./resolvers/main');
-const graphNodeOptionsResolver      = require('./resolvers/options');
-const graphNodeGroupIdsResolver     = require('./resolvers/groupId');
-const graphRootNodeOptionsResolver  = require('./resolvers/filterId');
-const graphCountResolver            = require('./resolvers/count');
+const SQLitegraphNodeResolver            = require('./resolvers/sqlite/main');
+const SQLitegraphNodeOptionsResolver     = require('./resolvers/sqlite/options');
+const SQLitegraphNodeGroupIdsResolver    = require('./resolvers/sqlite/groupId');
+const SQLitegraphRootNodeOptionsResolver = require('./resolvers/sqlite/filterId');
+const SQLitegraphCountResolver           = require('./resolvers/sqlite/count');
 
 class Query {
 
@@ -115,17 +115,17 @@ class Query {
       // Add some defined resolvers to this graph node.
       // The "main" resolver will resolves the SQL select using the
       // json1 extension and it respectives source and joined tables.
-      nodeGraph.createResolver('main', graphNodeResolver, true);
+      nodeGraph.createResolver('main', SQLitegraphNodeResolver, true);
       // The "filterId" resolver will resolve the general where clause which
       // is responsible in getting the distinct ids of the root collection which
       // will be used as filter to the query.
-      nodeGraph.createResolver('filterId', graphRootNodeOptionsResolver, false, '');
+      nodeGraph.createResolver('filterId', SQLitegraphRootNodeOptionsResolver, false, '');
       // #
-      nodeGraph.createResolver('options', graphNodeOptionsResolver);
+      nodeGraph.createResolver('options', SQLitegraphNodeOptionsResolver);
       // #
-      nodeGraph.createResolver('groupId', graphNodeGroupIdsResolver);
+      nodeGraph.createResolver('groupId', SQLitegraphNodeGroupIdsResolver);
       // # count
-      nodeGraph.createResolver('count', graphCountResolver);
+      nodeGraph.createResolver('count', SQLitegraphCountResolver);
 
       // "jtree" function accepts a returned object that will be defined
       // to the next walk node. In some cases these options are used to

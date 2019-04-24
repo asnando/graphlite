@@ -1,5 +1,5 @@
-const _ = require('../../utils');
-const debug = require('../../debugger');
+const _ = require('../../../utils');
+const debug = require('../../../debugger');
 
 // Render the part of the query where the ids of the root schema will be fetch.
 module.exports = function graphRootNodeOptionsResolver(node, options, nextNodes, customResolver) {

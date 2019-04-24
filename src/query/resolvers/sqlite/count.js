@@ -1,5 +1,5 @@
-const _ = require('../../utils');
-const debug = require('../../debugger');
+const _ = require('../../../utils');
+const debug = require('../../../debugger');
 
 module.exports = function graphCountResolver(node, options, nextNodes, customResolver) {
   let query = ``;
