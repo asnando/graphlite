@@ -82,7 +82,7 @@ describe('GraphLite', () => {
   describe('findOne()', () => {
     // #4
     it('should fetch one product', done => {
-      graphlite.findAll('full-product', { }, { withCount: true })
+      graphlite.findOne('full-product', { }, { withCount: true })
         .then(logresponse.bind(null, done))
         .catch(logerror.bind(null, done));
     });
