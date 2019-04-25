@@ -15,15 +15,25 @@ const {
   DEFAULT_OPTIONS_PAGE,
 } = _const;
 
+const defaultProps = {
+  _connection: null,
+  _schemas: [],
+  _queries: [],
+  _options: {}
+};
+
 class GraphLite {
 
   constructor(opts) {
-    _.xtend(this, {
-      _connection: opts.connection,
-      _schema: _.defaults(opts.schema, [], (schemas) => {
+    // Create initial state of options.
+    Object.assign(this, defaultProps);
+
+    Object.assign(this, {
+      _connection: _.defaults(opts.connection, this._connection),
+      _schemas: _.defaults(opts.schemas, this._schemas, (schemas) => {
         return schemas.map(schema => this.defineSchema(schema));
       }),
-      _queries: _.defaults(opts.queries, [], (queries) => {
+      _queries: _.defaults(opts.queries, this._queries, (queries) => {
         return queries.map(query => this.defineQuery(query));
       }),
       _options: {},
@@ -31,7 +41,7 @@ class GraphLite {
   }
 
   _schemaProvider(schemaName) {
-    return this._schema.find(schema => schema.name === schemaName);
+    return this._schemas.find(schema => schema.name === schemaName);
   }
 
   // Extra options(b) represents the second object received by the find
@@ -129,7 +139,7 @@ class GraphLite {
     opts = _.isObject(name) ? name : opts;
     name = _.isObject(name) ? name.name : name;
     const schema = new Schema(name, opts, schemaProvider);
-    this._schema.push(schema);
+    this._schemas.push(schema);
     return schema;
   }
 
@@ -137,6 +147,12 @@ class GraphLite {
     const schemaProvider = this._schemaProvider.bind(this);
     graph = _.isObject(name) ? name : graph;
     name = _.isObject(name) ? name.name : name;
+    
+    // Delete the name property of the graph. The query graph will
+    // interpret that property as a alias for one of defined schemas instead
+    // of a configuration property.
+    delete graph.name;
+
     const query = new Query(name, graph, schemaProvider);
     this._queries.push(query);
     return query;
