@@ -92,47 +92,49 @@ class GraphLite {
   }
 
   _executeQueryWithOptions(queryName, options = {}) {
-    // Resolve query schema from the list.
-    const query = this.getQueryByName(queryName);
+    return new Promise((resolve, reject) => {
+      // Resolve query schema from the list.
+      const query = this.getQueryByName(queryName);
 
-    // Check if query really exists.
-    if (!query) throw new Error(`Undefined ${queryName} query!`);
+      // Check if query really exists.
+      if (!query) return reject(`Undefined ${queryName} query!`);
 
-    // Must build and run a specific query for total count?
-    const withCount = (_.isBoolean(options.count) && !options.count) ? false : (options.page === 1) ? true : false;
+      // Must build and run a specific query for total count?
+      const withCount = (_.isBoolean(options.count) && !options.count) ? false : (options.page === 1) ? true : false;
 
-    // #
-    const buildAndRunQuery = () => {
-      const buildedQuery = query.buildQuery(options);
-      return this._executeQueryOnDatabase(buildedQuery)
-        .then(rows => this._parseRowsFromDatabase(rows, DEFAULT_ROW_NAME))
-        .then(rows => query.parseRows(rows))
-        .then(rows => this._translateRowsToObject(rows, DEFAULT_OBJECT_RESPONSE_NAME));
-    }
+      // #
+      const buildAndRunQuery = () => {
+        const buildedQuery = query.buildQuery(options);
+        return this._executeQueryOnDatabase(buildedQuery)
+          .then(rows => this._parseRowsFromDatabase(rows, DEFAULT_ROW_NAME))
+          .then(rows => query.parseRows(rows))
+          .then(rows => this._translateRowsToObject(rows, DEFAULT_OBJECT_RESPONSE_NAME));
+      }
 
-    // #
-    const buildAndRunCountQuery = (data) => {
-      const buildedCountQuery = query.buildCountQuery(options);
-      return this._executeQueryOnDatabase(buildedCountQuery)
-        .then(rows => this._parseRowsFromDatabase(rows, DEFAULT_ROW_COUNT_NAME))
-        .then(rows => this._translateRowsToObject(rows, DEFAULT_TOTAL_COUNT_OBJECT_RESPONSE_NAME))
-        .then(rows => _.xtend(rows, data));
-    }
+      // #
+      const buildAndRunCountQuery = (data) => {
+        const buildedCountQuery = query.buildCountQuery(options);
+        return this._executeQueryOnDatabase(buildedCountQuery)
+          .then(rows => this._parseRowsFromDatabase(rows, DEFAULT_ROW_COUNT_NAME))
+          .then(rows => this._translateRowsToObject(rows, DEFAULT_TOTAL_COUNT_OBJECT_RESPONSE_NAME))
+          .then(rows => _.xtend(rows, data));
+      }
 
-    const tasks = [
-      buildAndRunQuery,
-      withCount ? buildAndRunCountQuery : null
-    ];
+      const tasks = [
+        buildAndRunQuery,
+        withCount ? buildAndRunCountQuery : null
+      ];
 
-    // Execute query list sync then return.
-    return tasks.reduce((promise, task) => {
-      return promise = promise.then(task);
-    }, Promise.resolve())
-    .then(data => {
-      // Manual add 'count' property within the data rows length;
-      return _.xtend(data, {
-        [DEFAULT_COUNT_OBJECT_RESPONSE_NAME]: data[DEFAULT_OBJECT_RESPONSE_NAME].length
-      });
+      // Execute query list sync then return.
+      return tasks.reduce((promise, task) => {
+        return promise = promise.then(task);
+      }, Promise.resolve())
+      .then(data => {
+        // Manual add 'count' property within the data rows length;
+        return _.xtend(data, {
+          [DEFAULT_COUNT_OBJECT_RESPONSE_NAME]: data[DEFAULT_OBJECT_RESPONSE_NAME].length
+        });
+      }).then(data => resolve(data));
     });
   }
 
