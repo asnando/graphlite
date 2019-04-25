@@ -28,15 +28,27 @@ class GraphLite {
     // Create initial state of options.
     Object.assign(this, defaultProps);
 
-    Object.assign(this, {
-      _connection: _.defaults(opts.connection, this._connection),
-      _schemas: _.defaults(opts.schemas, this._schemas, (schemas) => {
-        return schemas.map(schema => this.defineSchema(schema));
-      }),
-      _queries: _.defaults(opts.queries, this._queries, (queries) => {
-        return queries.map(query => this.defineQuery(query));
-      }),
-      _options: {},
+    this._connection = _.defaults(opts.connection, this._connection);
+
+    this._schemas = _.defaults(opts.schemas, this._schemas, (schemas) => {
+      return schemas.map(schema => this.defineSchema(schema));
+    });
+
+    // If property 'associations' refers to a function, transform
+    // the array of schemas into a object and pass it down to that function.
+    // The function is responsible to make all the associations using the schemas
+    // respective methods.
+    if (_.isFunction(opts.associations)) {
+      function translateSchemasToObjectList(schemas) {
+        const object = {};
+        schemas.forEach(schema => object[schema.name] = schema);
+        return object;
+      }
+      opts.associations(translateSchemasToObjectList(this._schemas));
+    }
+
+    this._queries = _.defaults(opts.queries, this._queries, (queries) => {
+      return queries.map(query => this.defineQuery(query));
     });
   }
 
