@@ -66,7 +66,7 @@ class GraphLite {
     }));
   }
 
-  _getQueryByName(queryName) {
+  getQueryByName(queryName) {
     return this._queries.find(query => query.name === queryName);
   }
 
@@ -93,7 +93,7 @@ class GraphLite {
 
   _executeQueryWithOptions(queryName, options = {}) {
     // Resolve query schema from the list.
-    const query = this._getQueryByName(queryName);
+    const query = this.getQueryByName(queryName);
 
     // Check if query really exists.
     if (!query) throw new Error(`Undefined ${queryName} query!`);
