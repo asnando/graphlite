@@ -16,10 +16,10 @@ const {
 } = _const;
 
 const defaultProps = {
-  _connection: null,
-  _schemas: [],
-  _queries: [],
-  _options: {}
+  connection: null,
+  schemas: [],
+  queries: [],
+  options: {}
 };
 
 class GraphLite {
@@ -28,9 +28,9 @@ class GraphLite {
     // Create initial state of options.
     Object.assign(this, defaultProps);
 
-    this._connection = _.defaults(opts.connection, this._connection);
+    this.connection = _.defaults(opts.connection, this.connection);
 
-    this._schemas = _.defaults(opts.schemas, this._schemas, (schemas) => {
+    this.schemas = _.defaults(opts.schemas, this.schemas, (schemas) => {
       return schemas.map(schema => this.defineSchema(schema));
     });
 
@@ -44,16 +44,16 @@ class GraphLite {
         schemas.forEach(schema => object[schema.name] = schema);
         return object;
       }
-      opts.associations(translateSchemasToObjectList(this._schemas));
+      opts.associations(translateSchemasToObjectList(this.schemas));
     }
 
-    this._queries = _.defaults(opts.queries, this._queries, (queries) => {
+    this.queries = _.defaults(opts.queries, this.queries, (queries) => {
       return queries.map(query => this.defineQuery(query));
     });
   }
 
   _schemaProvider(schemaName) {
-    return this._schemas.find(schema => schema.name === schemaName);
+    return this.schemas.find(schema => schema.name === schemaName);
   }
 
   // Extra options(b) represents the second object received by the find
@@ -67,17 +67,17 @@ class GraphLite {
   }
 
   getQueryByName(queryName) {
-    return this._queries.find(query => query.name === queryName);
+    return this.queries.find(query => query.name === queryName);
   }
 
   _executeQueryOnDatabase(query) {
     const connectionProviderQueryRunnerName = DEFAULT_CONNECTION_PROVIDER_QUERY_RUNNER_NAME;
-    if (!this._connection) {
+    if (!this.connection) {
       throw new Error(`There is no database connection to run the query!`);
-    } else if (!_.isFunction(this._connection[connectionProviderQueryRunnerName])) {
+    } else if (!_.isFunction(this.connection[connectionProviderQueryRunnerName])) {
       throw new Error(`Unknown "${connectionProviderQueryRunnerName}" method on the connection provider instance!`);
     }
-    return this._connection[connectionProviderQueryRunnerName](query);
+    return this.connection[connectionProviderQueryRunnerName](query);
   }
 
   _parseRowsFromDatabase(rows, rowObjectName) {
@@ -120,6 +120,15 @@ class GraphLite {
           .then(rows => _.xtend(rows, data));
       }
 
+      const resolveResponseObject = (data) => {
+        // Manual add 'count' property within the data rows length;
+        return {
+          [DEFAULT_TOTAL_COUNT_OBJECT_RESPONSE_NAME]: data[DEFAULT_TOTAL_COUNT_OBJECT_RESPONSE_NAME],
+          [DEFAULT_COUNT_OBJECT_RESPONSE_NAME]: data[DEFAULT_OBJECT_RESPONSE_NAME].length,
+          [DEFAULT_OBJECT_RESPONSE_NAME]: data[DEFAULT_OBJECT_RESPONSE_NAME],
+        };
+      }
+
       const tasks = [
         buildAndRunQuery,
         withCount ? buildAndRunCountQuery : null
@@ -129,12 +138,8 @@ class GraphLite {
       return tasks.reduce((promise, task) => {
         return promise = promise.then(task);
       }, Promise.resolve())
-      .then(data => {
-        // Manual add 'count' property within the data rows length;
-        return _.xtend(data, {
-          [DEFAULT_COUNT_OBJECT_RESPONSE_NAME]: data[DEFAULT_OBJECT_RESPONSE_NAME].length
-        });
-      }).then(data => resolve(data));
+        .then(resolveResponseObject)
+        .then(data => resolve(data));
     });
   }
 
@@ -153,7 +158,7 @@ class GraphLite {
     opts = _.isObject(name) ? name : opts;
     name = _.isObject(name) ? name.name : name;
     const schema = new Schema(name, opts, schemaProvider);
-    this._schemas.push(schema);
+    this.schemas.push(schema);
     return schema;
   }
 
@@ -168,7 +173,7 @@ class GraphLite {
     delete graph.name;
 
     const query = new Query(name, graph, schemaProvider);
-    this._queries.push(query);
+    this.queries.push(query);
     return query;
   }
 
