@@ -71,13 +71,15 @@ class GraphLite {
   }
 
   _executeQueryOnDatabase(query) {
-    const connectionProviderQueryRunnerName = DEFAULT_CONNECTION_PROVIDER_QUERY_RUNNER_NAME;
-    if (!this.connection) {
-      throw new Error(`There is no database connection to run the query!`);
-    } else if (!_.isFunction(this.connection[connectionProviderQueryRunnerName])) {
-      throw new Error(`Unknown "${connectionProviderQueryRunnerName}" method on the connection provider instance!`);
-    }
-    return this.connection[connectionProviderQueryRunnerName](query);
+    return new Promise((resolve, reject) => {
+      const connectionProviderQueryRunnerName = DEFAULT_CONNECTION_PROVIDER_QUERY_RUNNER_NAME;
+      if (!this.connection) {
+        return reject(`There is no database connection to run the query!`);
+      } else if (!_.isFunction(this.connection[connectionProviderQueryRunnerName])) {
+        return reject(`Unknown "${connectionProviderQueryRunnerName}" method on the connection provider instance!`);
+      }
+      return this.connection[connectionProviderQueryRunnerName](query).then(resolve).catch(reject);
+    })
   }
 
   _parseRowsFromDatabase(rows, rowObjectName) {
@@ -139,7 +141,8 @@ class GraphLite {
         return promise = promise.then(task);
       }, Promise.resolve())
         .then(resolveResponseObject)
-        .then(data => resolve(data));
+        .then(data => resolve(data))
+        .catch(reject);
     });
   }
 
