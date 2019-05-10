@@ -227,7 +227,6 @@ class QueryNode {
       // by the parent/association that have the "has" association type.
       if (!hasConditionClauses || /^left/i.test(joinType) || /^belongs/.test(associationType)) {
         return ``;
-        // return `/* begin breakpoint #8 (empty) */ /* end breakpoint #8 (empty) */`;
       } else if (!!foreignTable && !!foreignKey) {
         return `/* begin breakpoint #6 */ ${joinType} JOIN ${foreignTable} ON ${foreignTable}.${foreignKey}=${sourceTable}.${foreignKey} ${joinType} JOIN ${targetTable} ON ${targetTable}.${targetKey}=${foreignTable}.${targetKey} /* end breakpoint #6 */`;
       } else {

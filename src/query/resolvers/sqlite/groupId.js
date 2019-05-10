@@ -3,7 +3,7 @@ const debug = require('../../../debugger');
 
 // This resolver will add the json_group_array property into the query select area. The
 // grouped ids can be used by the next nested nodes when its parent data is grouped.
-module.exports = function graphNodeGroupIdsResolver(node, options, nextNodes, customResolver) {
+module.exports = function graphNodeGroupIdsResolver(node, options, nextNodes, customResolver, parentNode) {
 
   if (!node.parentAssociation || !node.haveGroupByOption()) return '';
 
@@ -12,6 +12,12 @@ module.exports = function graphNodeGroupIdsResolver(node, options, nextNodes, cu
   // association format. In that cases remove the duplication(s).
   .filter((association, index, self) => {
     return index === self.findIndex(b => (association.targetTable === b.targetTable) && (association.targetKey === b.targetKey));
+  })
+  // Fix: Associations tha "belongs" to the parent can`t have
+  // the association group ids declared (as it will refers to the ids from parent
+  // and not the one which were grouped in the previous node).
+  .filter((association) => {
+    return !/^belongs/.test(association.associationType);
   })
   .map(association => {
     return `, json_group_array(${association.targetTable}.${association.targetKey}) AS id_${association.targetKey}`;

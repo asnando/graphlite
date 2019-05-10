@@ -1,11 +1,13 @@
 const _ = require('../../../utils');
 const debug = require('../../../debugger');
 
-// Render the part of the query where the ids of the root schema will be fetch.
+// Render the part of the query where the ids of the root schema will be fetched.
 module.exports = function graphRootNodeOptionsResolver(node, options, nextNodes, customResolver) {
   const nextNodeQuery   = nextNodes().replace(/json_object\(\)/g, '');
   let conditionClauses  = customResolver('options', options).replace(/json_object\(\)/g, '');
   const resolvedOptions = node.getOptions(options, [ 'group', 'order', 'limit', 'offset' ]);
+  
+  // If condition string exists and is not a null string.
   const hasCondition = !!conditionClauses && !/^\s{0,}$/.test(conditionClauses);
 
   // Quick fix: Remove duplicated 'where' keyword(s).
