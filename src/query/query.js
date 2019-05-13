@@ -41,7 +41,7 @@ class Query {
       if (/^\$$/.test(path) ||
         (/(?<=\.(where|shows)\.)\w+$/.test(path)) ||
         (/(?<=\.options)/.test(path)) ||
-        (/(using|throught|shows|options|alias|properties|\d|where|groupBy|size|page|orderBy|type)$/.test(path))
+        (/(as|using|throught|shows|options|alias|properties|\d|where|groupBy|size|page|orderBy|type)$/.test(path))
       ) return;
 
       const schemaName = node.alias || resolveSchemaName(path);
@@ -105,6 +105,7 @@ class Query {
         properties: node.properties,
         schemaProperties: schema.properties,
         primaryKey: schema.primaryKey,
+        showAs: node.as,
         // Filters to use in order to display certain rows.
         shows: displayOptions,
         // Represents the filter(s) object definition.

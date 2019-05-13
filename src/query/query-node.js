@@ -27,6 +27,8 @@ class QueryNode {
       ),
       tableName: opts.tableName,
       primaryKey: opts.primaryKey,
+      // Alias name to use on nested objects when type array.
+      showAs: opts.showAs,
       parentAssociation: opts.parentAssociation,
       // Defined options refers to the "where conditions"
       // definition of the query. It will be a object within
@@ -403,7 +405,8 @@ class QueryNode {
   }
 
   getAssociationName() {
-    return _.quote(this.name);
+    const name = this.showAs || this.name;
+    return _.quote(name);
   }
 
   getDistinctPrimaryKey() {
