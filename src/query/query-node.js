@@ -18,7 +18,7 @@ class QueryNode {
       name: opts.name,
       alias: opts.alias,
       hash: opts.hash,
-      properties: opts.properties,
+      // properties: opts.properties,
       schemaProperties: _.defaults(opts.schemaProperties, []),
       // Merged options array.
       definedProperties: this._resolvePropertiesDefinition(
@@ -32,11 +32,21 @@ class QueryNode {
       // definition of the query. It will be a object within
       // the property name to filter and the respective key name
       // that will be received by the find methods.
-      definedOptions: _.defaults(opts.options, {}),
+      definedOptions: _.defaults(opts.definedOptions, {}),
+      // Represents raw SQL queries to use as filters (declared as array).
+      rawOptions: _.defaults(opts.rawOptions, []),
       // Static values defined for [size, orderBy, groupBy, page]
       // inside the query graph.
-      staticOptions: opts.staticOptions,
-      nodeOptions: _.defaults(opts.shows, {}),
+      staticOptions: {
+        page: opts.staticOptions.page,
+        size: opts.staticOptions.size,
+        orderBy: opts.staticOptions.orderBy,
+        groupBy: opts.staticOptions.groupBy,
+      },
+      // Object containing the filter(s) that tells which rows
+      // must be displayed or not. For example, when you want to
+      // not display the products having some type of column value.
+      displayOptions: _.defaults(opts.shows, {}),
     });
   }
 
@@ -236,144 +246,150 @@ class QueryNode {
   }
 
   getShowOptions(options) {
-    options = this.resolveOptionsWithValues(this.nodeOptions, options);
+    options = this.resolveFilterClauses(this.displayOptions, options);
     return !options.length ? '' : `AND ${options.join(' AND ')}`;
   }
 
+  // options represents the options values object that
+  // will render the 'where' clauses of the query.
+  // rendersOnly will restrict which type of conditions strings
+  // must be returned by this function.
   getOptions(options = {}, rendersOnly = []) {
 
     const self = this;
+    const { staticOptions, rawOptions, definedOptions } = this;
+    const optionsValues = _.copy(options);
+    const hasAssociation = !!this.parentAssociation;
+    const tableName = this.tableName;
 
-    const resolvedOptions = this.resolveOptionsWithValues(this.definedOptions, options);
-
-    function resolveWhere(options) {
-      return (options && options.length)
-        ? ' WHERE '.concat(options.join(' AND '))
-        : '';
+    if (rendersOnly.length) {
+      // Fix: Translate some render keys to a new name schema.
+      rendersOnly = rendersOnly.map(t => {
+        switch (t) {
+          case 'order':
+            return 'orderBy';
+          case 'group':
+            return 'groupBy';
+          default:
+            return t;
+        };
+      });
     }
 
-    function resolveOffset(page, size) {
-      return (!self.parentAssociation && page && size) ? ' OFFSET '.concat(((page - 1) * size)) : '';
+    const whereResolver = (def, values, raw) => {
+      return self.resolveFilterClauses(def, values, raw);
     }
 
-    function resolveGroupBy(gp) {
-      if (!gp || !gp.length) return '';
-      return ' GROUP BY ' + gp.map(propName => {
-        const prop = self.getSchemaPropertyConfig(propName);
-        if (!prop) {
-          throw new Error(`Undefined "${propName}" property configuration on "${self.name}" schema for grouping.`);
-        }
+    const limitResolver = (size) => {
+      return hasAssociation ? `` : `LIMIT ${size}`;
+    }
+
+    const offsetResolver = (page, pageSize) => {
+      return (!hasAssociation && page && pageSize)
+        ? `OFFSET ${((page - 1) * pageSize)}` : ``;
+    }
+
+    const groupByResolver = (g = []) => {
+      return !g.length ? `` : `GROUP BY ` + g.map(propName => {
+        return self.getSchemaPropertyConfig(propName);
+      }).map(prop => {
         return prop.alias || prop.name;
-      }).map(prop => self.getTableName().concat('.').concat(prop));
+      }).map(propName => {
+        return `${tableName}.${propName}`;
+      }).join(`,`);
     }
 
-    function resolveOrderBy(order) {
-      if (!order || !order.length) return '';
-      return ' ORDER BY ' + order.map(propName => {
-        const prop = self.getSchemaPropertyConfig(propName);
-        if (!prop) {
-          throw new Error(`Undefined "${propName}" property configuration on "${self.name}" schema for ordering.`);
-        }
+    const orderByResolver = (o = []) => {
+      return !o.length ? `` : `ORDER BY ` + o.map(propName => {
+        return self.getSchemaPropertyConfig(propName);
+      }).map(prop => {
         return prop.alias || prop.name;
-      }).map(prop => self.getTableName().concat('.').concat(prop));
+      }).map(propName => {
+        return `${tableName}.${propName}`;
+      }).join(`,`);
     }
 
-    function resolveLimit(size) {
-      const staticSize = self.staticOptions.size;
-      if (self.parentAssociation && staticSize) {
-        return `LIMIT ${staticSize}`;
-      } else if (self.parentAssociation) {
-        return ``;
-      } else if (size) {
-        return `LIMIT ${size}`;
-      } else {
-        return `LIMIT ${DEFAULT_PAGE_DATA_LIMIT}`;
-      }
-    }
-
-    const where = resolvedOptions,
-          group = _.toArray(this.staticOptions.groupBy),
-          order = _.toArray(this.staticOptions.orderBy),
-          page  = options.page || this.staticOptions.page,
-          size  = options.size || this.staticOptions.size;
-
-    const clauses = {
-      where:  resolveWhere(resolvedOptions),
-      group:  resolveGroupBy(group),
-      order:  resolveOrderBy(order),
-      limit:  resolveLimit(options.size),
-      offset: resolveOffset(page, size),
+    // Merge static options from the query schema and the ones
+    // received by the find(s) function.
+    const extraOptions = {
+      page: options.page || staticOptions.page || 1,
+      size: options.size || staticOptions.size || DEFAULT_PAGE_DATA_LIMIT,
+      orderBy: _.toArray(options.orderBy || staticOptions.orderBy),
+      groupBy: _.toArray(options.groupBy || staticOptions.groupBy)
     };
 
-    // Renders only is a array within all the keys
-    // from "clauses" object above which will be present
-    // in the query.
+    // Remove extra options properties from the options object values.
+    delete optionsValues.page;
+    delete optionsValues.size;
+
+    const resolved = {
+      where: whereResolver(definedOptions, optionsValues, rawOptions),
+      groupBy: groupByResolver(extraOptions.groupBy),
+      orderBy: orderByResolver(extraOptions.orderBy),
+      limit: limitResolver(extraOptions.size),
+      offset: offsetResolver(extraOptions.page, extraOptions.size),
+    };
+
+    let keysToRender = _.keys(resolved);
+
+    // Remove keys that must not need be returned.
     if (rendersOnly.length) {
-      return rendersOnly.map(key => clauses[key]).join(' ');
-    } else {
-      return _.keys(clauses).map(key => clauses[key]).join(' ');
+      keysToRender = keysToRender.filter(k => rendersOnly.includes(k));
     }
+    return keysToRender.map(k => resolved[k]).join(` `);
   }
 
-  resolveOptionsWithValues(def, options) {
+  resolveFilterClauses(def, values, rawOptions = []) {
 
-    const definedOptionKeys = _.keys(options).filter(optionName => !!def.hasOwnProperty(optionName));
+    const self = this;
+    const tableName = this.tableName;
 
-    if (!definedOptionKeys.length) return '';
-
-    const optionValues = definedOptionKeys.map(optionName => {
-    const propName = def[optionName].replace(/\W/g, '');
-    const propDefinitionFromSchema = this.schemaProperties.find(prop => prop.name === propName);
-    const definition = def[optionName];
-    const value = options[optionName];
-    const resolvedPropName = propDefinitionFromSchema.alias || propDefinitionFromSchema.name;
-    const operator = /\W/.test(definition) ? definition.match(/\W/)[0] : '=';
-
-    if (!propDefinitionFromSchema) {
-      throw new Error(`"${propName}" property from where clause not found in "${this.name}" schema properties.`);
+    const translateFilterWithValue = (filter, value) => {
+      const operator = /^\W/.test(filter) ? filter.match(/^\W+/)[0] : '=';
+      const prop = self.getSchemaPropertyConfig(filter.replace(/^\W+/, ''));
+      const propName = prop.alias || prop.name;
+      return replaceValueIntoOperator(operator, value, `${tableName}.${propName}`);
     }
 
-    const resolve = function() {
-      const operator = this.operator,
-            value    = this.value;
-      switch (operator) {
-        case '=':
-          return `=${_.quote(value)}`;
-        case '<>':
-          return `<>${_.quote(value)}`;
-        case '>':
-          return `>${value}`;
-        case '<':
-          return `<${value}`;
-        case '%':
-          return `LIKE ${_.quote('%' + value + '%')}`;
-        case '#':
-          return `GLOB ${_.quote(_.glob(value))}`;
-        case '|':
-          return ``;
-        case '&':
-          return ``;
-        default:
-          return '';
-      };
+    // Translate all the matches(${propName}) within the real
+    // columns names in the 'TABLENAME.COLNAME' schema inside the query.
+    const translateRawQuery = (query) => {
+      _.toArray(query.match(/\$\{(\w+)\}/g)).map(t => {
+        return t.replace(/(^\$\{)|(\}$)/g, '');
+      }).forEach(propName => {
+        const rgxp = new RegExp(`\\$\\{${propName}\\}`);
+        let prop = self.getSchemaPropertyConfig(propName);
+        prop = `${tableName}.${prop.alias || prop.name}`;
+        query = query.replace(rgxp, prop);
+      });
+      return query;
     }
 
-    return {
-      name: resolvedPropName,
-      definition,
-      value,
-      operator,
-      resolve
-    };
-  }).map(opt => {
-    return `${this.getTableName()}.${opt.name} ${opt.resolve()}`;
-  });
+    const resolvedRawOptions = rawOptions.map(q => translateRawQuery(q));
 
-    return optionValues;
+    // Remove from defined options array all the missing keys
+    // from the options value object.
+    const resolvedDefinedOptions = _.keys(def)
+      .filter(k => _.keys(values).includes(k))
+      .map(filterName => {
+        return translateFilterWithValue(def[filterName], values[filterName]);
+      });
+
+    const resolvedOptions = [
+      ...resolvedRawOptions,
+      ...resolvedDefinedOptions
+    ];
+
+    return !resolvedOptions.length ? `` : `WHERE ` + resolvedOptions.join(` AND `);
   }
 
   getSchemaPropertyConfig(propName) {
-    return this.schemaProperties.find(prop => prop.name === propName);
+    const props = this.schemaProperties;
+    const prop = /^id$/.test(propName)
+      ? props.find(p => p.type === 'primaryKey')
+      : props.find(p => p.name === propName);
+    if (!prop) throw new Error(`Undefined "${propName}" property configuration on "${this.name}" schema.`);
+    return prop;
   }
 
   getAssociationName() {
@@ -391,3 +407,26 @@ class QueryNode {
 }
 
 module.exports = QueryNode;
+
+function replaceValueIntoOperator(operator, value, field) {
+  switch (operator) {
+    case '=':
+      return `${field}=${_.quote(value)}`;
+    case '<>':
+      return `${field}<>${_.quote(value)}`;
+    case '>':
+      return `${field}>${value}`;
+    case '<':
+      return `${field}<${value}`;
+    case '%':
+      return `${field} LIKE ${_.quote('%' + value + '%')}`;
+    case '#':
+      return `${field} GLOB ${_.quote(_.glob(value))}`;
+    case '|':
+      return ``;
+    case '&':
+      return ``;
+    default:
+      return '';
+  };
+}

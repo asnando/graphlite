@@ -77,6 +77,20 @@ class Query {
         return !hasParent ? null : schema.getAssociationOptionsWith(parent);
       }
 
+      const staticOptions = {
+        page: node.page,
+        size: node.size,
+        orderBy: node.orderBy,
+        groupBy: node.groupBy
+      };
+      const definedOptions = _.pickBy({
+        ...node.where,
+        // Remove the "raw" object key.
+        raw: null
+      });
+      const rawOptions = (_.isObject(node.where) && node.where.raw) ? node.where.raw : [];
+      const displayOptions = node.shows;
+
       // A QueryNode represents the real value of the node
       // inside the graph. This value will be avaiable in the query
       // node resolver.
@@ -84,21 +98,21 @@ class Query {
       // some extra options and methods(avaible in this class) to make
       // our query resolution more easy.
       const queryNode = new QueryNode({
-        name:       schema.name,
-        alias:      node.alias && resolveSchemaName(path),
-        hash:       schema.hash,
-        tableName:  schema.tableName,
+        name: schema.name,
+        alias: node.alias && resolveSchemaName(path),
+        hash: schema.hash,
+        tableName: schema.tableName,
         properties: node.properties,
         schemaProperties: schema.properties,
         primaryKey: schema.primaryKey,
-        options:    node.where,
-        shows:      node.shows,
-        staticOptions: {
-          page:     node.page,
-          size:     node.size,
-          orderBy:  node.orderBy,
-          groupBy:  node.groupBy,
-        },
+        // Filters to use in order to display certain rows.
+        shows: displayOptions,
+        // Represents the filter(s) object definition.
+        definedOptions,
+        // Represents raw SQL queries to use as filters (declared as array).
+        rawOptions,
+        // Extra options for the query node (described structure below).
+        staticOptions,
         parentAssociation: resolveAssociationOptions(schema, parentSchema)
       });
 
