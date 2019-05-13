@@ -1,6 +1,9 @@
 const debug = require('./debugger');
 const  _ = require('./utils/');
 const Association = require('./association');
+const {
+  PRIMARY_KEY_DATA_TYPE
+} = require('./constants');
 
 class Schema {
 
@@ -22,7 +25,7 @@ class Schema {
       return this._createSchemaProperty(keyName, props[keyName])
     });
     // Schema must always declare one primary key property.
-    if (!props.find(prop => prop.type === 'primaryKey')) {
+    if (!props.find(prop => prop.type === PRIMARY_KEY_DATA_TYPE)) {
       throw new Error(`Missing primary key definition for "${this.name}" schema.`);
     }
     return props;
@@ -41,7 +44,7 @@ class Schema {
       useLocale: !!propDef.useLocale,
     });
 
-    if (propType === 'primaryKey') {
+    if (propType === PRIMARY_KEY_DATA_TYPE) {
       this.primaryKey = property.name;
     }
 

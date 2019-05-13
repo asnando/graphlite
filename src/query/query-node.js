@@ -8,10 +8,11 @@ const {
   DEFAULT_ROW_NAME,
   GRAPHLITE_COLUMN_DATA_TYPES,
   PRIMARY_KEY_DATA_TYPE,
-  NUMBER_DATA_TYPE,
+  NUMERIC_DATA_TYPE,
   STRING_DATA_TYPE,
   BOOLEAN_DATA_TYPE,
   INTEGER_DATA_TYPE,
+  FLOAT_DATA_TYPE,
 } = _const;
 
 // The QueryNode represents the real value of a node
@@ -94,7 +95,7 @@ class QueryNode {
     const props = this.definedProperties;
     let prop, propResolvedName;
     if (/^_id$/.test(propName)) {
-      prop = props.find(prop => /primaryKey/.test(prop.type));
+      prop = props.find(prop => prop.type === PRIMARY_KEY_DATA_TYPE);
     } else {
       prop = props.find(prop => prop.name === propName);
     }
@@ -112,7 +113,7 @@ class QueryNode {
   }
 
   resolvePropertyAliasName(prop) {
-    return /primaryKey/.test(prop.type) ? '_id' : prop.name;
+    return prop.type === PRIMARY_KEY_DATA_TYPE ? '_id' : prop.name;
   }
 
   // Returns format: 'fieldName', tableAlias.(fieldAlias || fieldName)
@@ -122,7 +123,7 @@ class QueryNode {
     const props = this.definedProperties;
   
     return props.filter(prop => {
-      return !hasAssociation || !/primaryKey/.test(prop.type);
+      return !hasAssociation || prop.type !== PRIMARY_KEY_DATA_TYPE;
     }).map(prop => {
       
       let propDisplayName = this.resolvePropertyAliasName(prop);
@@ -137,13 +138,14 @@ class QueryNode {
       }
   
       switch (prop.type) {
-        case 'boolean':
+        case BOOLEAN_DATA_TYPE:
           propTableName = `(CASE WHEN ${propTableName} IS NOT NULL AND ${propTableName}<>0 THEN 1 ELSE 0 END)`;
           break;
-        case 'integer':
+        case INTEGER_DATA_TYPE:
           propTableName = `cast(${propTableName} as integer)`;
           break;
-        case 'number':
+        case NUMERIC_DATA_TYPE:
+        case FLOAT_DATA_TYPE:
           propTableName = `cast(${propTableName} as real)`;
           break;
       };
@@ -427,7 +429,7 @@ class QueryNode {
   getSchemaPropertyConfig(propName) {
     const props = this.schemaProperties;
     const prop = /^id$/.test(propName)
-      ? props.find(p => p.type === 'primaryKey')
+      ? props.find(p => p.type === PRIMARY_KEY_DATA_TYPE)
       : props.find(p => p.name === propName);
     if (!prop) throw new Error(`Undefined "${propName}" property configuration on "${this.name}" schema.`);
     return prop;
@@ -451,11 +453,12 @@ class QueryNode {
 module.exports = QueryNode;
 
 function replaceValueIntoOperator(operator, value, field, type) {
+  const isNumeric = new RegExp(`${NUMERIC_DATA_TYPE}|${PRIMARY_KEY_DATA_TYPE}|${FLOAT_DATA_TYPE}|${INTEGER_DATA_TYPE}`).test(type);
   switch (operator) {
     case '=':
-      return /number|primaryKey/.test(type) ? `${field}=${value}` : `${field}=${_.quote(value)}`;
+      return isNumeric ? `${field}=${value}` : `${field}=${_.quote(value)}`;
     case '<>':
-      return /number|primaryKey/.test(type) ? `${field}<>${value}` : `${field}<>${_.quote(value)}`;
+      return isNumeric ? `${field}<>${value}` : `${field}<>${_.quote(value)}`;
     case '>':
       return `${field}>${value}`;
     case '<':
