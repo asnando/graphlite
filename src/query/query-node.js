@@ -299,13 +299,22 @@ class QueryNode {
       }).join(`,`);
     }
 
+    function whichOrderByOperator(ob) {
+      const opr = /^(\>|\<)/.test(ob) ? ob.match(/^\W/)[0] : null;
+      return !opr ? null : /^\>/.test(opr) ? 'asc' : /^\</.test(opr) ? 'desc' : null;
+    }
+
     const orderByResolver = (o = []) => {
       return !o.length ? `` : `ORDER BY ` + o.map(propName => {
-        return self.getSchemaPropertyConfig(propName);
-      }).map(prop => {
-        return prop.alias || prop.name;
-      }).map(propName => {
-        return `${tableName}.${propName}`;
+        const orderType = whichOrderByOperator(propName);
+        // Remove order by operator from prop name.
+        propName = propName.replace(/^\W/, '');
+        const prop = self.getSchemaPropertyConfig(propName);
+        // Resolve the column name of property.
+        propName = prop.alias || prop.name;
+        return orderType
+          ? `${tableName}.${propName} ${orderType}`
+          : `${tableName}.${propName}`;
       }).join(`,`);
     }
 
@@ -314,13 +323,14 @@ class QueryNode {
     const extraOptions = {
       page: options.page || staticOptions.page || 1,
       size: options.size || staticOptions.size || DEFAULT_PAGE_DATA_LIMIT,
-      orderBy: _.toArray(options.orderBy || staticOptions.orderBy),
-      groupBy: _.toArray(options.groupBy || staticOptions.groupBy)
+      orderBy: _.toArray(!hasAssociation ? (options.orderBy || staticOptions.orderBy) : staticOptions.orderBy),
+      groupBy: _.toArray(staticOptions.groupBy)
     };
 
     // Remove extra options properties from the options object values.
     delete optionsValues.page;
     delete optionsValues.size;
+    delete optionsValues.orderBy;
 
     const resolved = {
       where: whereResolver(definedOptions, optionsValues, rawOptions),

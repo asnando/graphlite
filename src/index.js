@@ -62,7 +62,8 @@ class GraphLite {
     return _.pickBy(_.xtend({}, a, {
       page: b.page || DEFAULT_OPTIONS_PAGE,
       size: b.size,
-      withCount: b.withCount
+      withCount: b.withCount,
+      orderBy: b.orderBy,
     }));
   }
 
