@@ -14,7 +14,7 @@ class Query {
 
   // Query is basically a graph which nodes represents
   // each schema declared or associated in the query definition graph.
-  constructor(name, graph, schemaProvider) {
+  constructor(name, graph, providers = {}) {
     // Queries will be builded and resolved by their names.
     this.name = name;
     // Save raw graph definition if it needs to be used later.
@@ -22,7 +22,8 @@ class Query {
     // The "schemaProvider" is a function received from this main lib class
     // which returns the schema instance using its name. All schemas
     // are accessible in the main lib instance.
-    this.schemaProvider = schemaProvider;
+    this.schemaProvider = providers.schemaProvider;
+    this.localeProvider = providers.localeProvider;
     // This will be the resolved graph which will resolve the query.
     this.graph = this._resolveGraph(this.rawGraph);
     this.rowsParser = new QueryResponse(this.graph);
@@ -102,7 +103,9 @@ class Query {
         alias: node.alias && resolveSchemaName(path),
         hash: schema.hash,
         tableName: schema.tableName,
+        // Only properties define in the query properties array.
         properties: node.properties,
+        // All the properties configured in the schema class.
         schemaProperties: schema.properties,
         primaryKey: schema.primaryKey,
         showAs: node.as,
@@ -115,7 +118,7 @@ class Query {
         // Extra options for the query node (described structure below).
         staticOptions,
         parentAssociation: resolveAssociationOptions(schema, parentSchema)
-      });
+      }, { localeProvider: this.localeProvider });
 
       // Adds a new node to the query graph. Creating a graph node
       // class is useful to loop throught the nodes in a automatic way.

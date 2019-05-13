@@ -6,6 +6,12 @@ const {
   DEFAULT_OBJECT_TYPE,
   DEFAULT_PAGE_DATA_LIMIT,
   DEFAULT_ROW_NAME,
+  GRAPHLITE_COLUMN_DATA_TYPES,
+  PRIMARY_KEY_DATA_TYPE,
+  NUMBER_DATA_TYPE,
+  STRING_DATA_TYPE,
+  BOOLEAN_DATA_TYPE,
+  INTEGER_DATA_TYPE,
 } = _const;
 
 // The QueryNode represents the real value of a node
@@ -13,7 +19,7 @@ const {
 // to resolve each part of the query for that specific node.
 class QueryNode {
 
-  constructor(opts = {}) {
+  constructor(opts = {}, providers = {}) {
     _.xtend(this, {
       name: opts.name,
       alias: opts.alias,
@@ -49,6 +55,7 @@ class QueryNode {
       // must be displayed or not. For example, when you want to
       // not display the products having some type of column value.
       displayOptions: _.defaults(opts.shows, {}),
+      localeProvider: providers.localeProvider,
     });
   }
 
@@ -83,42 +90,69 @@ class QueryNode {
     return this.primaryKey;
   }
 
-  getFieldsAsJson() {
-    // Returns format: 'fieldName', tableAlias.(fieldAlias || fieldName)
-    const tableAlias = this.getTableAlias();
+  getPropertyNameInTable(propName) {
+    const props = this.definedProperties;
+    let prop, propResolvedName;
+    if (/^_id$/.test(propName)) {
+      prop = props.find(prop => /primaryKey/.test(prop.type));
+    } else {
+      prop = props.find(prop => prop.name === propName);
+    }
+    
+    propResolvedName = prop.alias || prop.name;
 
-    return this.definedProperties.filter(prop => {
-      return !this.parentAssociation || prop.type !== 'primaryKey';
-    }).map(prop => {
-
-      let propName = prop.type === 'primaryKey' ? '_id' : prop.name,
-          propValue;
-
-      if (prop.resolver) {
-        propValue = '(CASE' + prop.resolver.map(name => ` WHEN ${tableAlias}.${name} IS NOT NULL THEN ${tableAlias}.${name}`).join(' ') + ' END)';
-      } else if (prop.join) {
-        propValue = prop.join.join(' || ');
-      } else {
-        propValue = tableAlias.concat('.').concat(prop.alias || prop.name);
+    if (prop.useLocale) {
+      const locale = this.localeProvider();
+      if (locale.useSuffix) {
+        propResolvedName += locale.useSuffix;
       }
+    }
 
+    return propResolvedName;
+  }
+
+  resolvePropertyAliasName(prop) {
+    return /primaryKey/.test(prop.type) ? '_id' : prop.name;
+  }
+
+  // Returns format: 'fieldName', tableAlias.(fieldAlias || fieldName)
+  getFieldsAsJson() {
+    const tableAlias = this.getTableAlias();
+    const hasAssociation = !!this.parentAssociation;
+    const props = this.definedProperties;
+  
+    return props.filter(prop => {
+      return !hasAssociation || !/primaryKey/.test(prop.type);
+    }).map(prop => {
+      
+      let propDisplayName = this.resolvePropertyAliasName(prop);
+      let propTableName = this.getPropertyNameInTable(propDisplayName);
+  
+      if (prop.resolver) {
+        propTableName = '(CASE' + prop.resolver.map(name => ` WHEN ${tableAlias}.${name} IS NOT NULL THEN ${tableAlias}.${name}`).join(' ') + ' END)';
+      } else if (prop.join) {
+        propTableName = prop.join.join(' || ');
+      } else {
+        propTableName = tableAlias.concat('.').concat(propTableName);
+      }
+  
       switch (prop.type) {
         case 'boolean':
-          propValue = `(CASE WHEN ${propValue} IS NOT NULL AND ${propValue}<>0 THEN 1 ELSE 0 END)`;
+          propTableName = `(CASE WHEN ${propTableName} IS NOT NULL AND ${propTableName}<>0 THEN 1 ELSE 0 END)`;
           break;
         case 'integer':
-          propValue = `cast(${propValue} as integer)`;
+          propTableName = `cast(${propTableName} as integer)`;
           break;
         case 'number':
-          propValue = `cast(${propValue} as real)`;
+          propTableName = `cast(${propTableName} as real)`;
           break;
       };
-
+  
       return [
-        _.quote(propName),
-        propValue
+        _.quote(propDisplayName),
+        propTableName
       ].join(',');
-
+  
     }).join(',');
   }
 
@@ -293,9 +327,7 @@ class QueryNode {
 
     const groupByResolver = (g = []) => {
       return !g.length ? `` : `GROUP BY ` + g.map(propName => {
-        return self.getSchemaPropertyConfig(propName);
-      }).map(prop => {
-        return prop.alias || prop.name;
+        return self.getPropertyNameInTable(propName);
       }).map(propName => {
         return `${tableName}.${propName}`;
       }).join(`,`);
@@ -311,9 +343,8 @@ class QueryNode {
         const orderType = whichOrderByOperator(propName);
         // Remove order by operator from prop name.
         propName = propName.replace(/^\W/, '');
-        const prop = self.getSchemaPropertyConfig(propName);
         // Resolve the column name of property.
-        propName = prop.alias || prop.name;
+        propName = self.getPropertyNameInTable(propName);
         return orderType
           ? `${tableName}.${propName} ${orderType}`
           : `${tableName}.${propName}`;
@@ -359,7 +390,7 @@ class QueryNode {
     const translateFilterWithValue = (filter, value) => {
       const operator = /^\W/.test(filter) ? filter.match(/^\W+/)[0] : '=';
       const prop = self.getSchemaPropertyConfig(filter.replace(/^\W+/, ''));
-      const propName = prop.alias || prop.name;
+      const propName = self.getPropertyNameInTable(prop.name);
       return replaceValueIntoOperator(operator, value, `${tableName}.${propName}`, prop.type);
     }
 
@@ -370,9 +401,7 @@ class QueryNode {
         return t.replace(/(^\$\{)|(\}$)/g, '');
       }).forEach(propName => {
         const rgxp = new RegExp(`\\$\\{${propName}\\}`);
-        let prop = self.getSchemaPropertyConfig(propName);
-        prop = `${tableName}.${prop.alias || prop.name}`;
-        query = query.replace(rgxp, prop);
+        query = query.replace(rgxp, self.getPropertyNameInTable(propName));
       });
       return query;
     }

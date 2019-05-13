@@ -19,14 +19,18 @@ const defaultProps = {
   connection: null,
   schemas: [],
   queries: [],
-  options: {}
+  options: {},
+  locales: {}
 };
 
 class GraphLite {
 
   constructor(opts) {
     // Create initial state of options.
-    Object.assign(this, defaultProps);
+    Object.assign(this, defaultProps, {
+      locales: opts.locales,
+      locale: opts.defaultLang
+    });
 
     this.connection = _.defaults(opts.connection, this.connection);
 
@@ -52,8 +56,17 @@ class GraphLite {
     });
   }
 
+  setLocale(locale) {
+    this.locale = locale;
+  }
+
   _schemaProvider(schemaName) {
     return this.schemas.find(schema => schema.name === schemaName);
+  }
+
+  _localeProvider(lang) {
+    lang = lang || this.locale || _.keys(this.locales)[0];
+    return this.locales[lang];
   }
 
   // Extra options(b) represents the second object received by the find
@@ -168,6 +181,7 @@ class GraphLite {
 
   defineQuery(name, graph) {
     const schemaProvider = this._schemaProvider.bind(this);
+    const localeProvider = this._localeProvider.bind(this);
     graph = _.isObject(name) ? name : graph;
     name = _.isObject(name) ? name.name : name;
     
@@ -176,7 +190,7 @@ class GraphLite {
     // of a configuration property.
     delete graph.name;
 
-    const query = new Query(name, graph, schemaProvider);
+    const query = new Query(name, graph, { schemaProvider, localeProvider });
     this.queries.push(query);
     return query;
   }

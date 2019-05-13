@@ -38,6 +38,7 @@ class Schema {
       resolver: propDef.resolve,
       join:     propDef.join,
       parser:   propDef.parser,
+      useLocale: !!propDef.useLocale,
     });
 
     if (propType === 'primaryKey') {

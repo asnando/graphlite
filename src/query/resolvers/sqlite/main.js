@@ -6,7 +6,14 @@ module.exports = function graphNodeResolver(node, options = {}, nextNodes, custo
   const objectType = node.getObjectType();
   const hasParentAssociation = !!node.parentAssociation;
 
-  let nodeOptions = node.getOptions(options, ['group', 'order', 'limit', 'offset']);
+  let nodeOptions = node.getOptions(options, [
+    // Disable order by inside the first node (as it will be already
+    // ordered inside the where clause of the 'filterId' resolver result).
+    hasParentAssociation ? 'order' : null,
+    'group',
+    'limit',
+    'offset'
+  ]);
 
   // Fix: Root schema can not have "limit" nor "offset" options (this options)
   // are filtered inside the specific where clauses condition outside this node.
