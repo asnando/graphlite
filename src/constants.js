@@ -22,6 +22,17 @@ const DEFAULT_TOTAL_COUNT_OBJECT_RESPONSE_NAME = 'total';
 // The lib builds the query then call the connection provider method
 // with the name below in order to execute the query into the database.
 const DEFAULT_CONNECTION_PROVIDER_QUERY_RUNNER_NAME = 'executeQuery';
+// 
+const GRAPHLITE_COLUMN_DATA_TYPES = [
+  'primaryKey',
+  'number',
+  'string',
+  'boolean'
+];
+const PRIMARY_KEY_DATA_TYPE = GRAPHLITE_COLUMN_DATA_TYPES[0];
+const NUMBER_DATA_TYPE = GRAPHLITE_COLUMN_DATA_TYPES[1];
+const STRING_DATA_TYPE = GRAPHLITE_COLUMN_DATA_TYPES[2];
+const BOOLEAN_DATA_TYPE = GRAPHLITE_COLUMN_DATA_TYPES[3];
 
 module.exports = {
   DEFAULT_ROW_NAME,
@@ -34,4 +45,9 @@ module.exports = {
   DEFAULT_COUNT_OBJECT_RESPONSE_NAME,
   DEFAULT_TOTAL_COUNT_OBJECT_RESPONSE_NAME,
   DEFAULT_CONNECTION_PROVIDER_QUERY_RUNNER_NAME,
+  GRAPHLITE_COLUMN_DATA_TYPES,
+  PRIMARY_KEY_DATA_TYPE,
+  NUMBER_DATA_TYPE,
+  STRING_DATA_TYPE,
+  BOOLEAN_DATA_TYPE,
 };

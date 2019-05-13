@@ -348,7 +348,7 @@ class QueryNode {
       const operator = /^\W/.test(filter) ? filter.match(/^\W+/)[0] : '=';
       const prop = self.getSchemaPropertyConfig(filter.replace(/^\W+/, ''));
       const propName = prop.alias || prop.name;
-      return replaceValueIntoOperator(operator, value, `${tableName}.${propName}`);
+      return replaceValueIntoOperator(operator, value, `${tableName}.${propName}`, prop.type);
     }
 
     // Translate all the matches(${propName}) within the real
@@ -408,12 +408,12 @@ class QueryNode {
 
 module.exports = QueryNode;
 
-function replaceValueIntoOperator(operator, value, field) {
+function replaceValueIntoOperator(operator, value, field, type) {
   switch (operator) {
     case '=':
-      return `${field}=${_.quote(value)}`;
+      return /number|primaryKey/.test(type) ? `${field}=${value}` : `${field}=${_.quote(value)}`;
     case '<>':
-      return `${field}<>${_.quote(value)}`;
+      return /number|primaryKey/.test(type) ? `${field}<>${value}` : `${field}<>${_.quote(value)}`;
     case '>':
       return `${field}>${value}`;
     case '<':
