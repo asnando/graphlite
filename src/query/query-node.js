@@ -163,7 +163,9 @@ class QueryNode {
   }
 
   getRawFields() {
-    return '*';
+    return !this.parentAssociation ? '*' : this.definedProperties
+      .filter(prop => prop.type !== PRIMARY_KEY_DATA_TYPE)
+      .map(prop => prop.alias || prop.name).join(',');
   }
 
   getSource(parentUseGroup) {
@@ -382,7 +384,6 @@ class QueryNode {
 
     // 
     if (hasAssociation && !/^$/.test(resolved.where)) {
-      // console.log(resolved);
       if (!/^$/.test(resolved.orderBy)) {
         resolved.orderBy += resolved.where
           .replace(/^WHERE/, ',')
