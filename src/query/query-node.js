@@ -347,7 +347,12 @@ class QueryNode {
     }
 
     const orderByResolver = (o = []) => {
-      return !o.length ? `` : `ORDER BY ` + o.map(propName => {
+      return !o.length ? `` : `ORDER BY ` + o.filter(propName => {
+        if (!self.haveSchemaPropertyConfig(propName) && !optionsValues[propName]) {
+          return false;
+        }
+        return true;
+      }).map(propName => {
         if (self.haveSchemaPropertyConfig(propName)) {
           // Normal property.
           const orderType = whichOrderByOperator(propName);
