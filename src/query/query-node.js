@@ -285,7 +285,10 @@ class QueryNode {
 
   getShowOptions(options) {
     options = this.resolveFilterClauses(this.displayOptions, options);
-    return !options.length ? '' : `AND ${options.join(' AND ')}`;
+    // Fix: Remove the 'where' keyboard from the resolved display options query
+    // as it generally are located inside nested collections and must not repeat.
+    options = options.replace(/^WHERE/, 'AND');
+    return options;
   }
 
   // options represents the options values object that
@@ -319,7 +322,7 @@ class QueryNode {
     }
 
     const limitResolver = (size) => {
-      return hasAssociation ? `` : `LIMIT ${size}`;
+      return size ? `LIMIT ${size}` : ``;
     }
 
     const offsetResolver = (page, pageSize) => {
@@ -357,10 +360,12 @@ class QueryNode {
     // received by the find(s) function.
     const extraOptions = {
       page: options.page || staticOptions.page || 1,
-      size: options.size || staticOptions.size || DEFAULT_PAGE_DATA_LIMIT,
+      size: hasAssociation ? staticOptions.size : (options.size || staticOptions.size || DEFAULT_PAGE_DATA_LIMIT),
       orderBy: _.toArray(!hasAssociation ? (options.orderBy || staticOptions.orderBy) : staticOptions.orderBy),
       groupBy: _.toArray(staticOptions.groupBy)
     };
+
+    
 
     // Remove extra options properties from the options object values.
     delete optionsValues.page;
@@ -374,6 +379,24 @@ class QueryNode {
       limit: limitResolver(extraOptions.size),
       offset: offsetResolver(extraOptions.page, extraOptions.size),
     };
+
+    // 
+    if (hasAssociation && !/^$/.test(resolved.where)) {
+      // console.log(resolved);
+      if (!/^$/.test(resolved.orderBy)) {
+        resolved.orderBy += resolved.where
+          .replace(/^WHERE/, ',')
+          .split(/\b(AND|OR)\b/)
+          .map(ob => `${ob} DESC`)
+          .join(',');
+      } else {
+        resolved.orderBy = resolved.where
+          .replace(/^WHERE/, 'ORDER BY')
+          .split(/\b(AND|OR)\b/)
+          .map(ob => `${ob} DESC`)
+          .join(',');
+      }
+    }
 
     let keysToRender = _.keys(resolved);
 
