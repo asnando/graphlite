@@ -4,6 +4,11 @@ const Graph = require('../graph/graph');
 const QueryNode = require('./query-node');
 const QueryResponse = require('./query-response');
 
+const _const = require('../constants');
+const {
+  PRIMARY_KEY_DATA_TYPE,
+} = _const;
+
 const SQLitegraphNodeResolver            = require('./resolvers/sqlite/main');
 const SQLitegraphNodeOptionsResolver     = require('./resolvers/sqlite/options');
 const SQLitegraphNodeGroupIdsResolver    = require('./resolvers/sqlite/groupId');
@@ -17,6 +22,9 @@ class Query {
   constructor(name, graph, providers = {}) {
     // Queries will be builded and resolved by their names.
     this.name = name;
+    // Object representing containing all the query filters defined. It will
+    // be used by nested nodes when a order by needs to use a specific filter.
+    this.filters = {};
     // Save raw graph definition if it needs to be used later.
     this.rawGraph = graph;
     // The "schemaProvider" is a function received from this main lib class
@@ -118,7 +126,13 @@ class Query {
         // Extra options for the query node (described structure below).
         staticOptions,
         parentAssociation: resolveAssociationOptions(schema, parentSchema)
-      }, { localeProvider: this.localeProvider });
+      }, {
+        localeProvider: this.localeProvider,
+        filterProvider: this._filterProvider.bind(this)
+      });
+
+      // Register the filter definition.
+      this._registerFilterList(definedOptions, schema.properties);
 
       // Adds a new node to the query graph. Creating a graph node
       // class is useful to loop throught the nodes in a automatic way.
@@ -156,6 +170,26 @@ class Query {
 
     });
     return resolvedGraph;
+  }
+
+  _filterProvider(name) {
+    const { filters } = this;
+    const match = _.keys(filters).find(k => k === name);
+    const filter = filters[match];
+    return filter;
+  }
+
+  _registerFilterList(filters = {}, properties = []) {
+    filters = _.copy(filters);
+    _.keys(filters).forEach(k => {
+      const filter = filters[k];
+      const propName = filter.replace(/^\W+/, '');
+      const prop = properties.find(prop => {
+        return /id/.test(propName) ? prop.type === PRIMARY_KEY_DATA_TYPE : prop.name === propName
+      });
+      filters[k] = { name: k, filter, refersTo: prop };
+    });
+    this.filters = { ...this.filters, ...filters };
   }
 
   buildQuery(options = {}) {

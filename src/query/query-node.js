@@ -57,6 +57,7 @@ class QueryNode {
       // not display the products having some type of column value.
       displayOptions: _.defaults(opts.shows, {}),
       localeProvider: providers.localeProvider,
+      filterProvider: providers.filterProvider
     });
   }
 
@@ -347,14 +348,32 @@ class QueryNode {
 
     const orderByResolver = (o = []) => {
       return !o.length ? `` : `ORDER BY ` + o.map(propName => {
-        const orderType = whichOrderByOperator(propName);
-        // Remove order by operator from prop name.
-        propName = propName.replace(/^\W/, '');
-        // Resolve the column name of property.
-        propName = self.getPropertyNameInTable(propName);
-        return orderType
-          ? `${tableName}.${propName} ${orderType}`
-          : `${tableName}.${propName}`;
+        if (self.haveSchemaPropertyConfig(propName)) {
+          // Normal property.
+          const orderType = whichOrderByOperator(propName);
+          // Remove order by operator from prop name.
+          propName = propName.replace(/^\W/, '');
+          // Resolve the column name of property.
+          propName = self.getPropertyNameInTable(propName);
+          return orderType
+            ? `${tableName}.${propName} ${orderType}`
+            : `${tableName}.${propName}`;
+        } else if (self.haveGroupByOption()) {
+          // Prop represents a query filter. We will use the
+          // filterProvider to find which filter it refers to.
+          const filter = self.filterProvider(propName);
+          const filterName = filter.name;
+          const prop = filter.refersTo;
+          const propType = prop.type;
+          const resolvedPropName = prop.alias || prop.name;
+          const value = optionsValues[filterName];
+          const operator = filter.filter.match(/^\W+/)[0];
+          const resolvedFilter = replaceValueIntoOperator(operator, 'json_each.value', value, propType);
+          return `(select min(case when ${resolvedFilter} then 0 else 1 end)
+            from json_each(json_group_array(${resolvedPropName})))`;
+        } else {
+          return `1=1`;
+        }
       }).join(`,`);
     }
 
@@ -366,8 +385,6 @@ class QueryNode {
       orderBy: _.toArray(!hasAssociation ? (options.orderBy || staticOptions.orderBy) : staticOptions.orderBy),
       groupBy: _.toArray(staticOptions.groupBy)
     };
-
-    
 
     // Remove extra options properties from the options object values.
     delete optionsValues.page;
@@ -417,7 +434,7 @@ class QueryNode {
       const operator = /^\W/.test(filter) ? filter.match(/^\W+/)[0] : '=';
       const prop = self.getSchemaPropertyConfig(filter.replace(/^\W+/, ''));
       const propName = self.getPropertyNameInTable(prop.name);
-      return replaceValueIntoOperator(operator, value, `${tableName}.${propName}`, prop.type);
+      return replaceValueIntoOperator(operator, `${tableName}.${propName}`, value, prop.type);
     }
 
     // Translate all the matches(${propName}) within the real
@@ -450,6 +467,10 @@ class QueryNode {
     return !resolvedOptions.length ? `` : `WHERE ` + resolvedOptions.join(` AND `);
   }
 
+  haveSchemaPropertyConfig(propName) {
+    return !!this.schemaProperties.find(prop => propName === prop.name);
+  }
+
   getSchemaPropertyConfig(propName) {
     const props = this.schemaProperties;
     const prop = /^id$/.test(propName)
@@ -476,7 +497,7 @@ class QueryNode {
 
 module.exports = QueryNode;
 
-function replaceValueIntoOperator(operator, value, field, type) {
+function replaceValueIntoOperator(operator, field, value, type) {
   const isNumeric = new RegExp(`${NUMERIC_DATA_TYPE}|${PRIMARY_KEY_DATA_TYPE}|${FLOAT_DATA_TYPE}|${INTEGER_DATA_TYPE}`).test(type);
   switch (operator) {
     case '=':

@@ -68,6 +68,5 @@ module.exports = function graphNodeResolver(node, options = {}, nextNodes, custo
   if (!hasParentAssociation) {
     _.pbcopy(query);
   }
-
   return query;
 }

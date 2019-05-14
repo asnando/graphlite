@@ -147,7 +147,7 @@ class GraphLite {
 
       const tasks = [
         buildAndRunQuery,
-        withCount ? buildAndRunCountQuery : null
+        // withCount ? buildAndRunCountQuery : null
       ];
 
       // Execute query list sync then return.
