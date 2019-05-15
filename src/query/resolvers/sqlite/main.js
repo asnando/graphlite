@@ -46,7 +46,7 @@ module.exports = function graphNodeResolver(node, options = {}, nextNodes, custo
   }
 
   let query = struct
-    .replace(/\$table_alias/g,     node.getTableAlias())
+    .replace(/\$table_alias/g,    node.getTableAlias())
     .replace(/\$raw_fields/,      node.getRawFields())
     .replace(/\$grouped_ids/,     hasParentAssociation ? customResolver('groupId') : '')
     .replace(/\$source/,          node.getSource(parentNode && parentNode.haveGroupByOption()))

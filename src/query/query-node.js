@@ -348,7 +348,7 @@ class QueryNode {
 
     const orderByResolver = (o = []) => {
       return !o.length ? `` : `ORDER BY ` + o.filter(propName => {
-        if (!self.haveSchemaPropertyConfig(propName) && !optionsValues[propName]) {
+        if (!self.haveSchemaPropertyConfig(propName) && !optionsValues[propName] && !/\s/.test(propName)) {
           return false;
         }
         return true;
@@ -363,6 +363,10 @@ class QueryNode {
           return orderType
             ? `${tableName}.${propName} ${orderType}`
             : `${tableName}.${propName}`;
+        } else if (/\s/.test(propName)) {
+          // When order by prop can refer to a raw query, parse it,
+          // replacing all properties alias with the real table column names.
+          return self.translateRawQueryWithProps(propName);
         } else if (self.haveGroupByOption()) {
           // Prop represents a query filter. We will use the
           // filterProvider to find which filter it refers to.
@@ -441,20 +445,7 @@ class QueryNode {
       const propName = self.getPropertyNameInTable(prop.name);
       return replaceValueIntoOperator(operator, `${tableName}.${propName}`, value, prop.type);
     }
-
-    // Translate all the matches(${propName}) within the real
-    // columns names in the 'TABLENAME.COLNAME' schema inside the query.
-    const translateRawQuery = (query) => {
-      _.toArray(query.match(/\$\{(\w+)\}/g)).map(t => {
-        return t.replace(/(^\$\{)|(\}$)/g, '');
-      }).forEach(propName => {
-        const rgxp = new RegExp(`\\$\\{${propName}\\}`);
-        query = query.replace(rgxp, self.getPropertyNameInTable(propName));
-      });
-      return query;
-    }
-
-    const resolvedRawOptions = rawOptions.map(q => translateRawQuery(q));
+    const resolvedRawOptions = rawOptions.map(q => this.translateRawQueryWithProps(q));
 
     // Remove from defined options array all the missing keys
     // from the options value object.
@@ -471,6 +462,19 @@ class QueryNode {
 
     return !resolvedOptions.length ? `` : `WHERE ` + resolvedOptions.join(` AND `);
   }
+
+  // Translate all the matches(${propName}) within the real
+  // columns names in the 'TABLENAME.COLNAME' schema inside the query.
+  translateRawQueryWithProps(query) {
+    _.toArray(query.match(/\$\{(\w+)\}/g)).map(t => {
+      return t.replace(/(^\$\{)|(\}$)/g, '');
+    }).forEach(propName => {
+      const rgxp = new RegExp(`\\$\\{${propName}\\}`);
+      query = query.replace(rgxp, this.getPropertyNameInTable(propName));
+    });
+    return query;
+  }
+
 
   haveSchemaPropertyConfig(propName) {
     return !!this.schemaProperties.find(prop => propName === prop.name);
