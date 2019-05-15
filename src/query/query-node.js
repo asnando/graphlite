@@ -504,11 +504,13 @@ module.exports = QueryNode;
 
 function replaceValueIntoOperator(operator, field, value, type) {
   const isNumeric = new RegExp(`${NUMERIC_DATA_TYPE}|${PRIMARY_KEY_DATA_TYPE}|${FLOAT_DATA_TYPE}|${INTEGER_DATA_TYPE}`).test(type);
+  const isBoolean = new RegExp(`${BOOLEAN_DATA_TYPE}`).test(type);
+  if (isBoolean) value = value ? 1 : 0;
   switch (operator) {
     case '=':
-      return isNumeric ? `${field}=${value}` : `${field}=${_.quote(value)}`;
+      return (isNumeric || isBoolean) ? `${field}=${value}` : `${field}=${_.quote(value)}`;
     case '<>':
-      return isNumeric ? `${field}<>${value}` : `${field}<>${_.quote(value)}`;
+      return (isNumeric || isBoolean) ? `${field}<>${value}` : `${field}<>${_.quote(value)}`;
     case '>':
       return `${field}>${value}`;
     case '<':
