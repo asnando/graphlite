@@ -93,7 +93,7 @@ class QueryNode {
   }
 
   getPropertyNameInTable(propName) {
-    const props = this.definedProperties;
+    const props = this.schemaProperties;
     let prop, propResolvedName;
     if (/^_id$/.test(propName)) {
       prop = props.find(prop => prop.type === PRIMARY_KEY_DATA_TYPE);
