@@ -32,6 +32,8 @@ module.exports = function graphNodeResolver(node, options = {}, nextNodes, custo
   if (/object/.test(objectType)) {
     if (hasParentAssociation && /^json_object\(\)$/.test(resolvedNextNodes)) {
       struct = `select json_object($fields_as_json) $object_name $grouped_ids $source $show_options $options`;
+    } else if (!hasParentAssociation) {
+      struct = `select /* begin json_patch #1 */ json_patch(json_object($fields_as_json), ($next_nodes)) /* end json_patch #1 */ $object_name from (select $table_alias.* from ($filter_id) as root left join $table_name as $table_alias on $table_alias.$primary_key=root.$primary_key) as $table_alias`;
     } else {
       struct = `select /* begin json_patch #1 */ json_patch(json_object($fields_as_json), ($next_nodes)) /* end json_patch #1 */ $object_name from (select $raw_fields $grouped_ids $source $show_options $options) $table_alias`;
     }
@@ -44,24 +46,21 @@ module.exports = function graphNodeResolver(node, options = {}, nextNodes, custo
   }
 
   let query = struct
-      .replace(/\$table_alias/,     node.getTableAlias())
-      .replace(/\$raw_fields/,      node.getRawFields())
-      .replace(/\$grouped_ids/,     hasParentAssociation ? customResolver('groupId') : '')
-      .replace(/\$source/,          node.getSource(parentNode && parentNode.haveGroupByOption()))
-      .replace(/\$fields_as_json/,  node.getFieldsAsJson())
-      .replace(/\$object_name/,     node.getResponseObjectName())
-      .replace(/\$node_name/,       node.getAssociationName())
-      .replace(/\$next_nodes/,      resolvedNextNodes)
-      .replace(/\$show_options/,    node.getShowOptions(options))
-      .replace(/\$options/,         nodeOptions)
-
-  // Build the filter subquery in order to select the root schema
-  // identifiers that will be returned by the select.
-  if (!hasParentAssociation) {
-    const filterQuery = customResolver('filterId', options);
-    query += ` WHERE ${node.getTableAlias()}.${node.getPrimaryKey()} IN (${filterQuery})`;
-    query += ` AND ${node.getResponseObjectName()} IS NOT NULL;`;
-  }
+    .replace(/\$table_alias/g,     node.getTableAlias())
+    .replace(/\$raw_fields/,      node.getRawFields())
+    .replace(/\$grouped_ids/,     hasParentAssociation ? customResolver('groupId') : '')
+    .replace(/\$source/,          node.getSource(parentNode && parentNode.haveGroupByOption()))
+    .replace(/\$fields_as_json/,  node.getFieldsAsJson())
+    .replace(/\$object_name/,     node.getResponseObjectName())
+    .replace(/\$node_name/,       node.getAssociationName())
+    .replace(/\$next_nodes/,      resolvedNextNodes)
+    .replace(/\$show_options/,    node.getShowOptions(options))
+    .replace(/\$options/,         nodeOptions)
+    // Build the filter subquery in order to select the root schema
+    // identifiers that will be returned by the select.
+    .replace(/\$filter_id/,       customResolver('filterId', options))
+    .replace(/\$table_name/,      node.getTableName())
+    .replace(/\$primary_key/g,    node.getPrimaryKey())
 
   query = _.query(query);
 
