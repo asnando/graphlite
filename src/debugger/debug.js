@@ -1,1 +1,0 @@
-module.exports = !process.env.WEBPACK ? console.log : function(){};

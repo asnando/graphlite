@@ -1,209 +1,96 @@
-const debug = require('../debugger');
-const  _ = require('../utils/');
-const Graph = require('../graph/graph');
-const QueryNode = require('./query-node');
-const QueryResponse = require('./query-response');
-
-const _const = require('../constants');
-const {
-  PRIMARY_KEY_DATA_TYPE,
-} = _const;
-
-const SQLitegraphNodeResolver            = require('./resolvers/sqlite/main');
-const SQLitegraphNodeOptionsResolver     = require('./resolvers/sqlite/options');
-const SQLitegraphNodeGroupIdsResolver    = require('./resolvers/sqlite/groupId');
-const SQLitegraphRootNodeOptionsResolver = require('./resolvers/sqlite/filterId');
-const SQLitegraphCountResolver           = require('./resolvers/sqlite/count');
+const _ = require('lodash');
+const jtree = require('../utils/jtree');
+const hashCode = require('../utils/hash-code');
 
 class Query {
 
-  // Query is basically a graph which nodes represents
-  // each schema declared or associated in the query definition graph.
-  constructor(name, graph, providers = {}) {
-    // Queries will be builded and resolved by their names.
-    this.name = name;
-    // Object representing containing all the query filters defined. It will
-    // be used by nested nodes when a order by needs to use a specific filter.
-    this.filters = {};
-    // Save raw graph definition if it needs to be used later.
-    this.rawGraph = graph;
-    // The "schemaProvider" is a function received from this main lib class
-    // which returns the schema instance using its name. All schemas
-    // are accessible in the main lib instance.
-    this.schemaProvider = providers.schemaProvider;
-    this.localeProvider = providers.localeProvider;
-    // This will be the resolved graph which will resolve the query.
-    this.graph = this._resolveGraph(this.rawGraph);
-    this.rowsParser = new QueryResponse(this.graph);
+  constructor (opts = {}) {
+    if (!_.isString(opts.name)) {
+      throw new Error(`Query must have a unique name. The name is missing or is not a string.`);
+    }
+    this.name = opts.name;
+    // console.log('######\n', opts, '\n######\n');
+    this._createQueryGraph(opts);
   }
 
-  _resolveGraph(graph) {
-
-    let resolvedGraph = new Graph();
-    const schemaProvider = this.schemaProvider;
-
-    // In order to create the query graph we need to
-    // check which paths represents a schema and which do not.
-    _.jtree(graph, (node, path, options) => {
-
-      // Check if the walked path represents a schema name.
-      if (/^\$$/.test(path) ||
-        (/(?<=\.(where|shows)\.)\w+$/.test(path)) ||
-        (/(?<=\.options)/.test(path)) ||
-        (/(as|using|throught|shows|options|alias|properties|\d|where|groupBy|size|page|orderBy|type)$/.test(path))
-      ) return;
-
-      const schemaName = node.alias || resolveSchemaName(path);
-
-      const schema = schemaProvider(schemaName);
-      
-      if (!schema) {
-        throw new Error(`Could not detect schema configuration for "${schemaName}".`);
-      }
-
-      function resolveParentName(path) {
-        // Ex.: $.some.path.(parentName).schema
-        return path.match(/\./g).length === 1 ? null : path.match(/(\w+)\.\w+$/)[1];
-      }
-
-      function resolveSchemaName(path) {
-        // Ex.: $.some.path.parentName.(schema)
-        return path.split('.').pop();
-      }
-
-      const parentNodeName = resolveParentName(path);
-      const parentSchema = options.parent;
-      const hasParent = !!parentSchema;
-
-      // The association with parent must be validated when a
-      // schema is not the root collection of the query. The association must
-      // be valid in two ways, parent has one/many of this and this belongs to parent.(for now)
-      if (hasParent && !schema.haveAssociationWith(parentSchema)) {
-        throw new Error(`"${schema.name}" have no relation with "${parentNodeName}".`);
-      }
-
-      function resolveAssociationOptions(schema, parent) {
-        return !hasParent ? null : schema.getAssociationOptionsWith(parent);
-      }
-
-      const staticOptions = {
-        page: node.page,
-        size: node.size,
-        orderBy: node.orderBy,
-        groupBy: node.groupBy
-      };
-      const definedOptions = _.pickBy({
-        ...node.where,
-        // Remove the "raw" object key.
-        raw: null
-      });
-      const rawOptions = (_.isObject(node.where) && node.where.raw) ? node.where.raw : [];
-      const displayOptions = node.shows;
-
-      // A QueryNode represents the real value of the node
-      // inside the graph. This value will be avaiable in the query
-      // node resolver.
-      // In this case we are copying the schema definition and adding
-      // some extra options and methods(avaible in this class) to make
-      // our query resolution more easy.
-      const queryNode = new QueryNode({
-        name: schema.name,
-        alias: node.alias && resolveSchemaName(path),
-        hash: schema.hash,
-        tableName: schema.tableName,
-        // Only properties define in the query properties array.
-        properties: node.properties,
-        // All the properties configured in the schema class.
-        schemaProperties: schema.properties,
-        primaryKey: schema.primaryKey,
-        showAs: node.as,
-        // Filters to use in order to display certain rows.
-        shows: displayOptions,
-        // Represents the filter(s) object definition.
-        definedOptions,
-        // Represents raw SQL queries to use as filters (declared as array).
-        rawOptions,
-        // Extra options for the query node (described structure below).
-        staticOptions,
-        parentAssociation: resolveAssociationOptions(schema, parentSchema)
-      }, {
-        localeProvider: this.localeProvider,
-        filterProvider: this._filterProvider.bind(this)
-      });
-
-      // Register the filter definition.
-      this._registerFilterList(definedOptions, schema.properties);
-
-      // Adds a new node to the query graph. Creating a graph node
-      // class is useful to loop throught the nodes in a automatic way.
-      const nodeGraph = resolvedGraph.addNode(
-        schema.hash,
-        queryNode,
-        options.lastNodeHash
-      );
-
-      // Resolvers are functions which receives a node from the graph and
-      // returns a parsed query.
-      // Add some defined resolvers to this graph node.
-      // The "main" resolver will resolves the SQL select using the
-      // json1 extension and it respectives source and joined tables.
-      nodeGraph.createResolver('main', SQLitegraphNodeResolver, true);
-      // The "filterId" resolver will resolve the general where clause which
-      // is responsible in getting the distinct ids of the root collection which
-      // will be used as filter to the query.
-      nodeGraph.createResolver('filterId', SQLitegraphRootNodeOptionsResolver, false, '');
-      // #
-      nodeGraph.createResolver('options', SQLitegraphNodeOptionsResolver);
-      // #
-      nodeGraph.createResolver('groupId', SQLitegraphNodeGroupIdsResolver);
-      // # count
-      nodeGraph.createResolver('count', SQLitegraphCountResolver);
-
-      // "jtree" function accepts a returned object that will be defined
-      // to the next walk node. In some cases these options are used to
-      // access the previous walked schema.
-      return {
-        lastNodeHash: schema.hash,
-        lastNodeName: schema.name,
-        parent: schema
-      }
-
-    });
-    return resolvedGraph;
-  }
-
-  _filterProvider(name) {
-    const { filters } = this;
-    const match = _.keys(filters).find(k => k === name);
-    const filter = filters[match];
-    return filter;
-  }
-
-  _registerFilterList(filters = {}, properties = []) {
-    filters = _.copy(filters);
-    _.keys(filters).forEach(k => {
-      const filter = filters[k];
-      const propName = filter.replace(/^\W+/, '');
-      const prop = properties.find(prop => {
-        return /id/.test(propName) ? prop.type === PRIMARY_KEY_DATA_TYPE : prop.name === propName
-      });
-      filters[k] = { name: k, filter, refersTo: prop };
-    });
-    this.filters = { ...this.filters, ...filters };
-  }
-
-  buildQuery(options = {}) {
-    return this.graph.resolve('main', _.pickBy(options));
-  }
-
-  buildCountQuery(options = {}) {
-    return this.graph.resolve('count', _.pickBy(options));
-  }
-
-  parseRows(rows) {
-    return this.rowsParser.parse(rows);
+  _createQueryGraph(queryStructure) {
+    this.graph = new Graph(queryStructure);
   }
 
 }
 
 module.exports = Query;
+
+class Graph {
+
+  constructor(structure) {
+    this.graph = this._createGraphStructure(structure);
+    console.log(this.graph);
+  }
+
+  _createGraphStructure(structure) {
+    let graph = {
+      head: null,
+      tail: null,
+      depth: 0,
+    };
+
+    jtree(structure, (node, path, options) => {
+
+      if (/^\$$/.test(path)) {
+        return;
+      } else if (/(name|as|shows|alias|properties|\d|where|groupBy|size|page|orderBy)$/.test(path)) {
+        return;
+      } else if (/(?<=(where|shows))\.\w+$/.test(path)) {
+        return;
+      }
+
+      const depth = _.isNil(options.depth) ? graph.depth : options.depth;
+
+      const schemaName = path.split('.').pop();
+
+      console.log(schemaName, depth);
+
+      this.addNode(graph, {
+        schemaName,
+        depth,
+      });
+
+      return {
+        depth: depth + 1
+      }
+    });
+    return graph;
+  }
+
+  addNode(graph, payload = {}) {
+    // console.log(payload);
+    // console.log(graph.depth, payload.depth);
+    // // Create a hash code for node.
+    // const nodeHash = hashCode();
+    // // Save and delete node depth number.
+    // const nodeDepth = payload.depth;
+    // delete payload.depth;
+    // // 
+    // if (!graph.nodeHead) {
+    //   payload.root = true;
+    //   graph.nodeHead = nodeHash;
+    // }
+    // payload.nextNodes = [];
+    // // Set the node payload
+    // graph[nodeHash] = payload;
+    // // Updates the node tail only when the node depth change.
+    // if (graph.depth !== nodeDepth) {
+    //   graph.nodeTail = nodeHash;
+    // } else if (!!graph.nodeTail) {
+    //   graph[graph.nodeTail].nextNodes.push(nodeHash);
+    // }
+    // // Update the graph depth number.
+    // graph.depth = nodeDepth;
+  }
+
+  resolve() {
+
+  }
+  
+}
