@@ -1,5 +1,5 @@
-const schemaList = require('./schema/schema-list');
-const queryList = require('./query/query-list');
+const SchemaList = require('./schema/schema-list');
+const QueryList = require('./query/query-list');
 const debug = require('./debug');
 
 // ! must disable it later.
@@ -8,11 +8,11 @@ debug.disableWarn();
 class GraphLite {
 
   constructor(opts = {}) {
-    this.schemaList = new schemaList({
-      schemas: opts.schemas
+    this.schemaList = new SchemaList({
+      schemas: opts.schemas,
     });
-    this.queryList = new queryList({
-      queries: opts.queries
+    this.queryList = new QueryList({
+      queries: opts.queries,
     });
   }
 
