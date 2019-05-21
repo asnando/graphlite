@@ -9,7 +9,6 @@ class Query {
       throw new Error(`Query must have a unique name. The name is missing or is not a string.`);
     }
     this.name = opts.name;
-    // console.log('######\n', opts, '\n######\n');
     this._createQueryGraph(opts);
   }
 
@@ -21,19 +20,21 @@ class Query {
 
 module.exports = Query;
 
+const initialGraph = {
+  head: null,
+  tail: null,
+  depth: 0,
+};
+
 class Graph {
 
   constructor(structure) {
-    this.graph = this._createGraphStructure(structure);
-    console.log(this.graph);
+    this.graph = initialGraph;
+    this._createGraphStructure(structure);
   }
 
   _createGraphStructure(structure) {
-    let graph = {
-      head: null,
-      tail: null,
-      depth: 0,
-    };
+    let { graph } = this;
 
     jtree(structure, (node, path, options) => {
 
@@ -49,8 +50,6 @@ class Graph {
 
       const schemaName = path.split('.').pop();
 
-      console.log(schemaName, depth);
-
       this.addNode(graph, {
         schemaName,
         depth,
@@ -64,29 +63,7 @@ class Graph {
   }
 
   addNode(graph, payload = {}) {
-    // console.log(payload);
-    // console.log(graph.depth, payload.depth);
-    // // Create a hash code for node.
-    // const nodeHash = hashCode();
-    // // Save and delete node depth number.
-    // const nodeDepth = payload.depth;
-    // delete payload.depth;
-    // // 
-    // if (!graph.nodeHead) {
-    //   payload.root = true;
-    //   graph.nodeHead = nodeHash;
-    // }
-    // payload.nextNodes = [];
-    // // Set the node payload
-    // graph[nodeHash] = payload;
-    // // Updates the node tail only when the node depth change.
-    // if (graph.depth !== nodeDepth) {
-    //   graph.nodeTail = nodeHash;
-    // } else if (!!graph.nodeTail) {
-    //   graph[graph.nodeTail].nextNodes.push(nodeHash);
-    // }
-    // // Update the graph depth number.
-    // graph.depth = nodeDepth;
+    
   }
 
   resolve() {

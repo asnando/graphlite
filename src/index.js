@@ -1,10 +1,10 @@
 const schemaList = require('./schema/schema-list');
 const queryList = require('./query/query-list');
+const debug = require('./debug');
 
 class GraphLite {
 
   constructor(opts = {}) {
-    // console.log('Graphlite received options:', opts);
     this.schemaList = new schemaList({
       schemas: opts.schemas
     });
@@ -20,11 +20,11 @@ class GraphLite {
   // Public API
   findOne(queryName, options = {}, extraOptions = {}) {
     extraOptions.size = 1;
-    console.log(queryName, options, extraOptions);
+    debug.log(queryName, options, extraOptions);
   }
 
   findAll(queryName, options = {}, extraOptions = {}) {
-    console.log(queryName, options, extraOptions);
+    debug.log(queryName, options, extraOptions);
   }
 
 }
