@@ -5,6 +5,7 @@
   "main": "dist/graphlite.js",
   "scripts": {
     "test": "mocha --watch ./test/index.test.js ./ --timeout 3000",
+    "run": "nodemon ./test/index.test.js",
     "build": "webpack"
   },
   "keywords": [],
