@@ -1,34 +1,62 @@
+const keys = require('lodash/keys');
+
 class Debug {
 
   constructor() {
-    this.enabled = true;
-  }
-
-  _setEnabledStatus(status) {
-    this.enabled = !!status;
-  }
-
-  _isEnabled() {
-    return !!this.enabled;
+    this.enabled = {
+      log: true,
+      warn: true,
+      error: true,
+    };
   }
 
   enable() {
-    this._setEnabledStatus(true);
+    keys(this.enabled).forEach(key => this.enabled[key] = true);
+  }
+
+  enableLog() {
+    this.enabled.log = true;
+  }
+
+  enableWarn() {
+    this.enabled.warn = true;
+  }
+
+  enableError() {
+    this.enabled.error = true;
   }
 
   disable() {
-    this._setEnabledStatus(false);
+    keys(this.enabled).forEach(key => this.enabled[key] = false);
+  }
+
+  disableLog() {
+    this.enabled.log = false;
+  }
+
+  disableWarn() {
+    this.enabled.warn = false;
+  }
+
+  disableError() {
+    this.enabled.error = false;
   }
 
   log() {
-    if (this._isEnabled()) {
+    if (this.enabled.log) {
       return console.log.apply(console, arguments);
     }
   }
 
   warn() {
-    if (this._isEnabled()) {
+    if (this.enabled.warn) {
       return console.warn.apply(console, arguments);
+    }
+  }
+
+  error() {
+    if (this.enabled.error) {
+      return console.error.apply(console, arguments);
     }
   }
 

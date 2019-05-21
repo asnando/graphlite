@@ -2,6 +2,9 @@ const schemaList = require('./schema/schema-list');
 const queryList = require('./query/query-list');
 const debug = require('./debug');
 
+// ! must disable it later.
+debug.disableWarn();
+
 class GraphLite {
 
   constructor(opts = {}) {
