@@ -4,6 +4,7 @@ const jset = require('lodash/set');
 const keys = require('lodash/keys');
 const hashCode = require('../utils/hash-code');
 const debug = require('../debug');
+const Association = require('./association');
 const SchemaProperty = require('./schema-property');
 const constants = require('../constants');
 
@@ -73,15 +74,14 @@ class Schema {
     foreignKey,
     useTargetKey,
     useSourceKey,
-  }, associationType) {
+  } = {}, associationType) {
     const schema = this;
     const objectType = /many/i.test(associationType) ? 'array' : 'object';
     const has = !!/has/i.test(associationType);
-    // const belongs = !!/belongs/i.test(associationType);
+    const belongs = !!/belongs/i.test(associationType);
     const source = has ? schema : associatedSchema;
     const target = has ? associatedSchema : schema;
-    debug.log(target._getPrimaryKeyName());
-    return {
+    return new Association({
       from: schema.name,
       to: associatedSchema.name,
       targetTable: target.tableName,
@@ -89,7 +89,7 @@ class Schema {
       targetKey: target._getPrimaryKeyName(),
       sourceTable: source.table,
       sourceHash: source.tableHash,
-      sourceKey: null,
+      sourceKey: source._getPrimaryKeyName(),
       foreignTable,
       foreignHash,
       foreignKey,
@@ -98,25 +98,23 @@ class Schema {
       objectType,
       using: [],
       associationType,
-    };
+    });
   }
 
   hasOne(schema, options) {
-    const association = this._createAssociation(schema, options, 'hasOne');
-    // debug.log(association);
-    return this;
+    this.has[schema.name] = this._createAssociation(schema, options, 'hasOne');
   }
 
-  hasMany(...args) {
-    return this;
+  hasMany(schema, options) {
+    this.has[schema.name] = this._createAssociation(schema, options, 'hasMany');
   }
 
-  belongsTo(...args) {
-    return this;
+  belongsTo(schema, options) {
+    this.belongs[schema.name] = this._createAssociation(schema, options, 'belongsTo');
   }
 
-  belongsToMany(...args) {
-    return this;
+  belongsToMany(schema, options) {
+    this.has[schema.name] = this._createAssociation(schema, options, 'belongsToMany');
   }
 }
 

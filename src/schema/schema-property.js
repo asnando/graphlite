@@ -1,4 +1,6 @@
-const _ = require('lodash');
+const assign = require('lodash/assign');
+const pickBy = require('lodash/pickBy');
+const isNil = require('lodash/isNil');
 const debug = require('../debug');
 const constants = require('../constants');
 
@@ -7,7 +9,9 @@ const {
   GRAPHLITE_DEFAULT_DATA_TYPE,
 } = constants;
 
-const graphliteSupportPropertyType = type => GRAPHLITE_SUPPORTED_DATA_TYPES.includes(type);
+const graphliteSupportPropertyType = (type) => {
+  return isNil(type) ? true : GRAPHLITE_SUPPORTED_DATA_TYPES.includes(type);
+};
 
 class SchemaProperty {
   constructor({
@@ -17,7 +21,7 @@ class SchemaProperty {
     parser,
     type,
   }) {
-    _.assign(this, _.pickBy({
+    assign(this, pickBy({
       schema,
       name,
       alias,
@@ -27,25 +31,22 @@ class SchemaProperty {
   }
 
   _resolvePropertyType(type) {
+    if (!graphliteSupportPropertyType(type)) {
+      throw new Error(`Unrecognized type "${type}" on prop "${this.name}"`);
+    }
     if (!type) {
       debug.warn(`Undefined type on prop "${this.name}", using "${GRAPHLITE_DEFAULT_DATA_TYPE}".`);
-      type = GRAPHLITE_DEFAULT_DATA_TYPE;
-    } else if (!graphliteSupportPropertyType(type)) {
-      throw new Error(`Unrecognized type "${type}" on prop "${this.name}"`);
+      return GRAPHLITE_DEFAULT_DATA_TYPE;
     }
     return type;
   }
-  
+
   getPropertyNameInTable() {
     return this.alias || this.name;
   }
 
   getPropertyName() {
     return this.name;
-  }
-
-  parsePropertyValue(value) {
-    debug.log(this.type, this.parser);
   }
 }
 

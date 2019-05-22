@@ -10,15 +10,13 @@ const queryList = require('./jar/query-list');
 debug.disableWarn();
 
 class GraphLite {
-  constructor(opts = {}) {
-    const {
-      schemas,
-      queries,
-      associations,
-      locales,
-      defaultLanguage,
-    } = opts;
-
+  constructor({
+    schemas,
+    queries,
+    associations,
+    locales,
+    defaultLanguage,
+  }) {
     const supportedLocales = isObject(locales) ? keys(locales) : {};
 
     assign(this, {

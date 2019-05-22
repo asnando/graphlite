@@ -1,14 +1,10 @@
 const path = require('path');
-const graphlite = require('../src');
-const sqliteStorage = require('sqlite-storage');
+const SqliteStorage = require('sqlite-storage');
+const Graphlite = require('../src');
+const useAssociations = require('./useAssociations');
 
-const schema = (schemaName) => {
-  return require(path.resolve(__dirname, 'schemas', schemaName));
-}
-
-const query = (queryName) => {
-  return require(path.resolve(__dirname, 'queries', queryName));
-}
+const schema = schemaName => require(path.resolve(__dirname, 'schemas', schemaName));
+const query = queryName => require(path.resolve(__dirname, 'queries', queryName));
 
 const schemas = [
   schema('aplicacao'),
@@ -31,28 +27,38 @@ const queries = [
   // query('grupos'),
 ];
 
-const graph = new graphlite({
+const graph = new Graphlite({
   schemas,
   queries,
+  associations: useAssociations,
+  locales: {
+    'pt-br': {
+      usePreffix: null,
+    },
+    en: {
+      usePreffix: 'E',
+    },
+  },
+  defaultLanguage: 'pt-br',
 });
 
-const sqlite = new sqliteStorage({
+const sqlite = new SqliteStorage({
   databases: [
     {
-      name: "data",
-      path: path.join(__dirname, 'databases', 'test.db')
+      name: 'data',
+      path: path.join(__dirname, 'databases', 'test.db'),
     },
     {
-      name: "images",
+      name: 'images',
       path: path.join(__dirname, 'databases', 'images'),
       attach: true,
-    }
+    },
   ]
 });
 
 // note: replacement while we do not have mocha installed yet.
-const before = (callback) =>  callback();
-const after = (callback) => callback();
+const before = callback => callback();
+const after = callback => callback();
 
 // before(() => {
 //   sqlite.connect().then(() => {
