@@ -1,7 +1,9 @@
+/* eslint-disable no-console */
+/* eslint-disable prefer-rest-params */
+/* eslint-disable prefer-spread */
 const keys = require('lodash/keys');
 
 class Debug {
-
   constructor() {
     this.enabled = {
       log: true,
@@ -11,7 +13,9 @@ class Debug {
   }
 
   enable() {
-    keys(this.enabled).forEach(key => this.enabled[key] = true);
+    keys(this.enabled).forEach((key) => {
+      this.enabled[key] = true;
+    });
   }
 
   enableLog() {
@@ -27,7 +31,9 @@ class Debug {
   }
 
   disable() {
-    keys(this.enabled).forEach(key => this.enabled[key] = false);
+    keys(this.enabled).forEach((key) => {
+      this.enabled[key] = false;
+    });
   }
 
   disableLog() {
@@ -44,22 +50,21 @@ class Debug {
 
   log() {
     if (this.enabled.log) {
-      return console.log.apply(console, arguments);
+      console.log.apply(console, arguments);
     }
   }
 
   warn() {
     if (this.enabled.warn) {
-      return console.warn.apply(console, arguments);
+      console.warn.apply(console, arguments);
     }
   }
 
   error() {
     if (this.enabled.error) {
-      return console.error.apply(console, arguments);
+      console.error.apply(console, arguments);
     }
   }
-
 }
 
 module.exports = new Debug();

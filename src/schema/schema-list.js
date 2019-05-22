@@ -1,11 +1,14 @@
-const _ = require('lodash');
+const isArray = require('lodash/isArray');
+const size = require('lodash/size');
+const isString = require('lodash/isString');
+const jset = require('lodash/set');
+const debug = require('../debug');
 const Schema = require('./schema');
 
 class SchemaList {
-
   constructor(opts = {}) {
     this.schemas = {};
-    if (_.isArray(opts.schemas)) {
+    if (isArray(opts.schemas)) {
       this._defineSchemasFromArrayList(opts.schemas);
     }
   }
@@ -14,14 +17,13 @@ class SchemaList {
     return schemas.forEach(schema => this.defineSchema(schema));
   }
 
-  defineSchema(schemaName, schema) {
-    schema = _.size(arguments) === 2 ? arguments[1] : arguments[0];
-
-    if (!_.isString(schema.name) && _.size(arguments) === 2) {
-      schema.name = arguments[0];
+  defineSchema(...args) {
+    const schema = size(args) === 2 ? args[1] : args[0];
+    if (!isString(schema.name) && size(args) === 2) {
+      const [schemaName] = args;
+      schema.name = schemaName;
     }
-
-    return _.set(this.schemas, schema.name, new Schema(schema));
+    return jset(this.schemas, schema.name, new Schema(schema));
   }
 
   getSchema(schemaName) {
@@ -30,7 +32,10 @@ class SchemaList {
     }
     return this.schemas[schemaName];
   }
-  
+
+  getSchemaList() {
+    return this.schemas;
+  }
 }
 
 module.exports = SchemaList;
