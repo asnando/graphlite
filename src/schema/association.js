@@ -40,5 +40,4 @@ class Association {
   }
 }
 
-
 module.exports = Association;

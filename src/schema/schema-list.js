@@ -2,7 +2,7 @@ const isArray = require('lodash/isArray');
 const size = require('lodash/size');
 const isString = require('lodash/isString');
 const jset = require('lodash/set');
-const debug = require('../debug');
+// const debug = require('../debug');
 const Schema = require('./schema');
 
 class SchemaList {

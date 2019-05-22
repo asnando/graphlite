@@ -3,21 +3,19 @@ const isString = require('lodash/isString');
 const jset = require('lodash/set');
 const keys = require('lodash/keys');
 const hashCode = require('../utils/hash-code');
-const debug = require('../debug');
 const Association = require('./association');
 const SchemaProperty = require('./schema-property');
 const constants = require('../constants');
+// const debug = require('../debug');
 
 const {
   GRAPHLITE_PRIMARY_KEY_DATA_TYPE,
 } = constants;
 
-const isPrimaryKeyDefined = (props) => {
-  return !!keys(props).find((propName) => {
-    const prop = props[propName];
-    return GRAPHLITE_PRIMARY_KEY_DATA_TYPE === (isString(prop) ? prop : prop.type);
-  });
-}
+const isPrimaryKeyDefined = props => !!keys(props).find((propName) => {
+  const prop = props[propName];
+  return GRAPHLITE_PRIMARY_KEY_DATA_TYPE === (isString(prop) ? prop : prop.type);
+});
 
 class Schema {
   constructor({
@@ -78,7 +76,7 @@ class Schema {
     const schema = this;
     const objectType = /many/i.test(associationType) ? 'array' : 'object';
     const has = !!/has/i.test(associationType);
-    const belongs = !!/belongs/i.test(associationType);
+    // const belongs = !!/belongs/i.test(associationType);
     const source = has ? schema : associatedSchema;
     const target = has ? associatedSchema : schema;
     return new Association({

@@ -1,17 +1,20 @@
-const _ = require('lodash');
+const isString = require('lodash/isString');
+// const debug = require('../debug');
 const Graph = require('../graph/graph');
+
+const createGraph = structure => new Graph(structure);
 
 class Query {
   constructor(opts = {}) {
-    if (!_.isString(opts.name)) {
+    if (!isString(opts.name)) {
       throw new Error('Query must have a unique name. The name is missing or is not a string.');
     }
     this.name = opts.name;
-    this._createQueryGraph(opts);
+    this.graph = createGraph(opts);
   }
 
-  _createQueryGraph(queryStructure) {
-    this.graph = new Graph(queryStructure);
+  resolve(options = {}) {
+    return this.graph.resolve(options);
   }
 }
 

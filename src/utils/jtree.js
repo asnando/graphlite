@@ -1,19 +1,23 @@
-const _ = require('lodash');
+const isArray = require('lodash/isArray');
+const isObject = require('lodash/isObject');
+const isNumber = require('lodash/isNumber');
+const keys = require('lodash/keys');
 
-module.exports = function jtree(tree, handler, path, parentNode, parentPath, options) {
-  path = path || '$';
-  options = options || {};
+module.exports = function jtree(tree, handler, path, parentNode, parentPath, options = {}) {
+  const activePath = path || '$';
+  let activeOptions = options;
   if (typeof handler === 'function') {
-    options = handler(tree, path, options, parentNode, parentPath);
+    activeOptions = handler(tree, activePath, activeOptions, parentNode, parentPath);
   }
-  if (_.isArray(tree)) {
+  if (isArray(tree)) {
     tree.forEach((node, index) => {
-      jtree(node, handler, path.concat('#').concat(index), tree, path, options);
+      jtree(node, handler, activePath.concat('#').concat(index), tree, activePath, activeOptions);
     });
-  } else if (_.isObject(tree)) {
-    Object.keys(tree).forEach(nodeName => {
-      if (_.isNumber(nodeName)) return;
-      jtree(tree[nodeName], handler, path.concat('.').concat(nodeName), tree, path, options);
+  } else if (isObject(tree)) {
+    keys(tree).forEach((nodeName) => {
+      if (!isNumber(nodeName)) {
+        jtree(tree[nodeName], handler, activePath.concat('.').concat(nodeName), tree, activePath, activeOptions);
+      }
     });
   }
-}
+};

@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 const path = require('path');
 const SqliteStorage = require('sqlite-storage');
 const Graphlite = require('../src');
@@ -19,8 +20,8 @@ const schemas = [
 ];
 
 const queries = [
-  // query('listaProdutos'),
-  query('produto'),
+  query('listaProdutos'),
+  // query('produto'),
   // query('linhasProdutos'),
   // query('montadoras'),
   // query('veiculos'),
@@ -53,10 +54,10 @@ const sqlite = new SqliteStorage({
       path: path.join(__dirname, 'databases', 'images'),
       attach: true,
     },
-  ]
+  ],
 });
 
-// note: replacement while we do not have mocha installed yet.
+// !note: replacement while we do not have mocha installed yet.
 const before = callback => callback();
 const after = callback => callback();
 
@@ -70,3 +71,8 @@ const after = callback => callback();
 //     });
 //   });
 // });
+
+
+before(() => {
+  graph.findAll('lista-produtos');
+});

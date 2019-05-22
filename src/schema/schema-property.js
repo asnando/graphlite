@@ -9,9 +9,9 @@ const {
   GRAPHLITE_DEFAULT_DATA_TYPE,
 } = constants;
 
-const graphliteSupportPropertyType = (type) => {
-  return isNil(type) ? true : GRAPHLITE_SUPPORTED_DATA_TYPES.includes(type);
-};
+const graphliteSupportPropertyType = type => (
+  isNil(type) ? true : GRAPHLITE_SUPPORTED_DATA_TYPES.includes(type)
+);
 
 class SchemaProperty {
   constructor({

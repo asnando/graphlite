@@ -47,16 +47,28 @@ class GraphLite {
     }
   }
 
-  // Public API
-  findOne(queryName, options = {}, extraOptions = {}) {
-    assign(extraOptions, 'size', 1);
-    debug.log(queryName, options, extraOptions);
-    return this.someRandomFunction(options, extraOptions);
+  _getQuery(queryName) {
+    return this.queryList.getQuery(queryName);
   }
 
-  findAll(queryName, options = {}, extraOptions = {}) {
-    debug.log(queryName, options, extraOptions);
-    return this.someRandomFunction(options, extraOptions);
+  // Public API
+  findOne(...args) {
+    // assign(extraOptions, 'size', 1);
+    return this._mountQuery(...args);
+  }
+
+  findAll(...args) {
+    return this._mountQuery(...args);
+  }
+
+  _mountQuery(queryName, options = {}, extraOptions = {}) {
+    const query = this._getQuery(queryName);
+    // !
+    const mergeOptionsObject = (a, b) => assign(a, b);
+    const mergedOptions = mergeOptionsObject(options, extraOptions);
+    const mountedQuery = query.resolve(mergedOptions);
+    debug.log('mounted query:', mountedQuery);
+    return Promise.resolve({});
   }
 
   setLocale(locale) {
