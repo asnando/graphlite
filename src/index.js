@@ -6,7 +6,7 @@ const debug = require('./debug');
 const schemaList = require('./jar/schema-list');
 const queryList = require('./jar/query-list');
 
-// ! must disable it later.
+// ! remove it later.
 debug.disableWarn();
 
 class GraphLite {

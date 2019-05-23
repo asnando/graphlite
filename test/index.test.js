@@ -20,8 +20,8 @@ const schemas = [
 ];
 
 const queries = [
-  query('listaProdutos'),
-  // query('produto'),
+  // query('listaProdutos'),
+  query('produto'),
   // query('linhasProdutos'),
   // query('montadoras'),
   // query('veiculos'),
@@ -74,5 +74,5 @@ const after = callback => callback();
 
 
 before(() => {
-  graph.findAll('lista-produtos');
+  graph.findAll('produto');
 });

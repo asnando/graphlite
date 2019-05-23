@@ -13,8 +13,8 @@ class Query {
     this.graph = createGraph(opts);
   }
 
-  resolve(options = {}) {
-    return this.graph.resolve(options);
+  resolve(...args) {
+    return this.graph.resolveGraph(...args);
   }
 }
 

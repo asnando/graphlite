@@ -57,13 +57,28 @@ class Schema {
     });
   }
 
-  _getPrimaryKey() {
+  getPrimaryKey() {
     const props = this.properties;
-    return keys(props).find(propName => props[propName].type === GRAPHLITE_PRIMARY_KEY_DATA_TYPE);
+    let pk = keys(props).find(propName => props[propName].type === GRAPHLITE_PRIMARY_KEY_DATA_TYPE);
+    pk = !pk ? pk : props[pk];
+    return pk;
   }
 
-  _getPrimaryKeyName() {
-    return this._getPrimaryKey();
+  getPrimaryKeyName() {
+    return this.getPrimaryKey().name;
+  }
+
+  getPrimaryKeyColumnName() {
+    const pk = this.getPrimaryKey();
+    return pk.alias || pk.name;
+  }
+
+  getTableName() {
+    return this.tableName;
+  }
+
+  getTableHash() {
+    return this.tableHash;
   }
 
   _createAssociation(associatedSchema, {
@@ -84,10 +99,10 @@ class Schema {
       to: associatedSchema.name,
       targetTable: target.tableName,
       targetHash: target.tableHash,
-      targetKey: target._getPrimaryKeyName(),
+      targetKey: target.getPrimaryKeyName(),
       sourceTable: source.table,
       sourceHash: source.tableHash,
-      sourceKey: source._getPrimaryKeyName(),
+      sourceKey: source.getPrimaryKeyName(),
       foreignTable,
       foreignHash,
       foreignKey,
