@@ -1,21 +1,30 @@
 const debug = require('../../debug');
+const constants = require('../../constants');
 
-const SQLiteGraphNodeRootResolver = (node, options) => {
-  const { schema } = node.getValue();
+const {
+  RESPONSE_OBJECT_NAME,
+} = constants;
+
+const SQLiteGraphNodeRootResolver = (nodeValue, options, node, resolveNextNodes, resolveNode) => {
+  const { schema } = nodeValue;
   const tableName = schema.getTableName();
   const tableHash = schema.getTableHash();
   const tableId = schema.getPrimaryKeyColumnName();
-  const responseObjectName = 'response';
-  const source = node.resolveNode(options, 'sourceWithAssociations');
-  debug.log('resolved source with associations:', source);
+  const responseObjectName = RESPONSE_OBJECT_NAME;
+  // Starts a new resolver loop from the actual node. It will render the
+  // "root source with associations" query piece.
+  const rootSourceWithAssociations = resolveNode('sourceWithAssociations');
+  /* const nestedNodes = node.resolveNode(); */
   return `
   SELECT
     /* begin response object */
     json_patch(
       /* begin root json fields */
       json_object(),
-      ($nextNodes)
       /* end root json fields */
+      /* begin nested nodes */
+      ($nestedNodes)
+      /* end nested nodes */
     ) AS ${responseObjectName}
     /* end response object */
   FROM (
@@ -28,13 +37,9 @@ const SQLiteGraphNodeRootResolver = (node, options) => {
         /* begin root distinct id */
         DISTINCT ${tableId}
         /* end root distinct id */
-      FROM
-      /* begin root source */
-      $source
-      /* end root source */
-      /* begin root associations */
-      $associations
-      /* end root associations */
+      /* begin root source with associations */
+      ${rootSourceWithAssociations}
+      /* end root source with associations */
       /* begin root options */
       $options
       /* end root options */

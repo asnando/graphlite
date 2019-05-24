@@ -6,7 +6,7 @@ const hashCode = require('../utils/hash-code');
 const Association = require('./association');
 const SchemaProperty = require('./schema-property');
 const constants = require('../constants');
-// const debug = require('../debug');
+const debug = require('../debug');
 
 const {
   GRAPHLITE_PRIMARY_KEY_DATA_TYPE,
@@ -18,15 +18,10 @@ const isPrimaryKeyDefined = props => !!keys(props).find((propName) => {
 });
 
 class Schema {
-  constructor({
-    name,
-    tableName,
-    properties,
-  }) {
+  constructor({ name, tableName, properties }, schemaList) {
     if (!isString(name)) {
       throw new Error('Schema must have a unique name. The name is missing or is not a string.');
     }
-
     assign(this, {
       name,
       tableName,
@@ -34,12 +29,14 @@ class Schema {
       properties: {},
       has: {},
       belongs: {},
+      // schemaList reference must be saved inside this class instance because
+      // the SchemaList class depends on this class. So, when we need access to the schema
+      // list jar we can access throught it.
+      schemaList,
     });
-
     if (!isPrimaryKeyDefined(properties)) {
       throw new Error(`Missing primary key on "${name}" schema.`);
     }
-
     this._definePropertiesFromList(properties);
   }
 
@@ -55,6 +52,10 @@ class Schema {
         schema: this.name,
       }));
     });
+  }
+
+  getSchemaName() {
+    return this.name;
   }
 
   getPrimaryKey() {
@@ -81,12 +82,23 @@ class Schema {
     return this.tableHash;
   }
 
+  getAssociationWith(schemaName) {
+    const schema = this._getSchemaFromList(schemaName);
+    return this.has[schemaName] || this.belongs[schemaName] || schema.getAssociationWith(this.name);
+  }
+
+  _getSchemaFromList(schemaName) {
+    return this.schemaList.getSchema(schemaName);
+  }
+
   _createAssociation(associatedSchema, {
     foreignTable,
-    foreignHash,
+    // foreignHash,
     foreignKey,
     useTargetKey,
     useSourceKey,
+    join,
+    using,
   } = {}, associationType) {
     const schema = this;
     const objectType = /many/i.test(associationType) ? 'array' : 'object';
@@ -95,21 +107,25 @@ class Schema {
     const source = has ? schema : associatedSchema;
     const target = has ? associatedSchema : schema;
     return new Association({
-      from: schema.name,
-      to: associatedSchema.name,
-      targetTable: target.tableName,
-      targetHash: target.tableHash,
+      from: schema.getSchemaName(),
+      to: associatedSchema.getSchemaName(),
+      targetTable: target.getTableName(),
+      targetHash: target.getTableHash(),
       targetKey: target.getPrimaryKeyName(),
-      sourceTable: source.table,
-      sourceHash: source.tableHash,
+      sourceTable: source.getTableName(),
+      sourceHash: source.getTableHash(),
       sourceKey: source.getPrimaryKeyName(),
       foreignTable,
-      foreignHash,
+      // foreignHash,
       foreignKey,
       useTargetKey,
       useSourceKey,
+      joinType: join,
       objectType,
-      using: [],
+      // "using" is an array that intermediates the association between two schemas. This
+      // array receives the schemas names in the middle of the association.
+      // The array is mutated within the real schema objects representations.
+      using: (using || []).map(schemaName => this.getAssociationWith(schemaName)),
       associationType,
     });
   }

@@ -2,13 +2,11 @@ const isObject = require('lodash/isObject');
 const keys = require('lodash/keys');
 const jset = require('lodash/set');
 const jget = require('lodash/get');
-// const isNil = require('lodash/isNil');
-// const chunk = require('lodash/chunk');
 const jtree = require('../utils/jtree');
-const debug = require('../debug');
 const hashCode = require('../utils/hash-code');
 const schemaList = require('../jar/schema-list');
 const GraphNode = require('./graph-node');
+const debug = require('../debug');
 
 const initialGraph = {
   head: null,

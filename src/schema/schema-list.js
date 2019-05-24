@@ -2,8 +2,8 @@ const isArray = require('lodash/isArray');
 const size = require('lodash/size');
 const isString = require('lodash/isString');
 const jset = require('lodash/set');
-// const debug = require('../debug');
 const Schema = require('./schema');
+// const debug = require('../debug');
 
 class SchemaList {
   constructor(opts = {}) {
@@ -23,7 +23,7 @@ class SchemaList {
       const [schemaName] = args;
       schema.name = schemaName;
     }
-    return jset(this.schemas, schema.name, new Schema(schema));
+    return jset(this.schemas, schema.name, new Schema(schema, this));
   }
 
   getSchema(schemaName) {

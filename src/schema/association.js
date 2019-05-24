@@ -1,4 +1,9 @@
 const assign = require('lodash/assign');
+const constants = require('../constants');
+
+const {
+  DEFAULT_ASSOCIATION_JOIN_TYPE,
+} = constants;
 
 class Association {
   constructor({
@@ -11,10 +16,11 @@ class Association {
     sourceHash,
     sourceKey,
     foreignTable,
-    foreignHash,
+    // foreignHash,
     foreignKey,
     useTargetKey,
     useSourceKey,
+    joinType = DEFAULT_ASSOCIATION_JOIN_TYPE,
     objectType,
     using,
     associationType,
@@ -29,10 +35,11 @@ class Association {
       sourceHash,
       sourceKey,
       foreignTable,
-      foreignHash,
+      // foreignHash,
       foreignKey,
       useTargetKey,
       useSourceKey,
+      joinType,
       objectType,
       using,
       associationType,
