@@ -14,7 +14,6 @@ const SQLiteGraphNodeRootResolver = (nodeValue, options, node, resolveNextNodes,
   // Starts a new resolver loop from the actual node. It will render the
   // "root source with associations" query piece.
   const rootSourceWithAssociations = resolveNode('sourceWithAssociations');
-  /* const nestedNodes = node.resolveNode(); */
   return `
   SELECT
     /* begin response object */
@@ -30,7 +29,7 @@ const SQLiteGraphNodeRootResolver = (nodeValue, options, node, resolveNextNodes,
   FROM (
     SELECT
       /* begin root raw fields */
-      *
+      ${tableHash}.*
       /* end root raw fields */
     FROM (
       SELECT
@@ -44,7 +43,7 @@ const SQLiteGraphNodeRootResolver = (nodeValue, options, node, resolveNextNodes,
       $options
       /* end root options */
     ) AS root
-    LEFT JOIN ${tableName} ON ${tableName}.${tableId}=root.${tableId}
+    LEFT JOIN ${tableName} AS ${tableHash} ON ${tableHash}.${tableId}=root.${tableId}
   ) AS ${tableHash};
   `;
 };
