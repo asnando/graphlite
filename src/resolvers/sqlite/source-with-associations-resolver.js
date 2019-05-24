@@ -7,7 +7,8 @@ const SQLiteGraphNodeSourceWithAssociationsResolver = (
   node,
   resolveNextNodes,
 ) => {
-  const { schema } = nodeValue;
+  // const { schema } = nodeValue;
+  const schema = nodeValue;
   const tableName = schema.getTableName();
   const parentSchemaName = node.root ? null : node.parent.getSchemaName();
 

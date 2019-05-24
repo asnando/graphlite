@@ -58,6 +58,10 @@ class Schema {
     return this.name;
   }
 
+  getAllProperties() {
+    return this.properties;
+  }
+
   getPrimaryKey() {
     const props = this.properties;
     let pk = keys(props).find(propName => props[propName].type === GRAPHLITE_PRIMARY_KEY_DATA_TYPE);

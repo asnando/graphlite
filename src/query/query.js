@@ -1,5 +1,4 @@
 const isString = require('lodash/isString');
-// const debug = require('../debug');
 const Graph = require('../graph/graph');
 
 const createGraph = structure => new Graph(structure);

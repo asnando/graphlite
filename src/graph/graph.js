@@ -6,6 +6,7 @@ const jtree = require('../utils/jtree');
 const hashCode = require('../utils/hash-code');
 const schemaList = require('../jar/schema-list');
 const GraphNode = require('./graph-node');
+const QuerySchema = require('../schema/query-schema');
 const debug = require('../debug');
 
 const initialGraph = {
@@ -40,10 +41,13 @@ class Graph {
       // Parent schema will be present in the path when there is more than 1 ".", in that case
       // resolve the parent schema name to access the previous graph node.
       const parentSchemaName = /(\w+\.){1,}/.test(path) ? path.split('.').slice(-2, -1).shift() : null;
-      // Add the actual node definition into the graph.
-      this._addGraphNode(schemaName, nodeHash, {
-        schema,
-      }, parentSchemaName);
+      // Create a new QuerySchema which represents the node schema and some
+      // merged options and methods.
+      this._addGraphNode(schemaName, nodeHash, new QuerySchema({
+        ...schema,
+        // Query Node specific attributes.
+        useProperties: node.properties,
+      }), parentSchemaName);
     });
     return graph;
   }

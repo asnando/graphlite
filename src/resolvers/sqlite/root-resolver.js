@@ -6,7 +6,8 @@ const {
 } = constants;
 
 const SQLiteGraphNodeRootResolver = (nodeValue, options, node, resolveNextNodes, resolveNode) => {
-  const { schema } = nodeValue;
+  // const { schema } = nodeValue;
+  const schema = nodeValue;
   const tableName = schema.getTableName();
   const tableHash = schema.getTableHash();
   const tableId = schema.getPrimaryKeyColumnName();
@@ -19,7 +20,9 @@ const SQLiteGraphNodeRootResolver = (nodeValue, options, node, resolveNextNodes,
     /* begin response object */
     json_patch(
       /* begin root json fields */
-      json_object(),
+      json_object(
+        $rootObjectFields
+      ),
       /* end root json fields */
       /* begin nested nodes */
       ($nestedNodes)

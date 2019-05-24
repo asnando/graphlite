@@ -69,7 +69,7 @@ class GraphNode {
 
   // acessed by nested nodes to know the name of its parent.
   getSchemaName() {
-    return this.value.schema.getSchemaName();
+    return this.value.getSchemaName();
   }
 
   getNextNodes() {
