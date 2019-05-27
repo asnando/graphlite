@@ -1,3 +1,5 @@
+const keys = require('lodash/keys');
+const quote = require('../../utils/quote');
 const debug = require('../../debug');
 const constants = require('../../constants');
 
@@ -5,8 +7,17 @@ const {
   RESPONSE_OBJECT_NAME,
 } = constants;
 
+// Returns the prop definition as pattern: 'propName', someTableRandomHash.propColumnName
+const translatePropsToObject = (props, schemaHash) => keys(props).map((propName) => {
+  const prop = props[propName];
+  return quote(prop.getPropertyName())
+    .concat(',')
+    .concat(schemaHash)
+    .concat('.')
+    .concat(prop.getPropertyColumnName());
+}).join(',');
+
 const SQLiteGraphNodeRootResolver = (nodeValue, options, node, resolveNextNodes, resolveNode) => {
-  // const { schema } = nodeValue;
   const schema = nodeValue;
   const tableName = schema.getTableName();
   const tableHash = schema.getTableHash();
@@ -15,13 +26,14 @@ const SQLiteGraphNodeRootResolver = (nodeValue, options, node, resolveNextNodes,
   // Starts a new resolver loop from the actual node. It will render the
   // "root source with associations" query piece.
   const rootSourceWithAssociations = resolveNode('sourceWithAssociations');
+  const rootObjectFields = translatePropsToObject(nodeValue.getDefinedProperties(), tableHash);
   return `
   SELECT
     /* begin response object */
     json_patch(
       /* begin root json fields */
       json_object(
-        $rootObjectFields
+        ${rootObjectFields}
       ),
       /* end root json fields */
       /* begin nested nodes */

@@ -47,6 +47,9 @@ class Graph {
         ...schema,
         // Query Node specific attributes.
         useProperties: node.properties,
+        options: {
+          orderBy: 1,
+        },
       }), parentSchemaName);
     });
     return graph;
