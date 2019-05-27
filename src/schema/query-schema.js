@@ -1,15 +1,26 @@
 const assign = require('lodash/assign');
 const isArray = require('lodash/isArray');
 const size = require('lodash/size');
+const keys = require('lodash/keys');
 const Schema = require('../schema/schema');
 const schemaList = require('../jar/schema-list');
 const debug = require('../debug');
+
+const DEFAULT_PAGE_SIZE = 100;
 
 // This class is a copy of the original schemas. Each node inside queries are maped
 // to a new exclusive representation of the original schemas. All new specifications
 // of use of the schema inside query must be put as method of this class.
 class QuerySchema extends Schema {
-  constructor(opts = {}) {
+  constructor(opts = {
+    options: {
+      where: {},
+      page: 1,
+      size: DEFAULT_PAGE_SIZE,
+      orderBy: [],
+      groupBy: [],
+    },
+  }) {
     // Pass the "schemaList" reference to parent constructor as it must be saved inside it.
     super(opts, schemaList);
     assign(this, {
@@ -17,6 +28,7 @@ class QuerySchema extends Schema {
       // then it will use only the defined properties inside this array, otherwise
       // will use all the properties from the schema.
       definedProperties: {},
+      options: opts.options,
     });
     // "useProperties" refers to a array within properties schema names
     // that must be (only)rendered when the query executes.
@@ -50,6 +62,15 @@ class QuerySchema extends Schema {
   // is overrided and it returns the real schema hash code from the schema in the schema list jar.
   getTableHash() {
     return schemaList.getSchema(this.getSchemaName()).getTableHash();
+  }
+
+  // check if defined query filters have some input value.
+  hasAssociatedOption(queryOptions = {}) {
+    const { where } = this.options;
+    if (!size(keys(where))) {
+      return false;
+    }
+    return !!keys(where).find(key => !!queryOptions[key]);
   }
 }
 

@@ -12,11 +12,12 @@ const SQLiteGraphNodeSourceWithAssociationsResolver = (
   const parentSchemaName = node.root ? null : node.parent.getValue().getSchemaName();
 
   if (!node.root) {
+    // ignore join(s) without filter value.
+    if (!schema.hasAssociatedOption(options)) return '';
     const resolvedAssociation = schema.getAssociationWith(parentSchemaName);
     // Nested nodes can have another schemas between associations. In that case,
     // we need to use the "using" middleware associations array to reach the associated data.
     return (resolvedAssociation.using || []).concat(resolvedAssociation)
-      // todo: ignore associations with no where clause too.
       // ignore left joins and middleware schemas which root association has left join too.
       .filter((association, index, self) => (!index
         ? !/left/i.test(association.joinType)

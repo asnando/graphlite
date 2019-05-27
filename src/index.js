@@ -66,7 +66,7 @@ class GraphLite {
     const mergeOptionsObject = (a, b) => assign(a, b);
     const mergedOptions = mergeOptionsObject(options, extraOptions);
     const resolvedQuery = formatQuery(query.resolve(mergedOptions));
-    debug.log(resolvedQuery);
+    // debug.log(resolvedQuery);
     pbcopy.writeSync(resolvedQuery);
     return Promise.resolve({});
   }

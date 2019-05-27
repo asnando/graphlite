@@ -48,7 +48,11 @@ class Graph {
         // Query Node specific attributes.
         useProperties: node.properties,
         options: {
-          orderBy: 1,
+          where: node.where,
+          size: node.size,
+          page: node.page,
+          groupBy: node.groupBy,
+          orderBy: node.orderBy,
         },
       }), parentSchemaName);
     });
