@@ -1,7 +1,6 @@
 const chunk = require('lodash/chunk');
+const pair = require('../../utils/pair');
 const debug = require('../../debug');
-
-const pair = array => (array.length === 2 ? array : array.concat('json_object'));
 
 const renderPatch = (pairedNodes) => {
   const resolvedPairedNodes = pairedNodes.map(node => `(${node})`).join(',');
