@@ -63,7 +63,7 @@ class GraphNode {
   }) {
     debug.log(resolver, queryOptions, options);
     const nodeValue = node.getValue();
-    const resolveNextNodes = node.resolveNextNodes.bind(node, resolver, queryOptions);
+    const resolveNextNodes = node.resolveNextNodes.bind(node, resolver, queryOptions, options);
     const resolveNode = node.resolveNode.bind(node, queryOptions);
     return resolver(nodeValue, queryOptions, node, resolveNextNodes, resolveNode);
   }
@@ -83,8 +83,8 @@ class GraphNode {
   // When a node resolver is called this function will be passed in the arguments list
   // in case when the resolver must resolve another specific resolver from inside it.
   // When this function is called it will resolve the nodes from the root(always).
-  resolveNode(queryOptions = {}, resolverName = DEFAULT_RESOLVER_NAME) {
-    return this._renderFromResolver(this._getResolver(resolverName), queryOptions);
+  resolveNode(queryOptions = {}, resolverName = DEFAULT_RESOLVER_NAME, options) {
+    return this._renderFromResolver(this._getResolver(resolverName), queryOptions, this, options);
   }
 
   /**
@@ -98,8 +98,14 @@ class GraphNode {
    * @param {object} options Specific options for graph builder.
    */
   resolveNextNodes(resolver, queryOptions = {}, options) {
-    const { nextNodes } = this;
-    return nextNodes.map(node => this._renderFromResolver(resolver, queryOptions, node, options)).join(' ');
+    const { nextNodes, patcher } = this;
+    const resolvedNodes = nextNodes.map(node => this._renderFromResolver(
+      resolver,
+      queryOptions,
+      node,
+      options,
+    ));
+    return options.usePatch ? patcher(resolvedNodes) : resolvedNodes.join(' ');
   }
 }
 

@@ -16,9 +16,8 @@ const SQLiteGraphNodeRootResolver = (nodeValue, options, node, resolveNextNodes,
   // "root source with associations" query piece.
   const rootSourceWithAssociations = resolveNode('sourceWithAssociations');
   const rootObjectFields = translatePropsToObject(schema.getDefinedProperties(), tableHash);
-  // // #
-  // const nextNodes = resolveNode('nested');
-  // debug.log(nextNodes);
+  // #
+  const nextNodes = resolveNode('nested', { usePatch: true });
   return `
   SELECT
     /* begin response object */
@@ -29,7 +28,7 @@ const SQLiteGraphNodeRootResolver = (nodeValue, options, node, resolveNextNodes,
       ),
       /* end root json fields */
       /* begin nested nodes */
-      ($nextNodes)
+      (${nextNodes})
       /* end nested nodes */
     ) AS ${responseObjectName}
     /* end response object */
