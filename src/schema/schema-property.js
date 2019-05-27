@@ -16,6 +16,7 @@ const graphliteSupportPropertyType = type => (
 class SchemaProperty {
   constructor({
     schema,
+    schemaHash,
     name,
     alias,
     parser,
@@ -23,6 +24,7 @@ class SchemaProperty {
   }) {
     assign(this, pickBy({
       schema,
+      schemaHash,
       name,
       alias,
       parser,
@@ -41,12 +43,12 @@ class SchemaProperty {
     return type;
   }
 
-  getPropertyNameInTable() {
-    return this.alias || this.name;
-  }
-
   getPropertyName() {
     return this.name;
+  }
+
+  getPropertyColumnName() {
+    return this.alias || this.name;
   }
 }
 

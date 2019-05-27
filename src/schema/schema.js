@@ -50,12 +50,17 @@ class Schema {
         parser: prop.parser,
         useLocale: prop.useLocale,
         schema: this.name,
+        schemaHash: this.tableHash,
       }));
     });
   }
 
   getSchemaName() {
     return this.name;
+  }
+
+  getProperty(propName) {
+    return this.properties[propName];
   }
 
   getAllProperties() {
