@@ -7,6 +7,7 @@ const constants = require('../constants');
 const {
   GRAPHLITE_SUPPORTED_DATA_TYPES,
   GRAPHLITE_DEFAULT_DATA_TYPE,
+  GRAPHLITE_PRIMARY_KEY_DATA_TYPE,
 } = constants;
 
 const graphliteSupportPropertyType = type => (
@@ -22,14 +23,15 @@ class SchemaProperty {
     parser,
     type,
   }) {
+    const resolvedType = this._resolvePropertyType(type);
     assign(this, pickBy({
+      name: resolvedType === GRAPHLITE_PRIMARY_KEY_DATA_TYPE ? 'id' : name,
+      alias: resolvedType === GRAPHLITE_PRIMARY_KEY_DATA_TYPE ? name : alias || name,
+      type: resolvedType,
       schema,
       schemaHash,
-      name,
-      alias,
       parser,
     }));
-    this.type = this._resolvePropertyType(type);
   }
 
   _resolvePropertyType(type) {
