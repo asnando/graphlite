@@ -2,15 +2,14 @@ const debug = require('../../debug');
 
 // todo: add description
 const SQLiteGraphNodeSourceWithAssociationsResolver = (
-  nodeValue,
+  schema,
   options,
   node,
   resolveNextNodes,
 ) => {
-  // const { schema } = nodeValue;
-  const schema = nodeValue;
   const tableName = schema.getTableName();
-  const parentSchemaName = node.root ? null : node.parent.getSchemaName();
+  const tableAlias = schema.getTableHash();
+  const parentSchemaName = node.root ? null : node.parent.getValue().getSchemaName();
 
   if (!node.root) {
     const resolvedAssociation = schema.getAssociationWith(parentSchemaName);
@@ -24,31 +23,42 @@ const SQLiteGraphNodeSourceWithAssociationsResolver = (
         : !/left/i.test(self[0].joinType)))
       .map(({
         sourceTable,
+        sourceHash,
         targetTable,
         targetKey,
+        targetHash,
         foreignTable,
         foreignKey,
         useSourceKey,
         useTargetKey,
         joinType,
-      }) => {
+      }, index, self) => {
         if (foreignTable && foreignKey) {
+          // Fix: When using foreign table it must update the last position of the array as it
+          // contains the final association with the desired table. If does not change it will try
+          // to join the two tables ignoring everything in the middle.
+          // eslint-disable-next-line no-param-reassign
+          self[self.length - 1] = {
+            ...self[self.length - 1],
+            sourceTable: targetTable,
+            sourceHash: targetHash,
+          };
           // When foreign table is defined it must join the table multiple times.
           return `
             ${joinType.toUpperCase()} JOIN ${foreignTable}
-              ON ${foreignTable}.${foreignKey}=${sourceTable}.${foreignKey}
-            ${joinType.toUpperCase()} JOIN ${targetTable}
-              ON ${targetTable}.${useTargetKey || targetKey}=${foreignTable}.${useTargetKey || targetKey}
+              ON ${foreignTable}.${foreignKey}=${sourceHash}.${foreignKey}
+            ${joinType.toUpperCase()} JOIN ${targetTable} ${targetHash}
+              ON ${targetHash}.${useTargetKey || targetKey}=${foreignTable}.${useTargetKey || targetKey}
           `;
         }
         return `
-          ${joinType.toUpperCase()} JOIN ${targetTable}
-            ON ${targetTable}.${useTargetKey || targetKey}=${sourceTable}.${useSourceKey || targetKey}
+          ${joinType.toUpperCase()} JOIN ${targetTable} ${targetHash}
+            ON ${targetHash}.${useTargetKey || targetKey}=${sourceHash}.${useSourceKey || targetKey}
         `;
       }).join(' ');
   }
   // Resolves root node(source).
-  return `FROM ${tableName} ${resolveNextNodes()}`;
+  return `FROM ${tableName} ${tableAlias} ${resolveNextNodes()}`;
 };
 
 module.exports = SQLiteGraphNodeSourceWithAssociationsResolver;

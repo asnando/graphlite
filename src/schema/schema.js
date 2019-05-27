@@ -18,7 +18,11 @@ const isPrimaryKeyDefined = props => !!keys(props).find((propName) => {
 });
 
 class Schema {
-  constructor({ name, tableName, properties }, schemaList) {
+  constructor({
+    name,
+    tableName,
+    properties,
+  }, schemaList) {
     if (!isString(name)) {
       throw new Error('Schema must have a unique name. The name is missing or is not a string.');
     }
@@ -75,12 +79,11 @@ class Schema {
   }
 
   getPrimaryKeyName() {
-    return this.getPrimaryKey().name;
+    return this.getPrimaryKey().getPropertyName();
   }
 
   getPrimaryKeyColumnName() {
-    const pk = this.getPrimaryKey();
-    return pk.alias || pk.name;
+    return this.getPrimaryKey().getPropertyColumnName();
   }
 
   getTableName() {
@@ -120,10 +123,10 @@ class Schema {
       to: associatedSchema.getSchemaName(),
       targetTable: target.getTableName(),
       targetHash: target.getTableHash(),
-      targetKey: target.getPrimaryKeyName(),
+      targetKey: target.getPrimaryKeyColumnName(),
       sourceTable: source.getTableName(),
       sourceHash: source.getTableHash(),
-      sourceKey: source.getPrimaryKeyName(),
+      sourceKey: source.getPrimaryKeyColumnName(),
       foreignTable,
       // foreignHash,
       foreignKey,

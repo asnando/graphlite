@@ -5,9 +5,12 @@ const Schema = require('../schema/schema');
 const schemaList = require('../jar/schema-list');
 const debug = require('../debug');
 
-// todo: add class description.
+// This class is a copy of the original schemas. Each node inside queries are maped
+// to a new exclusive representation of the original schemas. All new specifications
+// of use of the schema inside query must be put as method of this class.
 class QuerySchema extends Schema {
   constructor(opts = {}) {
+    // Pass the "schemaList" reference to parent constructor as it must be saved inside it.
     super(opts, schemaList);
     assign(this, {
       // Object with merged properties definition. If "useProperties" array
@@ -38,6 +41,15 @@ class QuerySchema extends Schema {
   getDefinedProperties() {
     const { definedProperties } = this;
     return size(definedProperties) ? definedProperties : this.getAllProperties();
+  }
+
+  // overrides "getTableHash" parent method. It is necessary cuz associations
+  // are made using the original Schema class instances instead of this Query Schema class.
+  // The schema used inside resolvers will differ from the original schemas and the
+  // hashes used to resolve associations will mismatch. To resolve this issue, the method
+  // is overrided and it returns the real schema hash code from the schema in the schema list jar.
+  getTableHash() {
+    return schemaList.getSchema(this.getSchemaName()).getTableHash();
   }
 }
 

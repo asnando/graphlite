@@ -2,12 +2,10 @@ const assign = require('lodash/assign');
 const isFunction = require('lodash/isFunction');
 const isObject = require('lodash/isObject');
 const keys = require('lodash/keys');
-const sqlFormatter = require('sql-formatter');
 const debug = require('./debug');
 const schemaList = require('./jar/schema-list');
 const queryList = require('./jar/query-list');
-
-const formatQuery = q => sqlFormatter.format(q);
+const formatQuery = require('./utils/query');
 
 class GraphLite {
   constructor({
@@ -66,8 +64,8 @@ class GraphLite {
     // !
     const mergeOptionsObject = (a, b) => assign(a, b);
     const mergedOptions = mergeOptionsObject(options, extraOptions);
-    const mountedQuery = query.resolve(mergedOptions);
-    debug.log(formatQuery(mountedQuery));
+    const resolvedQuery = formatQuery(query.resolve(mergedOptions));
+    debug.log(resolvedQuery);
     return Promise.resolve({});
   }
 
