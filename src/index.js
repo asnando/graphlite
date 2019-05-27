@@ -2,6 +2,7 @@ const assign = require('lodash/assign');
 const isFunction = require('lodash/isFunction');
 const isObject = require('lodash/isObject');
 const keys = require('lodash/keys');
+const pbcopy = require('clipboardy');
 const debug = require('./debug');
 const schemaList = require('./jar/schema-list');
 const queryList = require('./jar/query-list');
@@ -66,6 +67,7 @@ class GraphLite {
     const mergedOptions = mergeOptionsObject(options, extraOptions);
     const resolvedQuery = formatQuery(query.resolve(mergedOptions));
     debug.log(resolvedQuery);
+    pbcopy.writeSync(resolvedQuery);
     return Promise.resolve({});
   }
 
