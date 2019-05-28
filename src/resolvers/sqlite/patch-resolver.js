@@ -3,6 +3,7 @@ const pair = require('../../utils/pair');
 const debug = require('../../debug');
 
 const renderPatch = (pairedNodes) => {
+  debug.log(pairedNodes);
   const resolvedPairedNodes = pairedNodes.map(node => `(${node})`).join(',');
   return `
   /* begin json patch */
@@ -14,7 +15,9 @@ const renderPatch = (pairedNodes) => {
 };
 
 const SQLiteGraphNodePatchResolver = (nodes) => {
-  return renderPatch(pair(chunk(nodes, 2)).map(chunkedNodes => renderPatch(pair(chunkedNodes))));
+  const objectDefaultValue = 'json_object()';
+  return renderPatch(pair(chunk(nodes, 2), objectDefaultValue)
+    .map(chunkedNodes => renderPatch(pair(chunkedNodes, objectDefaultValue))));
 };
 
 module.exports = SQLiteGraphNodePatchResolver;

@@ -1,3 +1,3 @@
-const pair = array => ((array.length % 2) ? array.concat('json_object') : array);
+const pair = (array, value = '') => ((array.length % 2) ? array.concat(value) : array);
 
 module.exports = pair;
