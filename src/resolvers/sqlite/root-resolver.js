@@ -18,6 +18,7 @@ const SQLiteGraphNodeRootResolver = (nodeValue, options, node, resolveNextNodes,
   const rootObjectFields = translatePropsToObject(schema.getDefinedProperties(), tableHash);
   // #
   const nextNodes = resolveNode('nested', { usePatch: true });
+  const resolvedOptions = '';
   return `
   SELECT
     /* begin response object */
@@ -46,7 +47,7 @@ const SQLiteGraphNodeRootResolver = (nodeValue, options, node, resolveNextNodes,
       ${rootSourceWithAssociations}
       /* end root source with associations */
       /* begin root options */
-      $options
+      ${resolvedOptions}
       /* end root options */
     ) AS root
     LEFT JOIN ${tableName} AS ${tableHash} ON ${tableHash}.${tableId}=root.${tableId}

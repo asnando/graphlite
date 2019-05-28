@@ -4,8 +4,7 @@
   "description": "SQLite query builder that supports json",
   "main": "dist/graphlite.js",
   "scripts": {
-    "test": "mocha --watch ./test/index.test.js ./ --timeout 3000",
-    "run": "nodemon ./test/index.test.js",
+    "test": "jest",
     "build": "webpack",
     "lint": "eslint src/"
   },
@@ -20,6 +19,7 @@
     "eslint": "^5.16.0",
     "eslint-config-airbnb-base": "^13.1.0",
     "eslint-plugin-import": "^2.17.2",
+    "jest": "^24.8.0",
     "mocha": "^6.0.2",
     "nodemon": "^1.18.10",
     "sql-formatter": "^2.3.2",

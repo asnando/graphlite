@@ -61,8 +61,8 @@ const SQLiteGraphNodeNestedNodeResolver = (
     FROM (
       SELECT
         ${rawFields}
+        ${sourceWithAssociations}
     ) AS ${tableAlias}
-    ${sourceWithAssociations}
     /* end nested node */
   `;
 };

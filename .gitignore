@@ -4,4 +4,6 @@
 node_modules
 package-lock.json
 *.db
-test/*
+test
+__test__/**/*.js
+!__test__/integration/index.test.js
