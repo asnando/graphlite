@@ -40,7 +40,7 @@ const SQLiteGraphNodeRootResolver = (nodeValue, options, node, resolveNextNodes,
     FROM (
       SELECT
         /* begin root distinct id */
-        DISTINCT ${tableId}
+        DISTINCT ${tableHash}.${tableId}
         /* end root distinct id */
       /* begin root source with associations */
       ${rootSourceWithAssociations}
