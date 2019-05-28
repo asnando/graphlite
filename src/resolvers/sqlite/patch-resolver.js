@@ -1,9 +1,10 @@
 const chunk = require('lodash/chunk');
+const isArray = require('lodash/isArray');
 const pair = require('../../utils/pair');
 const debug = require('../../debug');
 
 const renderPatch = (pairedNodes) => {
-  debug.log(pairedNodes);
+  if (!isArray(pairedNodes)) return pairedNodes;
   const resolvedPairedNodes = pairedNodes.map(node => `(${node})`).join(',');
   return `
   /* begin json patch */
@@ -14,10 +15,14 @@ const renderPatch = (pairedNodes) => {
 `;
 };
 
-const SQLiteGraphNodePatchResolver = (nodes) => {
+const SQLiteGraphNodePatchResolver = (...args) => {
   const objectDefaultValue = 'json_object()';
-  return renderPatch(pair(chunk(nodes, 2), objectDefaultValue)
-    .map(chunkedNodes => renderPatch(pair(chunkedNodes, objectDefaultValue))));
+  const [nodes] = args;
+  if (nodes.length > 2) {
+    return renderPatch(pair(chunk(nodes, 2), objectDefaultValue)
+      .map(chunkedNodes => renderPatch(pair(chunkedNodes, objectDefaultValue))));
+  }
+  return renderPatch(pair(nodes, objectDefaultValue));
 };
 
 module.exports = SQLiteGraphNodePatchResolver;
