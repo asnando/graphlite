@@ -18,6 +18,9 @@ const renderPatch = (pairedNodes) => {
 const SQLiteGraphNodePatchResolver = (...args) => {
   const objectDefaultValue = 'json_object()';
   const [nodes] = args;
+  if (!nodes.length) {
+    return objectDefaultValue;
+  }
   if (nodes.length > 2) {
     return renderPatch(pair(chunk(nodes, 2), objectDefaultValue)
       .map(chunkedNodes => renderPatch(pair(chunkedNodes, objectDefaultValue))));
