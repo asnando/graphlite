@@ -17,8 +17,9 @@ const SQLiteGraphNodeNestedNodeResolver = (
 
   const schema = nodeValue;
   const tableAlias = schema.getTableHash();
-  const objectFields = translatePropsToObject(schema.getDefinedProperties(), tableAlias);
-  const rawFields = translatePropsToFields(schema.getDefinedProperties(), tableAlias);
+  const ignoreSchemaId = true;
+  const objectFields = translatePropsToObject(schema.getDefinedProperties(ignoreSchemaId), tableAlias);
+  const rawFields = translatePropsToFields(schema.getDefinedProperties(ignoreSchemaId), tableAlias);
 
   const parentSchema = node.parent.getValue();
   const parentSchemaName = parentSchema.getSchemaName();

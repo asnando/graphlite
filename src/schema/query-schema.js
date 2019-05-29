@@ -4,7 +4,12 @@ const size = require('lodash/size');
 const keys = require('lodash/keys');
 const Schema = require('../schema/schema');
 const schemaList = require('../jar/schema-list');
+const constants = require('../constants');
 const debug = require('../debug');
+
+const {
+  GRAPHLITE_PRIMARY_KEY_DATA_TYPE,
+} = constants;
 
 const DEFAULT_PAGE_SIZE = 100;
 
@@ -50,9 +55,19 @@ class QuerySchema extends Schema {
     });
   }
 
-  getDefinedProperties() {
+  getDefinedProperties(ignoreId = false) {
     const { definedProperties } = this;
-    return size(definedProperties) ? definedProperties : this.getAllProperties();
+    const props = size(definedProperties) ? definedProperties : this.getAllProperties();
+    if (ignoreId) {
+      // When ignoreId is true, remove the primary key from the properties list.
+      const id = keys(props).find(propName => props[propName].type === GRAPHLITE_PRIMARY_KEY_DATA_TYPE);
+      delete props[id];
+    } else {
+      // Always(when not forced ignore) return the id property.
+      const pk = this.getPrimaryKey();
+      props.id = pk;
+    }
+    return props;
   }
 
   // overrides "getTableHash" parent method. It is necessary cuz associations
