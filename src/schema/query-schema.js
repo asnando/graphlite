@@ -1,5 +1,4 @@
 const assign = require('lodash/assign');
-const isArray = require('lodash/isArray');
 const size = require('lodash/size');
 const keys = require('lodash/keys');
 const Schema = require('../schema/schema');
@@ -8,10 +7,8 @@ const constants = require('../constants');
 const debug = require('../debug');
 
 const {
-  GRAPHLITE_PRIMARY_KEY_DATA_TYPE,
+  DEFAULT_PAGE_SIZE,
 } = constants;
-
-const DEFAULT_PAGE_SIZE = 100;
 
 // This class is a copy of the original schemas. Each node inside queries are maped
 // to a new exclusive representation of the original schemas. All new specifications
