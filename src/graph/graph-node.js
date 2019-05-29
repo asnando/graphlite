@@ -5,12 +5,12 @@ const DEFAULT_RESOLVER_NAME = 'root';
 
 const useSQLiteResolvers = () => {
   const SQLiteGraphNodeRootResolver = require('../resolvers/sqlite/root-resolver');
-  const SQLiteGraphNodeNestedNodeResolver = require('../resolvers/sqlite/nested-node-resolver');
+  const SQLiteGraphNodeNodeResolver = require('../resolvers/sqlite/node-resolver');
   const SQLiteGraphNodeRootSourceWithAssociationsResolver = require('../resolvers/sqlite/root-source-with-associations-resolver');
   const SQLiteGraphNodeSourceWithAssociationsResolver = require('../resolvers/sqlite/node-source-with-associations-resolver');
   return {
     root: SQLiteGraphNodeRootResolver,
-    nested: SQLiteGraphNodeNestedNodeResolver,
+    node: SQLiteGraphNodeNodeResolver,
     rootSourceWithAssociations: SQLiteGraphNodeRootSourceWithAssociationsResolver,
     nodeSourceWithAssociations: SQLiteGraphNodeSourceWithAssociationsResolver,
   };

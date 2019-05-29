@@ -17,7 +17,7 @@ const SQLiteGraphNodeRootResolver = (nodeValue, options, node, resolveNextNodes,
   const rootSourceWithAssociations = resolveNode('rootSourceWithAssociations');
   const rootObjectFields = translatePropsToObject(schema.getDefinedProperties(), tableHash);
   // #
-  const nextNodes = resolveNode('nested', { usePatch: true });
+  const nextNodes = resolveNode('node', { usePatch: true });
   const resolvedOptions = '';
   return `
   SELECT
