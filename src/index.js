@@ -81,6 +81,7 @@ class GraphLite {
   }
 
   _run(queryName, options = {}, extraOptions = {}) {
+    debug.log(`Fetching data using "${queryName}" query, with options`, options, extraOptions);
     const query = this._mountQuery(queryName, options, extraOptions);
     pbcopy.writeSync(query);
     return this._executeQuery(query).then(parseDatabaseReponse);

@@ -32,7 +32,7 @@ class QuerySchema extends Schema {
       // then it will use only the defined properties inside this array, otherwise
       // will use all the properties from the schema.
       definedProperties: {},
-      options: opts.options,
+      definedOptions: opts.options,
     });
     // it must return a list of all schema properties merged with usedProperties
     // names array(when defined). It must check too when id needs to be used or not.
@@ -51,6 +51,10 @@ class QuerySchema extends Schema {
   getDefinedProperties() {
     const { definedProperties } = this;
     return size(definedProperties) ? definedProperties : this.getAllProperties();
+  }
+
+  getDefinedOptions() {
+    return this.definedOptions;
   }
 
   // check if defined query filters have some input value.

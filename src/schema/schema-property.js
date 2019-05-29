@@ -17,7 +17,7 @@ const graphliteSupportPropertyType = type => (
 
 class SchemaProperty {
   constructor({
-    schemaName, name, alias, parser, type,
+    schemaName, tableAlias, name, alias, parser, type,
   }) {
     const resolvedType = this._resolvePropertyType(type);
     if (resolvedType === GRAPHLITE_PRIMARY_KEY_DATA_TYPE) {
@@ -32,6 +32,7 @@ class SchemaProperty {
       alias,
       type: resolvedType,
       schemaName,
+      tableAlias,
       parser,
     }));
   }
@@ -64,7 +65,7 @@ class SchemaProperty {
   }
 
   getPropertyTableAlias() {
-    debug.log(this);
+    return this.tableAlias;
   }
 }
 

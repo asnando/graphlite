@@ -68,6 +68,7 @@ class Schema {
           parser,
           useLocale,
           schemaName: this.name,
+          tableAlias: this.getTableHash(),
         });
         jset(this.properties, prop.getPropertyName(), prop);
       });
