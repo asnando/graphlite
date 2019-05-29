@@ -53,15 +53,6 @@ class QuerySchema extends Schema {
     return size(definedProperties) ? definedProperties : this.getAllProperties();
   }
 
-  // overrides "getTableHash" parent method. It is necessary cuz associations
-  // are made using the original Schema class instances instead of this Query Schema class.
-  // The schema used inside resolvers will differ from the original schemas and the
-  // hashes used to resolve associations will mismatch. To resolve this issue, the method
-  // is overrided and it returns the real schema hash code from the schema in the schema list jar.
-  getTableHash() {
-    return schemaList.getSchema(this.getSchemaName()).getTableHash();
-  }
-
   // check if defined query filters have some input value.
   hasAssociatedOption(queryOptions = {}) {
     const { where } = this.options;

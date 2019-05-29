@@ -26,6 +26,7 @@ class Schema {
   constructor({
     name,
     tableName,
+    tableHash,
     properties,
   }, schemaList) {
     if (!isString(name)) {
@@ -34,7 +35,7 @@ class Schema {
     assign(this, {
       name,
       tableName,
-      tableHash: hashCode(),
+      tableHash: tableHash || hashCode(),
       properties: {},
       has: {},
       belongs: {},
@@ -66,8 +67,7 @@ class Schema {
           alias,
           parser,
           useLocale,
-          schema: this.name,
-          schemaHash: this.tableHash,
+          schemaName: this.name,
         });
         jset(this.properties, prop.getPropertyName(), prop);
       });
