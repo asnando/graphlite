@@ -25,6 +25,8 @@ class QuerySchema extends Schema {
       orderBy: [],
       groupBy: [],
     },
+    useProperties: [],
+    ignoreId: false,
   }) {
     // Pass the "schemaList" reference to parent constructor as it must be saved inside it.
     super(opts, schemaList);
@@ -35,39 +37,25 @@ class QuerySchema extends Schema {
       definedProperties: {},
       options: opts.options,
     });
-    // "useProperties" refers to a array within properties schema names
-    // that must be (only)rendered when the query executes.
-    if (opts.useProperties && isArray(opts.useProperties)) {
-      this.useProperties = opts.useProperties;
-      // As it is an array of string it must be translated to an object
-      // within the fields names as key and field definition as value.
-      this._createUsePropertiesListFromDefinition(opts.useProperties);
-    }
+    // it must return a list of all schema properties merged with usedProperties
+    // names array(when defined). It must check too when id needs to be used or not.
+    const useProperties = this.resolveSchemaPropertiesNamesList(opts.ignoreId, opts.useProperties);
+    // Save the schema properties names to be used in the query.
+    this.useProperties = useProperties;
+    // As it is an array of string it must be translated to an object
+    // within the fields names as key and field definition as value.
+    this._createUsePropertiesListFromDefinition(useProperties);
   }
 
   _createUsePropertiesListFromDefinition(props) {
     props.forEach((propName) => {
-      const prop = this.getProperty(propName);
-      if (!prop) {
-        throw new Error(`Undefined "${propName}" property on "${this.getSchemaName()}" schema.`);
-      }
-      this.definedProperties[propName] = prop;
+      this.definedProperties[propName] = this.translateToProperty(propName);
     });
   }
 
-  getDefinedProperties(ignoreId = false) {
+  getDefinedProperties() {
     const { definedProperties } = this;
-    const props = size(definedProperties) ? definedProperties : this.getAllProperties();
-    if (ignoreId) {
-      // When ignoreId is true, remove the primary key from the properties list.
-      const id = keys(props).find(propName => props[propName].type === GRAPHLITE_PRIMARY_KEY_DATA_TYPE);
-      delete props[id];
-    } else {
-      // Always(when not forced ignore) return the id property.
-      const pk = this.getPrimaryKey();
-      props.id = pk;
-    }
-    return props;
+    return size(definedProperties) ? definedProperties : this.getAllProperties();
   }
 
   // overrides "getTableHash" parent method. It is necessary cuz associations

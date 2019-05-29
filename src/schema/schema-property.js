@@ -8,6 +8,7 @@ const {
   GRAPHLITE_SUPPORTED_DATA_TYPES,
   GRAPHLITE_DEFAULT_DATA_TYPE,
   GRAPHLITE_PRIMARY_KEY_DATA_TYPE,
+  ID_PROPERTY_KEY_NAME,
 } = constants;
 
 const graphliteSupportPropertyType = type => (
@@ -16,17 +17,19 @@ const graphliteSupportPropertyType = type => (
 
 class SchemaProperty {
   constructor({
-    schema,
-    schemaHash,
-    name,
-    alias,
-    parser,
-    type,
+    schema, schemaHash, name, alias, parser, type,
   }) {
     const resolvedType = this._resolvePropertyType(type);
+    if (resolvedType === GRAPHLITE_PRIMARY_KEY_DATA_TYPE) {
+      // save alias before it change to id
+      alias = alias || name;
+      name = ID_PROPERTY_KEY_NAME;
+    } else {
+      alias = alias || name;
+    }
     assign(this, pickBy({
-      name: resolvedType === GRAPHLITE_PRIMARY_KEY_DATA_TYPE ? 'id' : name,
-      alias: resolvedType === GRAPHLITE_PRIMARY_KEY_DATA_TYPE ? name : alias || name,
+      name,
+      alias,
       type: resolvedType,
       schema,
       schemaHash,

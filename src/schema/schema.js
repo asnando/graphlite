@@ -2,6 +2,8 @@ const assign = require('lodash/assign');
 const isString = require('lodash/isString');
 const jset = require('lodash/set');
 const keys = require('lodash/keys');
+const size = require('lodash/size');
+const intersection = require('lodash/intersection');
 const hashCode = require('../utils/hash-code');
 const Association = require('./association');
 const SchemaProperty = require('./schema-property');
@@ -10,12 +12,15 @@ const debug = require('../debug');
 
 const {
   GRAPHLITE_PRIMARY_KEY_DATA_TYPE,
+  ID_PROPERTY_KEY_NAME,
 } = constants;
 
 const isPrimaryKeyDefined = props => !!keys(props).find((propName) => {
   const prop = props[propName];
   return GRAPHLITE_PRIMARY_KEY_DATA_TYPE === (isString(prop) ? prop : prop.type);
 });
+
+const isIdPropName = propName => (propName === ID_PROPERTY_KEY_NAME);
 
 class Schema {
   constructor({
@@ -45,18 +50,27 @@ class Schema {
   }
 
   _definePropertiesFromList(props = {}) {
-    keys(props).forEach((propName) => {
-      const prop = props[propName];
-      jset(this.properties, propName, new SchemaProperty({
-        name: propName,
-        type: isString(prop) ? prop : prop.type,
-        alias: prop.alias,
-        parser: prop.parser,
-        useLocale: prop.useLocale,
-        schema: this.name,
-        schemaHash: this.tableHash,
-      }));
-    });
+    keys(props)
+      .map((propName) => {
+        const prop = props[propName];
+        return isString(prop)
+          ? { name: propName, type: prop }
+          : { ...prop, name: propName };
+      })
+      .forEach(({
+        name, type, alias, parser, useLocale,
+      }) => {
+        const prop = new SchemaProperty({
+          name,
+          type,
+          alias,
+          parser,
+          useLocale,
+          schema: this.name,
+          schemaHash: this.tableHash,
+        });
+        jset(this.properties, prop.getPropertyName(), prop);
+      });
   }
 
   getSchemaName() {
@@ -69,6 +83,34 @@ class Schema {
 
   getAllProperties() {
     return this.properties;
+  }
+
+  // This function might be used by QuerySchema class to acess a list of
+  // schema defined properties names.
+  getAllPropertiesNamesList(ignoreId = false) {
+    const props = keys(this.properties);
+    return ignoreId ? props.filter(propName => isIdPropName(propName)) : props;
+  }
+
+  translateToProperty(propName) {
+    const prop = this.getProperty(propName);
+    if (!prop) {
+      throw new Error(`Undefined "${propName}" property on "${this.getSchemaName()}" schema.`);
+    }
+    return prop;
+  }
+
+  resolveSchemaPropertiesNamesList(ignoreId = false, useProperties = []) {
+    // Get a list of all properties names from schema.
+    const allProps = this.getAllPropertiesNamesList();
+    // Merge props using the "useProperties" array(when defined).
+    let props = size(useProperties) ? intersection(allProps, useProperties) : allProps;
+    // If id must be ignored then return its property name from the array.
+    if (ignoreId) props = props.filter(propName => !isIdPropName(propName));
+    // Otherwise check if id property name is not defined and define it.
+    const hasDefinedId = !!props.find(propName => isIdPropName(propName));
+    props = !hasDefinedId ? [ID_PROPERTY_KEY_NAME].concat(props) : props;
+    return props;
   }
 
   getPrimaryKey() {

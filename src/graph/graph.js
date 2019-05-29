@@ -38,15 +38,18 @@ class Graph {
       const schema = schemaList.getSchema(schemaName);
       // Creates a new hash code for the current specific node.
       const nodeHash = hashCode();
+      // Check if the actual node is the first from the graph.
+      const isRoot = /^\$\.\w+$/.test(path);
       // Parent schema will be present in the path when there is more than 1 ".", in that case
       // resolve the parent schema name to access the previous graph node.
-      const parentSchemaName = /(\w+\.){1,}/.test(path) ? path.split('.').slice(-2, -1).shift() : null;
+      const parentSchemaName = !isRoot ? path.split('.').slice(-2, -1).shift() : null;
       // Create a new QuerySchema which represents the node schema and some
       // merged options and methods.
       this._addGraphNode(schemaName, nodeHash, new QuerySchema({
         ...schema,
         // Query Node specific attributes.
         useProperties: node.properties,
+        ignoreId: !isRoot,
         options: {
           where: node.where,
           size: node.size,
