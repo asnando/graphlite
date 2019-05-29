@@ -19,7 +19,6 @@ const SQLiteGraphNodeNestedNodeResolver = (
   const tableAlias = schema.getTableHash();
   const objectFields = translatePropsToObject(schema.getDefinedProperties(), tableAlias);
   const rawFields = translatePropsToFields(schema.getDefinedProperties(), tableAlias);
-  const sourceWithAssociations = resolveNode('sourceWithAssociations');
 
   const parentSchema = node.parent.getValue();
   const parentSchemaName = parentSchema.getSchemaName();
@@ -27,10 +26,12 @@ const SQLiteGraphNodeNestedNodeResolver = (
   const { objectType } = resolvedAssociation;
 
   if (objectType === 'array') {
+    // todo: use array alias declared as "as" query object key property.
     // Resolve the key name that represents the array data.
     const showAs = schema.getSchemaName();
+    const sourceWithAssociations = resolveNode('nodeSourceWithAssociations');
     return `
-      /* begin nested node */
+      /* begin ${tableAlias} node */
       SELECT
         json_object(
           '${showAs}',
@@ -41,29 +42,41 @@ const SQLiteGraphNodeNestedNodeResolver = (
                   ${objectFields}
                 )
               )
+            FROM (
+              SELECT
+                ${rawFields}
+              ${sourceWithAssociations}
+            ) ${tableAlias}
           )
-          FROM (
-            SELECT
-              ${rawFields}
-            ${sourceWithAssociations}
-          ) ${tableAlias}
         )
-        /* end nested node */
+      /* end ${tableAlias} node */
     `;
   }
 
+  const usingMiddlewareAssociations = !!resolvedAssociation.using.length;
+  if (usingMiddlewareAssociations) {
+    return `
+      /* todo */
+      /* begin ${tableAlias} node */
+      json_object()
+      /* end ${tableAlias} node */
+    `;
+  }
+
+  const associationWithParent = resolveNode('nodeSourceWithAssociations');
+  // When there is no middleware tables between the association,
+  // it renders the node source directly. It select the parent identifiers
+  // to make a directly join.
   return `
-    /* begin nested node */
+    /* begin ${tableAlias} node */
     SELECT
-      json_object(
-        ${objectFields}
-      )
-    FROM (
-      SELECT
-        ${rawFields}
-        ${sourceWithAssociations}
-    ) AS ${tableAlias}
-    /* end nested node */
+        json_object(
+          ${objectFields}
+        )
+      /* begin ${tableAlias} join */
+      ${associationWithParent}
+      /* end ${tableAlias} join */
+    /* end ${tableAlias} node */
   `;
 };
 

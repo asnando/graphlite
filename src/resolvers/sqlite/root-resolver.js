@@ -14,7 +14,7 @@ const SQLiteGraphNodeRootResolver = (nodeValue, options, node, resolveNextNodes,
   const responseObjectName = RESPONSE_OBJECT_NAME;
   // Starts a new resolver loop from the actual node. It will render the
   // "root source with associations" query piece.
-  const rootSourceWithAssociations = resolveNode('sourceWithAssociations');
+  const rootSourceWithAssociations = resolveNode('rootSourceWithAssociations');
   const rootObjectFields = translatePropsToObject(schema.getDefinedProperties(), tableHash);
   // #
   const nextNodes = resolveNode('nested', { usePatch: true });

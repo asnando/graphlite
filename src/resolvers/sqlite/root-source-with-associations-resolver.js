@@ -1,5 +1,14 @@
-const SQLiteAssociationResolver = (schema, options, node, resolveNextNodes) => {
-  if (node.isRoot()) return '';
+const debug = require('../../debug');
+
+// todo: add description
+const SQLiteGraphNodeSourceWithAssociationsResolver = (schema, options, node, resolveNextNodes) => {
+  if (node.isRoot()) {
+    const tableName = schema.getTableName();
+    const tableAlias = schema.getTableHash();
+    return `FROM ${tableName} ${tableAlias} ${resolveNextNodes()}`;
+  }
+
+  return '';
 
   const parentSchema = node.parent.getValue();
   const parentSchemaName = parentSchema.getSchemaName();
@@ -12,7 +21,9 @@ const SQLiteAssociationResolver = (schema, options, node, resolveNextNodes) => {
 
   return associationList
     // Ignore "left" join(s) and foreign tables that came from it.
-    .filter((association, index, self) => !/left/i.test(!index ? association.joinType : self[0].joinType))
+    .filter((association, index, self) => {
+      return !/left/i.test(!index ? association.joinType : self[0].joinType);
+    })
     .map(({
       sourceHash,
       targetTable,
@@ -49,4 +60,4 @@ const SQLiteAssociationResolver = (schema, options, node, resolveNextNodes) => {
     }).join(' ');
 };
 
-module.exports = SQLiteAssociationResolver;
+module.exports = SQLiteGraphNodeSourceWithAssociationsResolver;

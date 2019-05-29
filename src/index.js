@@ -3,12 +3,11 @@ const isFunction = require('lodash/isFunction');
 const isObject = require('lodash/isObject');
 const keys = require('lodash/keys');
 const pbcopy = require('clipboardy');
-const debug = require('./debug');
 const schemaList = require('./jar/schema-list');
 const queryList = require('./jar/query-list');
 const formatQuery = require('./utils/query');
-
 const constants = require('./constants');
+const debug = require('./debug');
 
 const {
   RESPONSE_OBJECT_NAME,
@@ -19,6 +18,7 @@ const parseDatabaseReponse = (rows) => {
   rows = rows.map(row => JSON.parse(row[RESPONSE_OBJECT_NAME]));
   return {
     rows,
+    count: rows.length,
   };
 }
 
@@ -68,12 +68,7 @@ class GraphLite {
 
   _mountQuery(queryName, options = {}, extraOptions = {}) {
     const query = this._getQuery(queryName);
-    // !
-    const mergeOptionsObject = (a, b) => assign(a, b);
-    const mergedOptions = mergeOptionsObject(options, extraOptions);
-    const resolvedQuery = formatQuery(query.resolve(mergedOptions));
-    // debug.log(resolvedQuery);
-    pbcopy.writeSync(resolvedQuery);
+    const resolvedQuery = formatQuery(query.resolve(assign(options, extraOptions)));
     return resolvedQuery;
   }
 
@@ -87,17 +82,18 @@ class GraphLite {
 
   _run(queryName, options = {}, extraOptions = {}) {
     const query = this._mountQuery(queryName, options, extraOptions);
+    pbcopy.writeSync(query);
     return this._executeQuery(query).then(parseDatabaseReponse);
   }
 
   // Public API
-  findOne(...args) {
-    // assign(extraOptions, 'size', 1);
-    return this._run(...args);
+  findOne(queryName, options, extraOptions = {}) {
+    assign(extraOptions, 'size', 1);
+    return this._run(queryName, options, extraOptions);
   }
 
-  findAll(...args) {
-    return this._run(...args);
+  findAll(queryName, options, extraOptions = {}) {
+    return this._run(queryName, options, extraOptions);
   }
 
   setLocale(locale) {
