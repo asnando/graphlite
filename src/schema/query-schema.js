@@ -37,8 +37,6 @@ class QuerySchema extends Schema {
     // it must return a list of all schema properties merged with usedProperties
     // names array(when defined). It must check too when id needs to be used or not.
     const useProperties = this.resolveSchemaPropertiesNamesList(opts.ignoreId, opts.useProperties);
-    // Save the schema properties names to be used in the query.
-    this.useProperties = useProperties;
     // As it is an array of string it must be translated to an object
     // within the fields names as key and field definition as value.
     this._createUsePropertiesListFromDefinition(useProperties);

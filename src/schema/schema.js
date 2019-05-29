@@ -106,10 +106,13 @@ class Schema {
     // Merge props using the "useProperties" array(when defined).
     let props = size(useProperties) ? intersection(allProps, useProperties) : allProps;
     // If id must be ignored then return its property name from the array.
-    if (ignoreId) props = props.filter(propName => !isIdPropName(propName));
-    // Otherwise check if id property name is not defined and define it.
-    const hasDefinedId = !!props.find(propName => isIdPropName(propName));
-    props = !hasDefinedId ? [ID_PROPERTY_KEY_NAME].concat(props) : props;
+    if (ignoreId) {
+      props = props.filter(propName => !isIdPropName(propName));
+    } else {
+      // Otherwise check if id property name is not defined and define it.
+      const hasDefinedId = !!props.find(propName => isIdPropName(propName));
+      props = !hasDefinedId ? [ID_PROPERTY_KEY_NAME].concat(props) : props;
+    }
     return props;
   }
 
