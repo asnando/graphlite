@@ -2,6 +2,7 @@ const isString = require('lodash/isString');
 const isArray = require('lodash/isArray');
 const keys = require('lodash/keys');
 const isNil = require('lodash/isNil');
+const noop = require('lodash/noop');
 const constants = require('../../constants');
 const translatePropsToObject = require('./helpers/translate-props-to-object');
 const debug = require('../../debug');
@@ -34,46 +35,88 @@ const useOrderBy = (schema, { orderBy }) => {
     // todo: check if property description have schema table name before the property name.
     const prop = schema.translateToProperty(propName);
     const tableAlias = prop.getPropertyTableAlias();
-    const columnName = prop.getPropertyColumnName();
-    return `${tableAlias}.${columnName}`;
+    const propColumnName = prop.getPropertyColumnName();
+    return `${tableAlias}.${propColumnName}`;
   }).join(',')}
   `;
 };
 
-const useGroupBy = (schema, groupBy) => {
-
+const useGroupBy = (schema, { groupBy = [] }) => {
+  if (!groupBy.length) {
+    return '';
+  }
+  return `GROUP BY ${groupBy
+    .map((propName) => {
+      const prop = schema.translateToProperty(propName);
+      const tableAlias = prop.getPropertyTableAlias();
+      const propColumnName = prop.getPropertyColumnName();
+      return `${tableAlias}.${propColumnName}`;
+    })
+    .join(',')}`;
 };
 
 const useWhere = (schema, options) => {
   const schemaDefinedOptions = schema.getDefinedOptions();
   const { where } = schemaDefinedOptions;
-  return `WHERE ${keys(where)
-    // remove where conditions with no value.
-    .filter(filterName => !isNil(where[filterName]))
-    .map(filterName => aaa(where[filterName], options[filterName]))
-    .join(' AND ')}`;
+  // filter the object keys name only that have value inside the query options object.
+  const useFilters = keys(where)
+    .filter(filterName => !isNil(options[filterName]));
+  return !useFilters.length
+    ? ''
+    : `WHERE ${useFilters
+      .map(filterName => translateFilterProp(where[filterName], options[filterName], schema))
+      .join(' AND ')}`;
 };
 
-// todo: translate property name
-// todo: add table hash before property column name
-const aaa = (condition, value) => {
+// todo: use another schemas when filter refers to a nested schema.
+const translateFilterProp = (condition, value, schema) => {
+  debug.info(`Resolving '${condition}' with value: '${value}'`);
+  // Resolves the operator from the condition. Generally it is at
+  // the beginning of the condition string.
   const opr = Array.from(condition.match(/^\W+/)).shift();
+  // Removes the operator from the condition string.
   const propName = condition.replace(/^\W+/, '');
-  debug.warn(opr, propName, value);
-  return `${propName}${opr}${value}`;
+  const prop = schema.translateToProperty(propName);
+  const propColumnName = prop.getPropertyColumnName();
+  const tableAlias = schema.getTableHash();
+  return resolvePropWithOperator(`${tableAlias}.${propColumnName}`, opr, value);
 };
 
-// resolve: where, orderBy, groupBy, limit, offset
-const resolveOptions = (schema, options, node) => {
+// todo: resolve another types of operators.
+const resolvePropWithOperator = (propName, operator, value) => {
+  switch (operator) {
+    case '=':
+      return `${propName}=${value}`;
+    case '%':
+      return '';
+    case '<>':
+      return '';
+    case '<':
+      return '';
+    case '>':
+      return '';
+    case '#':
+      return '';
+    case '|':
+      return '';
+    case '&':
+      return '';
+    default:
+      return '';
+  }
+};
+
+const resolveOptions = (schema, options) => {
   const { size, page } = options;
-  // const parentSchema = node.parent ? node.parent.getValue() : null;
   const limit = useLimit(size);
   const offset = useOffset(size, page);
-  const resolvedOrderBy = useOrderBy(schema, options);
-  // useGroupBy(schema, options);
+  const orderBy = useOrderBy(schema, options);
   const where = useWhere(schema, options);
-  return `${where} ${resolvedOrderBy} ${limit} ${offset}`;
+  const groupBy = useGroupBy(schema, options);
+  return `${where} ${groupBy} ${orderBy} ${limit} ${offset}`;
 };
+
+// const SQLiteGraphNodeOptionsResolver = null;
 
 const SQLiteGraphNodeRootResolver = (schema, options, node, resolveNextNodes, resolveNode) => {
   const tableName = schema.getTableName();
