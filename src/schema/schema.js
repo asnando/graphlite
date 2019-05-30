@@ -140,12 +140,16 @@ class Schema {
     return this.tableHash;
   }
 
+  getTableAlias() {
+    return this.tableHash;
+  }
+
   getAssociationWith(schemaName) {
-    const schema = this._getSchemaFromList(schemaName);
+    const schema = this.getSchemaFromList(schemaName);
     return this.has[schemaName] || this.belongs[schemaName] || schema.getAssociationWith(this.name);
   }
 
-  _getSchemaFromList(schemaName) {
+  getSchemaFromList(schemaName) {
     return this.schemaList.getSchema(schemaName);
   }
 

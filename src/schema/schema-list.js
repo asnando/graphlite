@@ -2,8 +2,9 @@ const isArray = require('lodash/isArray');
 const size = require('lodash/size');
 const isString = require('lodash/isString');
 const jset = require('lodash/set');
+const keys = require('lodash/keys');
 const Schema = require('./schema');
-// const debug = require('../debug');
+const debug = require('../debug');
 
 class SchemaList {
   constructor(opts = {}) {
@@ -31,6 +32,12 @@ class SchemaList {
       throw new Error(`Undefined "${schemaName}" schema`);
     }
     return this.schemas[schemaName];
+  }
+
+  getSchemaByAlias(hash) {
+    const { schemas } = this;
+    const match = keys(schemas).find(schemaName => (schemas[schemaName].getTableHash() === hash));
+    return match ? this.schemas[match] : null;
   }
 
   getSchemaList() {

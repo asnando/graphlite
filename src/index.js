@@ -1,26 +1,50 @@
 const assign = require('lodash/assign');
 const isFunction = require('lodash/isFunction');
 const isObject = require('lodash/isObject');
+const isArray = require('lodash/isArray');
 const keys = require('lodash/keys');
+const jset = require('lodash/set');
 const pbcopy = require('clipboardy');
 const schemaList = require('./jar/schema-list');
 const queryList = require('./jar/query-list');
 const formatQuery = require('./utils/query');
 const constants = require('./constants');
 const debug = require('./debug');
+const jtree = require('./utils/jtree');
 
 const {
   RESPONSE_OBJECT_NAME,
   GRAPHLITE_CONNECTION_EXECUTER_NAME,
 } = constants;
 
-const parseDatabaseReponse = (rows) => {
-  rows = rows.map(row => JSON.parse(row[RESPONSE_OBJECT_NAME]));
+const parseResponseRowObject = (row) => {
+  const shadow = {};
+  const object = JSON.parse(row[RESPONSE_OBJECT_NAME]);
+  // Parse each property value of the object.
+  jtree(object, (value, path) => {
+    // ignore when begin path, value is array or it represents a object inside array.
+    if (/^\$$/.test(path) || isArray(value) || /\d$/.test(path)) return;
+    let prop = path.match(/\w+\.\w+$/)[0].split('.');
+    const [schemaAlias, propName] = prop;
+    const schema = schemaList.getSchemaByAlias(schemaAlias);
+    prop = schema.getProperty(propName);
+    const propValue = prop.parseValue(value);
+    const objectPath = path
+      .replace(/#(\d{1,})/g, '[$1]')
+      .replace(/^\$\.?/, '')
+      .replace(/\w+\.(?=\w+$)/, '');
+    jset(shadow, objectPath, propValue);
+  });
+  return shadow;
+};
+
+const parseResponseRows = (rows) => {
+  const parsedRows = rows.map(row => parseResponseRowObject(row));
   return {
-    rows,
-    count: rows.length,
+    rows: parsedRows,
+    count: parsedRows.length,
   };
-}
+};
 
 class GraphLite {
   constructor({
@@ -74,17 +98,16 @@ class GraphLite {
 
   _executeQuery(query) {
     const { connection } = this;
-    if (isFunction(connection)) {
-      return connection(query);
-    }
-    return connection[GRAPHLITE_CONNECTION_EXECUTER_NAME](query);
+    return isFunction(connection)
+      ? connection(query)
+      : connection[GRAPHLITE_CONNECTION_EXECUTER_NAME](query);
   }
 
   _run(queryName, options = {}, extraOptions = {}) {
     debug.log(`Fetching data using "${queryName}" query, with options`, options, extraOptions);
     const query = this._mountQuery(queryName, options, extraOptions);
     pbcopy.writeSync(query);
-    return this._executeQuery(query).then(parseDatabaseReponse);
+    return this._executeQuery(query).then(parseResponseRows);
   }
 
   // Public API
