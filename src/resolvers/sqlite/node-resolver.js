@@ -1,9 +1,10 @@
 const translatePropsToObject = require('./helpers/translate-props-to-object');
 const translatePropsToFields = require('./helpers/translate-props-to-fields');
+const resolveOptions = require('./helpers/resolve-options');
 const debug = require('../../debug');
 
 const SQLiteGraphNodeNestedNodeResolver = (
-  nodeValue,
+  schema,
   options,
   node,
   resolveNextNodes,
@@ -15,7 +16,6 @@ const SQLiteGraphNodeNestedNodeResolver = (
     return resolveNextNodes();
   }
 
-  const schema = nodeValue;
   const tableAlias = schema.getTableHash();
   const objectFields = translatePropsToObject(schema.getDefinedProperties(), tableAlias);
   const rawFields = translatePropsToFields(schema.getDefinedProperties(), tableAlias);
@@ -24,6 +24,8 @@ const SQLiteGraphNodeNestedNodeResolver = (
   const parentSchemaName = parentSchema.getSchemaName();
   const resolvedAssociation = schema.getAssociationWith(parentSchemaName);
   const { objectType } = resolvedAssociation;
+
+  const resolvedOptions = resolveOptions(schema, options);
 
   if (objectType === 'array') {
     // todo: use array alias declared as "as" query object key property.
@@ -46,6 +48,7 @@ const SQLiteGraphNodeNestedNodeResolver = (
               SELECT
                 ${rawFields}
               ${sourceWithAssociations}
+              ${resolvedOptions}
             ) ${tableAlias}
           )
         )
@@ -76,6 +79,7 @@ const SQLiteGraphNodeNestedNodeResolver = (
       /* begin ${tableAlias} join */
       ${associationWithParent}
       /* end ${tableAlias} join */
+      ${resolvedOptions}
     /* end ${tableAlias} node */
   `;
 };
