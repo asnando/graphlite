@@ -5,16 +5,14 @@ const createAssociationList = (schema, parentSchemaName) => {
   return [association].concat(association.using);
 };
 
-const hasMiddlewareAssociation = associationList => associationList[0].using.length > 1;
-
 const getParentSchemaName = node => node.parent.getValue().getSchemaName();
 
 const SQLiteGraphNodeSourceWithAssociationsResolver = (schema, options, node) => {
   const parentSchemaName = getParentSchemaName(node);
   const associationList = createAssociationList(schema, parentSchemaName);
-  const useMiddlewareAssociation = hasMiddlewareAssociation(associationList);
+  const useMiddlewareAssociation = (associationList.length > 1);
 
-  if (useMiddlewareAssociation) {
+  if (!useMiddlewareAssociation) {
     const {
       sourceHash,
       targetTable,
@@ -40,6 +38,8 @@ const SQLiteGraphNodeSourceWithAssociationsResolver = (schema, options, node) =>
       targetHash,
       targetKey,
       sourceHash,
+      foreignTable,
+      foreignKey,
       joinType,
     } = association;
 
@@ -52,11 +52,17 @@ const SQLiteGraphNodeSourceWithAssociationsResolver = (schema, options, node) =>
 
     let resolvedAssociation;
 
-    // Otherwise, it will render all the middle associations between they.
-    resolvedAssociation = `
-      ${joinType.toUpperCase()} JOIN ${targetTable} ${targetHash}
-      ON ${targetHash}.${targetKey}=${sourceHash}.${targetKey}
-    `;
+    // Join(s) must be different when there is a foreign table between the associations.
+    if (foreignTable && foreignKey) {
+      resolvedAssociation = `
+        ${joinType.toUpperCase()} JOIN ${foreignTable} ON ${foreignTable}.${foreignKey}=${sourceHash}.${foreignKey}
+        ${joinType.toUpperCase()} JOIN ${targetTable} ${targetHash} ON ${targetHash}.${targetKey}=${foreignTable}.${targetKey}
+      `;
+    } else {
+      resolvedAssociation = `
+        ${joinType.toUpperCase()} JOIN ${targetTable} ${targetHash} ON ${targetHash}.${targetKey}=${sourceHash}.${targetKey}
+      `;
+    }
 
     // As we are using the simple "FROM" table for the first index of list, it
     // must make the "join" with this source table using the "WHERE" condition when it

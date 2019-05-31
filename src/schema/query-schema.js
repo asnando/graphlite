@@ -57,6 +57,10 @@ class QuerySchema extends Schema {
     return this.definedOptions;
   }
 
+  getDisplayName() {
+    return this.getSchemaName();
+  }
+
   // check if defined query filters have some input value.
   hasAssociatedOption(queryOptions = {}) {
     const { where } = this.options;

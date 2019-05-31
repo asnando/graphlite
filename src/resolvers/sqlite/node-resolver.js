@@ -19,24 +19,31 @@ const SQLiteGraphNodeNestedNodeResolver = (
   const tableAlias = schema.getTableHash();
   const objectFields = translatePropsToObject(schema.getDefinedProperties(), tableAlias);
   const rawFields = translatePropsToFields(schema.getDefinedProperties(), tableAlias);
-
   const parentSchema = node.parent.getValue();
   const parentSchemaName = parentSchema.getSchemaName();
   const resolvedAssociation = schema.getAssociationWith(parentSchemaName);
   const { objectType } = resolvedAssociation;
-
   const resolvedOptions = resolveOptions(schema, options);
 
+  // Resolve the key name that represents the array/object data.
+  // todo: use array alias declared as "as" query object key property.
+  const schemaDisplayName = schema.getDisplayName();
+
   if (objectType === 'array') {
-    // todo: use array alias declared as "as" query object key property.
-    // Resolve the key name that represents the array data.
-    const showAs = schema.getSchemaName();
     const sourceWithAssociations = resolveNode('nodeSourceWithAssociations');
+    debug.log(sourceWithAssociations);
+
+    // // When the node have group by condition it must group (using json_group_array function)
+    // // the ids from all the others associated schemas and return it to be avaiable to the next nodes.
+    // if (/group by/i.test(resolvedOptions)) {
+
+    // }
+
     return `
       /* begin ${tableAlias} node */
       SELECT
         json_object(
-          '${showAs}',
+          '${schemaDisplayName}',
           (
             SELECT
               json_group_array(
@@ -56,15 +63,8 @@ const SQLiteGraphNodeNestedNodeResolver = (
     `;
   }
 
-  const usingMiddlewareAssociations = !!resolvedAssociation.using.length;
-  if (usingMiddlewareAssociations) {
-    return `
-      /* todo */
-      /* begin ${tableAlias} node */
-      json_object()
-      /* end ${tableAlias} node */
-    `;
-  }
+  // Resolve node query when is "object" type
+  // ...
 
   const associationWithParent = resolveNode('nodeSourceWithAssociations');
   // When there is no middleware tables between the association,
