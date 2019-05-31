@@ -30,25 +30,22 @@ afterAll(async () => {
 });
 
 describe('graphlite', () => {
-  // it('should return 6674 rows from database table', async () => {
-  //   const data = await graph.findAll('produto');
-  //   const { count } = data;
-  //   expect(count).toBe(6674);
-  // });
 
-  // it('should return 100 rows from database table ordered by description', async() => {
-  //   const options = {};
-  //   const extraOptions = { size: 100, page: 1, orderBy: ['descricaoProduto'] };
-  //   const data = await graph.findAll('produto', options, extraOptions);
-  //   const { count } = data;
-  //   expect(count).toBe(100);
-  // });
+  it('should return 100 rows from database table ordered by description', async() => {
+    const options = {};
+    const extraOptions = { size: 100, page: 1 };
+    const data = await graph.findAll('lista-produtos', options, extraOptions);
+    const { count } = data;
+    expect(count).toBe(100);
+  });
 
-  it('should return one product with the 19260 id', async() => {
-    const options = { id: 19260 };
+  it('should return one product with the 10785 id', async() => {
+    const options = { id: 10785 };
     const extraOptions = {};
     const data = await graph.findAll('produto', options, extraOptions);
-    expect(data.count).toBe(1);
+    const { rows } = data;
+    const [product] = rows;
+    expect(product.id).toBe(10785);
   });
 
 });
