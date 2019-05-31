@@ -58,9 +58,12 @@ class GraphLite {
     const supportedLocales = isObject(locales) ? keys(locales) : {};
 
     assign(this, {
-      connection,
       schemaList,
       queryList,
+    });
+
+    assign(this, {
+      connection,
       supportedLocales,
       locales,
       locale: defaultLanguage || supportedLocales[0],
@@ -72,11 +75,13 @@ class GraphLite {
   }
 
   _defineSchemasFromArrayList(schemas = []) {
-    schemas.forEach(schema => this.schemaList.defineSchema(schema));
+    this.schemaList._defineSchemasFromArrayList(schemas);
+    // schemas.forEach(schema => this.schemaList.defineSchema(schema));
   }
 
   _defineQueriesFromArrayList(queries = []) {
-    queries.forEach(query => this.queryList.defineQuery(query));
+    this.queryList._defineQueriesFromArrayList(queries);
+    // queries.forEach(query => this.queryList.defineQuery(query));
   }
 
   _useAssociationFunction(useAssociation) {
@@ -118,6 +123,14 @@ class GraphLite {
 
   findAll(queryName, options, extraOptions = {}) {
     return this._run(queryName, options, extraOptions);
+  }
+
+  defineSchema() {
+
+  }
+
+  defineQuery() {
+
   }
 
   setLocale(locale) {

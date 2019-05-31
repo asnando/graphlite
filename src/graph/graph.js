@@ -17,7 +17,7 @@ const initialGraph = {
 
 class Graph {
   constructor(structure) {
-    this.graph = initialGraph;
+    this.graph = { ...initialGraph };
     this._createGraphStructure(structure);
   }
 
@@ -46,7 +46,7 @@ class Graph {
       // Create a new QuerySchema which represents the node schema and some
       // merged options and methods.
       this._addGraphNode(schemaName, nodeHash, new QuerySchema({
-        ...schema,
+        schema,
         // Query Node specific attributes.
         useProperties: node.properties,
         ignoreId: !isRoot,

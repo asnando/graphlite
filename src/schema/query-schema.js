@@ -16,6 +16,7 @@ const {
 // of use of the schema inside query must be put as method of this class.
 class QuerySchema extends Schema {
   constructor(opts = {
+    schema: {},
     options: {
       where: {},
       page: 1,
@@ -23,12 +24,13 @@ class QuerySchema extends Schema {
       orderBy: [],
       groupBy: [],
     },
-    displayAs,
+    displayAs: null,
     useProperties: [],
     ignoreId: false,
   }) {
     // Pass the "schemaList" reference to parent constructor as it must be saved inside it.
-    super(opts, schemaList);
+    super(opts.schema, schemaList);
+    // Extend specific QuerySchema Class props.
     assign(this, {
       // Object with merged properties definition. If "useProperties" array
       // then it will use only the defined properties inside this array, otherwise
@@ -64,6 +66,10 @@ class QuerySchema extends Schema {
     return this.displayAs || this.getSchemaName();
   }
 
+  // This method is acessed by the child node resolver
+  // to check if its parent have any group by options defined.
+  // This verification is necessary to let SQLite know if it neeeds to
+  // use the ids already grouped from the parent node instead of a new join.
   haveGroupByOptions() {
     const definedOptions = this.getDefinedOptions();
     return !isNil(definedOptions.groupBy);

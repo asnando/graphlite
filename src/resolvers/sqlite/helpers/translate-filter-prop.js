@@ -26,7 +26,6 @@ const resolvePropWithOperator = (propName, operator, value) => {
 
 // todo: use another schemas when filter refers to a nested schema.
 const translateFilterProp = (condition, value, schema) => {
-  debug.info(`Resolving '${condition}' with value: '${value}'`);
   // Resolves the operator from the condition. Generally it is at
   // the beginning of the condition string.
   const opr = Array.from(condition.match(/^\W+/)).shift();

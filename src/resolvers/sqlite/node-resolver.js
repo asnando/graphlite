@@ -52,9 +52,7 @@ const SQLiteGraphNodeNestedNodeResolver = (
             SELECT
               json_group_array(
                 json_patch(
-                  json_object(
-                    ${objectFields}
-                  ),
+                  json_object(${objectFields}),
                   (${resolvedNextNodes})
                 )
               )
