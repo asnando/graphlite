@@ -23,6 +23,7 @@ class QuerySchema extends Schema {
       orderBy: [],
       groupBy: [],
     },
+    displayAs,
     useProperties: [],
     ignoreId: false,
   }) {
@@ -34,6 +35,7 @@ class QuerySchema extends Schema {
       // will use all the properties from the schema.
       definedProperties: {},
       definedOptions: opts.options,
+      displayAs: opts.displayAs,
     });
     // it must return a list of all schema properties merged with usedProperties
     // names array(when defined). It must check too when id needs to be used or not.
@@ -59,7 +61,7 @@ class QuerySchema extends Schema {
   }
 
   getDisplayName() {
-    return this.getSchemaName();
+    return this.displayAs || this.getSchemaName();
   }
 
   haveGroupByOptions() {

@@ -50,6 +50,7 @@ class Graph {
         // Query Node specific attributes.
         useProperties: node.properties,
         ignoreId: !isRoot,
+        displayAs: node.as,
         options: {
           where: node.where,
           size: node.size,
