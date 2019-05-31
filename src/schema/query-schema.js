@@ -1,6 +1,7 @@
 const assign = require('lodash/assign');
 const size = require('lodash/size');
 const keys = require('lodash/keys');
+const isNil = require('lodash/isNil');
 const Schema = require('../schema/schema');
 const schemaList = require('../jar/schema-list');
 const constants = require('../constants');
@@ -61,13 +62,9 @@ class QuerySchema extends Schema {
     return this.getSchemaName();
   }
 
-  // check if defined query filters have some input value.
-  hasAssociatedOption(queryOptions = {}) {
-    const { where } = this.options;
-    if (!size(keys(where))) {
-      return false;
-    }
-    return !!keys(where).find(key => !!queryOptions[key]);
+  haveGroupByOptions() {
+    const definedOptions = this.getDefinedOptions();
+    return !isNil(definedOptions.groupBy);
   }
 }
 

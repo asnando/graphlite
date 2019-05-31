@@ -1,3 +1,4 @@
+const isNil = require('lodash/isNil');
 const debug = require('../../debug');
 
 const createAssociationList = (schema, parentSchemaName) => {
@@ -11,25 +12,46 @@ const SQLiteGraphNodeSourceWithAssociationsResolver = (schema, options, node) =>
   const parentSchemaName = getParentSchemaName(node);
   const associationList = createAssociationList(schema, parentSchemaName);
   const useMiddlewareAssociation = (associationList.length > 1);
+  const parentNode = node.parent;
+  const parentSchema = parentNode.getValue();
 
   if (!useMiddlewareAssociation) {
     const {
+      sourceTable,
       sourceHash,
+      sourceKey,
       targetTable,
       targetHash,
       targetKey,
       useSourceKey,
       useTargetKey,
       joinType,
+      associationType,
     } = associationList[0];
-    return `
-      FROM (
-        SELECT
-          ${sourceHash}.${useSourceKey || targetKey}
-      ) AS ${sourceHash}
-      ${joinType.toUpperCase()} JOIN ${targetTable} ${targetHash}
-      ON ${targetHash}.${useTargetKey || targetKey}=${sourceHash}.${useSourceKey || targetKey}
-    `;
+
+    if (parentNode.isRoot()) {
+      return `
+        FROM (
+          SELECT
+            ${sourceHash}.${useSourceKey || targetKey}
+        ) AS ${sourceHash}
+        ${joinType.toUpperCase()} JOIN ${targetTable} ${targetHash}
+        ON ${targetHash}.${useTargetKey || targetKey}=${sourceHash}.${useSourceKey || targetKey}
+      `;
+    }
+
+    if (/^belongs/.test(associationType)) {
+      if (parentSchema.haveGroupByOptions()) {
+        return `
+          FROM ${sourceTable} ${sourceHash},
+          json_each(id_${sourceHash}) as id_${sourceHash}
+          WHERE ${sourceHash}.${sourceKey}=id_${sourceHash}.value
+        `;
+      }
+      return '/* todo */';
+    }
+
+    return '/* todo */';
   }
 
   return associationList.map((association, index, self) => {

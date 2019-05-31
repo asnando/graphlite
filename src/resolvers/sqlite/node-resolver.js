@@ -18,12 +18,13 @@ const SQLiteGraphNodeNestedNodeResolver = (
 
   const tableAlias = schema.getTableHash();
   const objectFields = translatePropsToObject(schema.getDefinedProperties(), tableAlias);
-  const rawFields = translatePropsToFields(schema.getDefinedProperties(), tableAlias);
+  let rawFields = translatePropsToFields(schema.getDefinedProperties(), tableAlias);
   const parentSchema = node.parent.getValue();
   const parentSchemaName = parentSchema.getSchemaName();
   const resolvedAssociation = schema.getAssociationWith(parentSchemaName);
   const { objectType } = resolvedAssociation;
   const resolvedOptions = resolveOptions(schema, options);
+  const resolvedNextNodes = resolveNextNodes();
 
   // Resolve the key name that represents the array/object data.
   // todo: use array alias declared as "as" query object key property.
@@ -31,13 +32,16 @@ const SQLiteGraphNodeNestedNodeResolver = (
 
   if (objectType === 'array') {
     const sourceWithAssociations = resolveNode('nodeSourceWithAssociations');
-    debug.log(sourceWithAssociations);
 
-    // // When the node have group by condition it must group (using json_group_array function)
-    // // the ids from all the others associated schemas and return it to be avaiable to the next nodes.
-    // if (/group by/i.test(resolvedOptions)) {
-
-    // }
+    // When the node have group by condition it must group (using json_group_array function)
+    // the ids from all the others associated schemas and return it to be avaiable to
+    // the next nodes.
+    if (/group by/i.test(resolvedOptions) && resolvedAssociation.using.length) {
+      const associationList = [resolvedAssociation].concat(resolvedAssociation.using);
+      rawFields += `, ${associationList.map(({
+        targetHash, targetKey,
+      }) => `json_group_array(${targetHash}.${targetKey}) as id_${targetHash}`).join(',')}`;
+    }
 
     return `
       /* begin ${tableAlias} node */
@@ -47,8 +51,11 @@ const SQLiteGraphNodeNestedNodeResolver = (
           (
             SELECT
               json_group_array(
-                json_object(
-                  ${objectFields}
+                json_patch(
+                  json_object(
+                    ${objectFields}
+                  ),
+                  (${resolvedNextNodes})
                 )
               )
             FROM (
