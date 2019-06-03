@@ -23,7 +23,7 @@ const SQLiteGraphNodeNestedNodeResolver = (
   const parentSchemaName = parentSchema.getSchemaName();
   const resolvedAssociation = schema.getAssociationWith(parentSchemaName);
   const { objectType } = resolvedAssociation;
-  const resolvedOptions = resolveOptions(schema, options);
+  const resolvedOptions = resolveOptions(schema, options, node);
   const resolvedNextNodes = resolveNextNodes();
 
   // Resolve the key name that represents the array/object data.
