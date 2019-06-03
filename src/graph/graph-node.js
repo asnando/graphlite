@@ -8,11 +8,13 @@ const useSQLiteResolvers = () => {
   const SQLiteGraphNodeNodeResolver = require('../resolvers/sqlite/node-resolver');
   const SQLiteGraphNodeRootSourceWithAssociationsResolver = require('../resolvers/sqlite/root-source-with-associations-resolver');
   const SQLiteGraphNodeSourceWithAssociationsResolver = require('../resolvers/sqlite/node-source-with-associations-resolver');
+  const SQLiteGraphNodeRootOptionsResolver = require('../resolvers/sqlite/root-options');
   return {
     root: SQLiteGraphNodeRootResolver,
     node: SQLiteGraphNodeNodeResolver,
     rootSourceWithAssociations: SQLiteGraphNodeRootSourceWithAssociationsResolver,
     nodeSourceWithAssociations: SQLiteGraphNodeSourceWithAssociationsResolver,
+    rootOptions: SQLiteGraphNodeRootOptionsResolver,
   };
 };
 

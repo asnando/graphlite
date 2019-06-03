@@ -87,6 +87,10 @@ class SchemaProperty {
     return this.tableAlias;
   }
 
+  getPropertyType() {
+    return this.type;
+  }
+
   // After data fetch from database it must be parsed to the
   // real type and be parsed by the parser function(if defined).
   parseValue(...args) {

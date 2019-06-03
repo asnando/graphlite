@@ -16,6 +16,8 @@ const SQLiteGraphNodeNestedNodeResolver = (
     return resolveNextNodes();
   }
 
+  const optionsTypes = ['limit', 'offset', 'groupBy', 'orderBy'];
+
   const tableAlias = schema.getTableHash();
   const objectFields = translatePropsToObject(schema.getDefinedProperties(), tableAlias);
   let rawFields = translatePropsToFields(schema.getDefinedProperties(), tableAlias);
@@ -23,11 +25,12 @@ const SQLiteGraphNodeNestedNodeResolver = (
   const parentSchemaName = parentSchema.getSchemaName();
   const resolvedAssociation = schema.getAssociationWith(parentSchemaName);
   const { objectType } = resolvedAssociation;
-  const resolvedOptions = resolveOptions(schema, options, node);
+  // Resolve the node options ignoring the 'where' clause as it will be already
+  // rendered by the graph root node.
+  const resolvedOptions = resolveOptions(schema, options, node, optionsTypes);
   const resolvedNextNodes = resolveNextNodes();
 
   // Resolve the key name that represents the array/object data.
-  // todo: use array alias declared as "as" query object key property.
   const schemaDisplayName = schema.getDisplayName();
 
   if (objectType === 'array') {

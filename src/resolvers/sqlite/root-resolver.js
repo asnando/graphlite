@@ -21,8 +21,10 @@ const SQLiteGraphNodeRootResolver = (schema, options, node, resolveNextNodes, re
   // Resolve next nodes query patching with json_patch() function.
   const nextNodes = resolveNode('node', { usePatch: true });
 
-  // Resolve root node options.
-  const resolvedOptions = resolveOptions(schema, options, node);
+  const optionsType = ['limit', 'page', 'groupBy', 'orderBy'];
+  // todo: add description
+  const resolvedOptions = resolveNode('rootOptions');
+  const resolvedExtraOptions = resolveOptions(schema, options, node, optionsType);
 
   return `
   SELECT
@@ -53,6 +55,7 @@ const SQLiteGraphNodeRootResolver = (schema, options, node, resolveNextNodes, re
       /* end root source with associations */
       /* begin root options */
       ${resolvedOptions}
+      ${resolvedExtraOptions}
       /* end root options */
     ) AS root
     LEFT JOIN ${tableName} AS ${tableHash} ON ${tableHash}.${tableId}=root.${tableId}

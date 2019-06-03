@@ -10,11 +10,11 @@ const {
   DEFAULT_PAGE_SIZE,
 } = constants;
 
-const SQLiteGraphNodeOptionsResolver = (schema, queryOptions, node) => {
+const SQLiteGraphNodeOptionsResolver = (schema, queryOptions, node, useOnly = []) => {
   const schemaDefinedOptions = schema.getDefinedOptions();
   const isRoot = node.isRoot();
 
-  let resolvedExtraOptions = {};
+  const resolvedExtraOptions = {};
   // 'size' and 'page' are options that must not be rendered inside nested nodes of graph.
   // It can be only rendered if it is statically defined in the query schema.
   if (isRoot) {
@@ -34,12 +34,31 @@ const SQLiteGraphNodeOptionsResolver = (schema, queryOptions, node) => {
 
   const { size, page } = mergedOptions;
 
-  const limit = useLimit(size);
-  const offset = useOffset(size, page);
-  const orderBy = useOrderBy(schema, mergedOptions);
-  const where = useWhere(schema, mergedOptions);
-  const groupBy = useGroupBy(schema, mergedOptions);
-  return `${where} ${groupBy} ${orderBy} ${limit} ${offset}`;
+  // Keep the order.
+  const types = [
+    'where',
+    'groupBy',
+    'orderBy',
+    'limit',
+    'offset',
+  ];
+
+  return types.filter(type => (!useOnly.length ? true : useOnly.includes(type))).map((type) => {
+    switch (type) {
+      case 'limit':
+        return useLimit(size);
+      case 'offset':
+        return useOffset(size, page);
+      case 'orderBy':
+        return useOrderBy(schema, mergedOptions);
+      case 'where':
+        return useWhere(schema, mergedOptions);
+      case 'groupBy':
+        return useGroupBy(schema, mergedOptions);
+      default:
+        return '';
+    }
+  }).join(' ');
 };
 
 module.exports = SQLiteGraphNodeOptionsResolver;

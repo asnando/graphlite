@@ -1,64 +1,74 @@
+const keys = require('lodash/keys');
+const isNil = require('lodash/isNil');
 const debug = require('../../debug');
 
-// todo: add description
+const createAssociationList = (node) => {
+  let associations = [];
+  let walker = node;
+  while (walker) {
+    if (!walker.isRoot()) {
+      const schema = walker.getValue();
+      const parentSchema = walker.parent.getValue();
+      const parentSchemaName = parentSchema.getSchemaName();
+      const associationWithParent = schema.getAssociationWith(parentSchemaName);
+      if (walker === node) {
+        // when first node it must get the directly association with parent
+        associations = [associationWithParent].concat(associations);
+      } else if (associationWithParent.using.length) {
+        // otherwise it will concat all the middleware associations until the root node.
+        associations = associationWithParent.using.concat(associations);
+      }
+    }
+    walker = walker.parent;
+  }
+  return associations;
+};
+
 const SQLiteGraphNodeSourceWithAssociationsResolver = (schema, options, node, resolveNextNodes) => {
+  // Imediatelly returns the source table from.
   if (node.isRoot()) {
     const tableName = schema.getTableName();
     const tableAlias = schema.getTableHash();
     return `FROM ${tableName} ${tableAlias} ${resolveNextNodes()}`;
   }
 
-  // for now just ignore joinned tables. It must be (re)enabled later...
-  return '';
+  // Check if there is at least one filter with value from this schema.
+  const schemaDefinedOptions = schema.getDefinedOptions();
+  const { where } = schemaDefinedOptions;
+  const match = !!keys(where).find(filterName => !isNil(options[filterName]));
 
-  // const parentSchema = node.parent.getValue();
-  // const parentSchemaName = parentSchema.getSchemaName();
-  // const resolvedAssociation = schema.getAssociationWith(parentSchemaName);
+  // If no defined options value just return the next resolved nodes.
+  if (!match) return resolveNextNodes();
 
-  // // Nested nodes can have another tables(fk) between associations. In that case,
-  // // we need to use the "using" middleware tables array to reach the associated data.
-  // // All the associations are translated to an array of table associations.
-  // const associationList = ([resolvedAssociation]).concat(resolvedAssociation.using);
+  const associationList = createAssociationList(node);
 
-  // return associationList
-  //   // Ignore "left" join(s) and foreign tables that came from it.
-  //   .filter((association, index, self) => {
-  //     return !/left/i.test(!index ? association.joinType : self[0].joinType);
-  //   })
-  //   .map(({
-  //     sourceHash,
-  //     targetTable,
-  //     targetKey,
-  //     targetHash,
-  //     foreignTable,
-  //     foreignKey,
-  //     useSourceKey,
-  //     useTargetKey,
-  //     joinType,
-  //   }, index, self) => {
-  //     if (foreignTable && foreignKey) {
-  //       // Fix: When using foreign table it must update the last position of the array as it
-  //       // contains the final association with the desired table. If does not change it will try
-  //       // to join the two tables ignoring everything in the middle.
-  //       // eslint-disable-next-line no-param-reassign
-  //       self[self.length - 1] = {
-  //         ...self[self.length - 1],
-  //         sourceTable: targetTable,
-  //         sourceHash: targetHash,
-  //       };
-  //       // When foreign table is defined it must join the table multiple times.
-  //       return `
-  //         ${joinType.toUpperCase()} JOIN ${foreignTable}
-  //           ON ${foreignTable}.${foreignKey}=${sourceHash}.${foreignKey}
-  //         ${joinType.toUpperCase()} JOIN ${targetTable} ${targetHash}
-  //           ON ${targetHash}.${useTargetKey || targetKey}=${foreignTable}.${useTargetKey || targetKey}
-  //       `;
-  //     }
-  //     return `
-  //       ${joinType.toUpperCase()} JOIN ${targetTable} ${targetHash}
-  //         ON ${targetHash}.${useTargetKey || targetKey}=${sourceHash}.${useSourceKey || targetKey}
-  //     `;
-  //   }).join(' ');
+  return associationList
+    .map((association) => {
+      const {
+        sourceHash,
+        targetTable,
+        targetKey,
+        targetHash,
+        foreignTable,
+        foreignKey,
+        useSourceKey,
+        useTargetKey,
+        joinType,
+      } = association;
+      if (foreignTable && foreignKey) {
+        // When foreign table is defined it must join the table multiple times.
+        return `
+          ${joinType.toUpperCase()} JOIN ${foreignTable}
+            ON ${foreignTable}.${foreignKey}=${sourceHash}.${foreignKey}
+          ${joinType.toUpperCase()} JOIN ${targetTable} ${targetHash}
+            ON ${targetHash}.${useTargetKey || targetKey}=${foreignTable}.${useTargetKey || targetKey}
+        `;
+      }
+      return `
+        ${joinType.toUpperCase()} JOIN ${targetTable} ${targetHash}
+          ON ${targetHash}.${useTargetKey || targetKey}=${sourceHash}.${useSourceKey || targetKey}
+      `;
+    }).join(' ');
 };
 
 module.exports = SQLiteGraphNodeSourceWithAssociationsResolver;
