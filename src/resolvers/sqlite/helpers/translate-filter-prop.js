@@ -1,24 +1,25 @@
+const quote = require('../../../utils/quote');
+const glob = require('../../../utils/glob');
 const debug = require('../../../debug');
 
-// todo: resolve another types of operators.
 const resolvePropWithOperator = (propName, operator, value) => {
   switch (operator) {
     case '=':
       return `${propName}=${value}`;
     case '%':
-      return '';
+      return `${propName} LIKE ${quote(value)}`;
     case '<>':
-      return '';
+      return `${propName}<>${value}`;
     case '<':
-      return '';
+      return `${propName}<${value}`;
     case '>':
-      return '';
+      return `${propName}>${value}`;
     case '#':
-      return '';
+      return `${propName} GLOB ${glob(value)}`;
     case '|':
-      return '';
+      return value.map(v => `${v}=${value}`).join(' OR ');
     case '&':
-      return '';
+      return value.map(v => `${v}=${value}`).join(' AND ');
     default:
       return '';
   }
