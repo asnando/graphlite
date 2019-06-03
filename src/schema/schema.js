@@ -56,10 +56,15 @@ class Schema {
         const prop = props[propName];
         return isString(prop)
           ? { name: propName, type: prop }
-          : { ...prop, name: propName };
+          : { ...prop, name: propName, defaultValue: prop.default };
       })
       .forEach(({
-        name, type, alias, parser, useLocale,
+        name,
+        type,
+        alias,
+        parser,
+        useLocale,
+        defaultValue,
       }) => {
         const prop = new SchemaProperty({
           name,
@@ -67,6 +72,7 @@ class Schema {
           alias,
           parser,
           useLocale,
+          defaultValue,
           schemaName: this.name,
           tableAlias: this.getTableHash(),
         });

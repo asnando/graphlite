@@ -2,23 +2,14 @@ const assign = require('lodash/assign');
 const pickBy = require('lodash/pickBy');
 const isNil = require('lodash/isNil');
 const isFunction = require('lodash/isFunction');
+const isString = require('lodash/isString');
 const debug = require('../debug');
 const constants = require('../constants');
-
-const isString = require('lodash/isString');
-const isInteger = require('lodash/isInteger');
-const isBoolean = require('lodash/isBoolean');
-const isNumber = require('lodash/isNumber');
-const toString = require('lodash/toString');
-const toNumber = require('lodash/toNumber');
-
-const isFloat = value => !(value % 1);
-
-const parseToString = value => (isString(value) ? value : toString(value));
-const parseToNumber = value => (isNumber(value) ? value : toNumber(value));
-const parseToInt = value => (isInteger(value) ? value : parseInt(value, 1));
-const parseToFloat = value => (isFloat(value) ? value : parseFloat(value));
-const parseToBoolean = value => (isBoolean(value) ? value : !!value);
+const toString = require('../utils/to-string');
+const toNumber = require('../utils/to-number');
+const toInt = require('../utils/to-int');
+const toFloat = require('../utils/to-float');
+const toBoolean = require('../utils/to-boolean');
 
 const {
   GRAPHLITE_SUPPORTED_DATA_TYPES,
@@ -38,7 +29,13 @@ const graphliteSupportPropertyType = type => (
 
 class SchemaProperty {
   constructor({
-    schemaName, tableAlias, name, alias, parser, type,
+    schemaName,
+    tableAlias,
+    name,
+    alias,
+    parser,
+    type,
+    defaultValue,
   }) {
     const resolvedType = this._resolvePropertyType(type);
     if (resolvedType === GRAPHLITE_PRIMARY_KEY_DATA_TYPE) {
@@ -55,6 +52,7 @@ class SchemaProperty {
       schemaName,
       tableAlias,
       parser,
+      defaultValue,
     }));
   }
 
@@ -97,23 +95,23 @@ class SchemaProperty {
     switch (type) {
       // string
       case GRAPHLITE_STRING_DATA_TYPE:
-        value = parseToString(value);
+        value = toString(value);
         break;
       // bool
       case GRAPHLITE_BOOLEAN_DATA_TYPE:
-        value = parseToBoolean(value);
+        value = toBoolean(value);
         break;
       // number
       case GRAPHLITE_NUMBER_DATA_TYPE:
-        value = parseToNumber(value);
+        value = toNumber(value);
         break;
       // integer
       case GRAPHLITE_INTEGER_DATA_TYPE:
-        value = parseToInt(value);
+        value = toInt(value);
         break;
       // float
       case GRAPHLITE_FLOAT_DATA_TYPE:
-        value = parseToFloat(value);
+        value = toFloat(value);
         break;
       // default, pkey
       case GRAPHLITE_DEFAULT_DATA_TYPE:
@@ -123,6 +121,12 @@ class SchemaProperty {
     }
     if (parser && isFunction(parser)) {
       value = parser(value);
+    }
+    // If "defaultValue" is defined, then use it if property value is empty.
+    if (!isNil(this.defaultValue)) {
+      if ((isString(value) && /^$/.test(value)) || !value) {
+        value = this.defaultValue;
+      }
     }
     return value;
   }
