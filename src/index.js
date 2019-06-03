@@ -121,7 +121,8 @@ class GraphLite {
 
   // Public API
   findOne(queryName, options) {
-    assign(options, 'size', 1);
+    // Force options size.
+    options.size = 1;
     return this._run(queryName, options);
   }
 
