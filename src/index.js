@@ -20,19 +20,25 @@ const {
 const parseResponseRowObject = (row) => {
   const shadow = {};
   const object = JSON.parse(row[RESPONSE_OBJECT_NAME]);
-  // Parse each property value of the object.
+  // Parse each property value/index of the object.
   jtree(object, (value, path) => {
     // ignore when begin path, value is array or it represents a object inside array.
     if (/^\$$/.test(path) || isArray(value) || /\d$/.test(path)) return;
     let prop = path.match(/\w+\.\w+$/)[0].split('.');
     const [schemaAlias, propName] = prop;
+    // Resolve the property schema.
     const schema = schemaList.getSchemaByAlias(schemaAlias);
+    // Get the schema property instance by the property name.
     prop = schema.getProperty(propName);
+    // Resolve the property value.
     const propValue = prop.parseValue(value);
+    // Transform the path string representation to use with the
+    // lodash "set" function.
     const objectPath = path
       .replace(/#(\d{1,})/g, '[$1]')
       .replace(/^\$\.?/, '')
       .replace(/\w+\.(?=\w+$)/, '');
+    // Set the new parsed value into the shadow of the actual row object.
     jset(shadow, objectPath, propValue);
   });
   return shadow;
@@ -75,13 +81,11 @@ class GraphLite {
   }
 
   _defineSchemasFromArrayList(schemas = []) {
-    this.schemaList._defineSchemasFromArrayList(schemas);
-    // schemas.forEach(schema => this.schemaList.defineSchema(schema));
+    schemas.forEach(schema => this.schemaList.defineSchema(schema));
   }
 
   _defineQueriesFromArrayList(queries = []) {
-    this.queryList._defineQueriesFromArrayList(queries);
-    // queries.forEach(query => this.queryList.defineQuery(query));
+    queries.forEach(query => this.queryList.defineQuery(query));
   }
 
   _useAssociationFunction(useAssociation) {
@@ -95,9 +99,9 @@ class GraphLite {
     return this.queryList.getQuery(queryName);
   }
 
-  _mountQuery(queryName, options = {}, extraOptions = {}) {
+  _mountQuery(queryName, options = {}) {
     const query = this._getQuery(queryName);
-    const resolvedQuery = formatQuery(query.resolve(assign(options, extraOptions)));
+    const resolvedQuery = formatQuery(query.resolve(options));
     return resolvedQuery;
   }
 
@@ -108,21 +112,21 @@ class GraphLite {
       : connection[GRAPHLITE_CONNECTION_EXECUTER_NAME](query);
   }
 
-  _run(queryName, options = {}, extraOptions = {}) {
-    debug.log(`Fetching data using "${queryName}" query, with options`, options, extraOptions);
-    const query = this._mountQuery(queryName, options, extraOptions);
+  _run(queryName, options = {}) {
+    debug.log(`Fetching data using "${queryName}" query, with options`, options);
+    const query = this._mountQuery(queryName, options);
     pbcopy.writeSync(query);
     return this._executeQuery(query).then(parseResponseRows);
   }
 
   // Public API
-  findOne(queryName, options, extraOptions = {}) {
-    assign(extraOptions, 'size', 1);
-    return this._run(queryName, options, extraOptions);
+  findOne(queryName, options) {
+    assign(options, 'size', 1);
+    return this._run(queryName, options);
   }
 
-  findAll(queryName, options, extraOptions = {}) {
-    return this._run(queryName, options, extraOptions);
+  findAll(queryName, options) {
+    return this._run(queryName, options);
   }
 
   defineSchema() {
