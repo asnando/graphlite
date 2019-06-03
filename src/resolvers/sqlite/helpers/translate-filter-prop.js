@@ -7,6 +7,7 @@ const {
   GRAPHLITE_STRING_DATA_TYPE,
 } = constants;
 
+// Resolve string (already quoted) within the '%' like operator.
 const useLike = value => value.replace(/^'/, '\'%').replace(/'$/, '%\'');
 
 const resolvePropWithOperator = (propName, propType, operator, value) => {
@@ -14,7 +15,6 @@ const resolvePropWithOperator = (propName, propType, operator, value) => {
     // eslint-disable-next-line no-param-reassign
     value = quote(value);
   }
-  debug.warn(useLike(value));
   switch (operator) {
     case '=':
       return `${propName}=${value}`;
