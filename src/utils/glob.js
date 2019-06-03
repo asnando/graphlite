@@ -1,5 +1,5 @@
 const keys = require('lodash/keys');
-const unaccent = require('./unaccent');
+const accent = require('./accent');
 
 const glob = (value) => {
   const chars = {
@@ -11,7 +11,7 @@ const glob = (value) => {
     c: '[CÇcç]'
   };
   // eslint-disable-next-line no-param-reassign
-  value = unaccent(value);
+  value = accent(value);
   const charKeys = keys(chars);
   return `*${value.split('').map((char) => {
     return charKeys.includes(char) ? chars[char] : `[${char.toUpperCase()}${char}]`;

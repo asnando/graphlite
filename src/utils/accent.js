@@ -1,7 +1,7 @@
 /* eslint-disable no-param-reassign */
 const keys = require('lodash/keys');
 
-const unaccent = (value) => {
+const accent = (value) => {
   const letters = {
     a: ['á', 'à', 'â', '', 'ã', 'ª'],
     e: ['é', 'è', 'ê', ''],
@@ -24,4 +24,4 @@ const unaccent = (value) => {
   return value;
 };
 
-module.exports = unaccent;
+module.exports = accent;
