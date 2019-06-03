@@ -4,22 +4,32 @@ const useWhere = require('./use-where');
 const useOrderBy = require('./use-order-by');
 const useGroupBy = require('./use-group-by');
 const debug = require('../../../debug');
+const constants = require('../../../constants');
 
-const SQLiteGraphNodeOptionsResolver = (schema, options, node) => {
+const {
+  DEFAULT_PAGE_SIZE,
+} = constants;
+
+const SQLiteGraphNodeOptionsResolver = (schema, queryOptions, node) => {
   const schemaDefinedOptions = schema.getDefinedOptions();
-
   const isRoot = node.isRoot();
+
+  let resolvedExtraOptions = {};
+  // 'size' and 'page' are options that must not be rendered inside nested nodes of graph.
+  // It can be only rendered if it is statically defined in the query schema.
+  if (isRoot) {
+    resolvedExtraOptions.size = queryOptions.size || schemaDefinedOptions.size || DEFAULT_PAGE_SIZE;
+    resolvedExtraOptions.page = queryOptions.page || schemaDefinedOptions.page || 1;
+  } else {
+    resolvedExtraOptions.size = schemaDefinedOptions.size;
+    resolvedExtraOptions.page = schemaDefinedOptions.page;
+  }
 
   // merge query options and query static defined options.
   const mergedOptions = {
     ...schemaDefinedOptions,
-    ...options,
-    // 'size' and 'page' are options that must not be rendered inside nested nodes of graph.
-    // It can be only rendered if it is statically defined in the query schema.
-    ...{
-      size: isRoot ? (options.size || schemaDefinedOptions.size) : schemaDefinedOptions.size,
-      page: isRoot ? (options.page || schemaDefinedOptions.page) : schemaDefinedOptions.page,
-    },
+    ...queryOptions,
+    ...resolvedExtraOptions,
   };
 
   const { size, page } = mergedOptions;
