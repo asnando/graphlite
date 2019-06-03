@@ -7,22 +7,19 @@ const {
   GRAPHLITE_STRING_DATA_TYPE,
 } = constants;
 
+const useLike = value => value.replace(/^'/, '\'%').replace(/'$/, '%\'');
+
 const resolvePropWithOperator = (propName, propType, operator, value) => {
-  switch (propType) {
-    case GRAPHLITE_STRING_DATA_TYPE:
-      // eslint-disable-next-line no-param-reassign
-      value = quote(value);
-      break;
-    default:
-      // eslint-disable-next-line no-unused-expressions
-      value;
-      break;
+  if (propType === GRAPHLITE_STRING_DATA_TYPE) {
+    // eslint-disable-next-line no-param-reassign
+    value = quote(value);
   }
+  debug.warn(useLike(value));
   switch (operator) {
     case '=':
       return `${propName}=${value}`;
     case '%':
-      return `${propName} LIKE ${value}`;
+      return `${propName} LIKE ${useLike(value)}`;
     case '<>':
       return `${propName}<>${value}`;
     case '<':
