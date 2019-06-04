@@ -4,7 +4,6 @@ const isObject = require('lodash/isObject');
 const isArray = require('lodash/isArray');
 const keys = require('lodash/keys');
 const jset = require('lodash/set');
-const pbcopy = require('clipboardy');
 const schemaList = require('./jar/schema-list');
 const queryList = require('./jar/query-list');
 const formatQuery = require('./utils/query');
@@ -115,7 +114,6 @@ class GraphLite {
   _run(queryName, options = {}) {
     debug.log(`Fetching data using "${queryName}" query, with options`, options);
     const query = this._mountQuery(queryName, options);
-    pbcopy.writeSync(query);
     return this._executeQuery(query).then(parseResponseRows);
   }
 
