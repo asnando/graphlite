@@ -1,6 +1,7 @@
 const quote = require('../../../utils/quote');
 const glob = require('../../../utils/glob');
 const constants = require('../../../constants');
+const schemaList = require('../../../jar/schema-list');
 const debug = require('../../../debug');
 
 const {
@@ -37,17 +38,28 @@ const resolvePropWithOperator = (propName, propType, operator, value) => {
   }
 };
 
-// todo: use another schemas when filter refers to a nested schema.
 const translateFilterProp = (condition, value, schema) => {
   // Resolves the operator from the condition. Generally it is at
   // the beginning of the condition string.
   const opr = Array.from(condition.match(/^\W+/)).shift();
   // Removes the operator from the condition string.
-  const propName = condition.replace(/^\W+/, '');
-  const prop = schema.translateToProperty(propName);
+  let propName = condition.replace(/^\W+/, '');
+  let useSchema;
+  let anotherSchema;
+  // If property if prefixed with another schema name(eg: schema.propertyName) tries
+  // to translate the property instance from the schema it refers to.
+  if (/\w+\.\w+/.test(propName)) {
+    const anotherSchemaName = propName.match(/(\w+)\.\w/)[1];
+    propName = propName.replace(/\w+\.(?=\w+)/, '');
+    anotherSchema = schemaList.getSchema(anotherSchemaName);
+  }
+  // Resolve which schema the prop refers to.
+  // eslint-disable-next-line prefer-const
+  useSchema = anotherSchema || schema;
+  const prop = useSchema.translateToProperty(propName);
   const propType = prop.getPropertyType();
   const propColumnName = prop.getPropertyColumnName();
-  const tableAlias = schema.getTableHash();
+  const tableAlias = useSchema.getTableHash();
   return resolvePropWithOperator(`${tableAlias}.${propColumnName}`, propType, opr, value);
 };
 
