@@ -2,7 +2,7 @@
 SQLite ORM to query data as graph and receive it as json (uses the JSON1 extension)
 
 # Connection Provider
-GraphLite takes the defined query and schemas and translate the query graph to a executable SQLite query. The query is passed to a connection provider class (which can be any javascript class that have the <b>run</b> method). Basically a Connection Provider is a class that wraps the connection to the real SQLite instance.
+GraphLite takes the defined query and schemas and translate the query graph to a executable SQLite query. The query is passed to a connection provider class (which can be any javascript class that have the ```run``` method). Basically a Connection Provider is a class that wraps the connection to the real SQLite instance.
 
 ```javascript
 const GraphLite = require('graphlite');
@@ -25,19 +25,24 @@ const graphlite = new GraphLite({ connection });
 # Schemas
 Schemas are object representations for relational databases <b>Tables</b>. It can be defined using the GraphLite <b>defineSchema</b> method.
 ```javascript
-const mySchema = graphlite.defineSchema('mySchemaName', {
-  tableName: 'myTableName',
+const product = graphlite.defineSchema('product', {
+  tableName: 'products',
   properties: {
-    id: 'primaryKey',
-    description: {
-      type: 'string'
+    productID: 'primaryKey',
+    productDescription: 'string,
+    productNumber: {
+      alias: 'produt_number',
+      type: 'number'
     },
-    agg: {
-      join: ['columna', 'columnb']
-    },
-    type: {
-      resolve: ['typea', 'typeb']
-    }
+    isRelease: 'boolean'
+  }
+});
+
+const image = graphlite.defineSchema('image', {
+  tableName: 'images',
+  properties: {
+    imageName: 'primaryKey',
+    imageSource: 'string,
   }
 });
 ```
@@ -47,7 +52,7 @@ The name for the field that will be showed by the query response will be resolve
 ### Properties Options
 | Name | Type | Description | Acceptable |
 | ---- | ---- | ----------- | ---------- |
-| type | String | Type of the field value on response | primaryKey, string, number |
+| type | String | Type of the field value on response | primaryKey, string, number, boolean |
 | join | Array | Join two or more columns into one | - |
 | resolve | Array | Resolves one of columns that is not empty nor defined | - |
 | parse | Function | Function that will receive the response value of this column and returns a new value | - |
@@ -57,10 +62,11 @@ The name for the field that will be showed by the query response will be resolve
 # Queries
 Graph representation of the queries that will execute. The keys from graph must match the schemas names (GraphLite will import it when mounting the query representation of the query graph).
 ```javascript
-graphlite.defineQuery('result', {
-  mySchemaName: {
-    properties: '*',
-    anotherSchema: '*'
+graphlite.defineQuery('products-list', {
+  product: {
+    image: {
+      properties: ['imageSource']
+    }
   }
 });
 ```
@@ -80,42 +86,51 @@ Schemas can be associated by one or N relations. GraphLite have four methods for
 
 All the association methods above accepts some extra options needed for that associations. The options must be an object containing some of the following keys:
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| foreignTable | String | Name of the foreign table |
-| foreignKey | String | Name of the foreign key |
-| grouped | Boolean | Tells if any group by is defined in the query definition that uses this association |
-
-### Example
-```javascript
-const schema1 = graphlite.defineSchema(/* ... */),
-      schema2 = graphlite.defineSchema(/* ... */);
-
-schema1.hasMany(schema2);
-
-schema2.belongsTo(schema1, {
-  foreignTable: 'tableB',
-  foreignKey: 'keyB'
-});
-```
+| Name | Type | Description | Default |
+| ---- | ---- | ----------- | ------- |
+| foreignTable | String | Name of the foreign table | - |
+| foreignKey | String | Name of the foreign key | - |
+| grouped | Boolean | Tells if any group by is defined in the query definition that uses this association | - |
+| type | String | The type of join used to associate the tables (e.g: left/inner) | inner |
+| using | [String] | When schemas are not directly asssociated but they need to have data patched. ```using``` must receive the name of all the others schemas which goes down the associations tree to turn it into a valid association. | - |
+| useSourceKey | String | When the keys used by the association between the tables must be different from it primary keys. The source will repesent the table which ```have``` data from the other table. | - |
+| useTargetKey | String | When the keys used by the association between the tables must be different from it primary keys. The target will repesent the table which ```belongs``` to the other table. | - |
 
 ### Using association on query
 Here is an example on how to use defined association between two or more schemas within the query:
 
 ```javascript
-const schema1 = graphlite.defineSchema(/* ... */),
-      schema2 = graphlite.defineSchema(/* ... */);
+const product = graphlite.defineSchema(/* ... */);
+const image = graphlite.defineSchema(/* ... */);
 
-const query = graphlite.defineQuery('test', {
-  schema1: {
-    properties: '*',
-    schema2: {
-      properties: [
-        'columna'
-      ]
-    }
-  }
+product.hasOne(image, {
+  useSourceKey: 'productImageName'
+});
+
+image.belongsToOne(product, {
+  useTargetKey: 'productImageName'
 });
 ```
 
-<i>Note.: When associations are not directly associated GraphLite will try to detect the association with parent by walking throught another possible schema until it reaches the parent.</i>
+# Getting data
+Data can be fetched by using the ```findAll``` or ```findOne``` methods from the Graplite instance.
+These methods can receive two argument objects. The first object represents the filters that will be used by the query within its values, while the second object receive some extra options for pagination, ordering, etc.
+
+| Option | Type   | Required | Default |
+| ------ | ------ | -------- | ------- |
+| page   | Number | false    | 1       |
+| size   | Number | false    | 100     |
+| orderBy | String/Array | false | - |
+
+```javascript
+graphlite.findAll('product-list', { id: 38125 }, { page: 1, size: 30, orderBy: 'productNumber' }).then(data => {
+  console.log(data.rows[0]);
+  /* {
+    _id: 38125,
+    productDescription: '...',
+    productNumber: 38125,
+    isRelease: true,
+    imageSource: 'data:image/png;base64,...'
+  } */  
+});
+```

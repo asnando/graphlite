@@ -1,5 +1,13 @@
-const _ = require('./utils');
-const debug = require('./debugger');
+const _ = require('../utils');
+const debug = require('../debugger');
+const {
+  PRIMARY_KEY_DATA_TYPE,
+  NUMERIC_DATA_TYPE,
+  STRING_DATA_TYPE,
+  BOOLEAN_DATA_TYPE,
+  INTEGER_DATA_TYPE,
+  FLOAT_DATA_TYPE,
+} = require('../constants');
 
 class QueryResponse {
 
@@ -16,8 +24,7 @@ class QueryResponse {
       const objectType = parentAssociation ? parentAssociation.objectType : 'object';
 
       path = path ? objectType === 'array'
-          ? path.concat('.').concat(node.name) : path
-          : '$';
+          ? path.concat('.').concat(node.name) : path : '$';
 
       // When data from node is in array format, will try
       // parse this node data removing the null rows.
@@ -26,16 +33,22 @@ class QueryResponse {
       }
   
       node.definedProperties.filter(prop => {
-        return prop.type === 'primaryKey' ? !parentAssociation : true;
+        return prop.type === PRIMARY_KEY_DATA_TYPE ? !parentAssociation : true;
       }).map(prop => {
         const resolvers = [];
-        const propName = prop.type === 'primaryKey' ? '_id' : prop.name;
+        const propName = prop.type === PRIMARY_KEY_DATA_TYPE ? '_id' : prop.name;
 
         switch (prop.type) {
-          case 'boolean':
+          case BOOLEAN_DATA_TYPE:
             resolvers.push(toBoolean);
             break;
-          case 'number':
+          case FLOAT_DATA_TYPE:
+            resolvers.push(toFloat);
+            break;
+          case INTEGER_DATA_TYPE:
+            resolvers.push(toInt);
+            break;
+          case NUMERIC_DATA_TYPE:
             resolvers.push(toNumber);
             break;
         };
@@ -46,9 +59,9 @@ class QueryResponse {
 
         const propPath = path.concat('.').concat(propName);
 
-        return resolvers.length ? {
+        return !resolvers.length ? {} : {
           [propPath]: resolver.bind(this, resolvers)
-        } : {};
+        };
       }).forEach(prop => {
         shadow = _.xtend(shadow, prop);
       });
@@ -58,15 +71,14 @@ class QueryResponse {
   }
 
   parse(rows) {
-    return (!rows || !rows.length)
-      ? rows
-      : rows.map(row => {
-      // Call resolvers
-      _.keys(this.shadow).forEach(path => {
-        const resolver = this.shadow[path];
-        path = path.replace(/^\$\./, '');
-        const resolvedValue = resolver(_.get(row, path));
-        _.set(row, path, resolvedValue);
+    const shadow = this.shadow;
+    return rows.map(row => {
+      _.keys(shadow).forEach(shadowPath => {
+        const rawShadowPath = shadowPath.replace(/^\$\./, '');
+        const rowShadowPathValue = _.get(row, rawShadowPath);
+        if (_.isDef(rowShadowPathValue)) {
+          _.set(row, rawShadowPath, shadow[shadowPath](rowShadowPathValue));
+        }
       });
       return row;
     });
@@ -88,10 +100,18 @@ function toNumber(value) {
   return parseInt(value);
 }
 
+function toInt(value) {
+  return parseInt(value);
+}
+
+function toFloat(value) {
+  return parseFloat(value);
+}
+
 function toBoolean(value) {
   return !!value;
 }
 
 function stripNulls(value) {
-  return value.filter(val => val);
+  return _.isArray(value) ? value.filter(v => v) : value;
 }

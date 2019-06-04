@@ -4,7 +4,7 @@
   "description": "SQLite query builder that supports json",
   "main": "dist/graphlite.js",
   "scripts": {
-    "test": "mocha --watch ./test/index.test.js ./ --timeout 1000",
+    "test": "mocha --watch ./test/index.test.js ./ --timeout 3000",
     "build": "webpack"
   },
   "keywords": [],
@@ -21,5 +21,6 @@
     "sqlite3": "^4.0.6",
     "webpack": "^4.29.6",
     "webpack-cli": "^3.3.0"
-  }
+  },
+  "dependencies": {}
 }

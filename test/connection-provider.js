@@ -14,6 +14,10 @@ class ConnectionProvider {
     this._connection = new sqlite3.Database(this.path);
   }
 
+  attach(file, alias) {
+    return this.run(`ATTACH DATABASE '${file}' AS ${alias};`);
+  }
+
   run(query) {
     return new Promise((resolve, reject) => {
       this._connection.all(query, [], (error, rows) => {

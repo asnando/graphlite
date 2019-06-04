@@ -1,6 +1,6 @@
-const _ = require('./utils');
-const debug = require('./debugger');
-const QueryResolver = require('./query-resolver');
+const _ = require('../utils');
+const debug = require('../debugger');
+const QueryResolver = require('../query/query-resolver');
 
 // This class represents the nodes of a graph in a unique way.
 // This basically expose a resolver which is called by the graph
@@ -27,11 +27,11 @@ class GraphNode {
     return this.nextNodes.push(node);
   }
   
-  resolve(resolverName, options) {
+  resolve(resolverName, options, parent) {
     if (!this.resolvers[resolverName]) {
       throw new Error(`Undefined resolver "${resolverName}".`);
     }
-    return this.resolvers[resolverName].resolve(this, options);
+    return this.resolvers[resolverName].resolve(this, options, parent);
   }
 
   raw() {

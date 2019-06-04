@@ -8,9 +8,13 @@ module.exports = function(graphlite) {
         type: 'string',
         alias: 'DescricaoAplicacao'
       },
-      complement: {
+      type: {
         type: 'string',
-        alias: 'ComplementoAplicacao'
+        alias: 'ComplementoAplicacao3_5'
+      },
+      model: {
+        type: 'string',
+        alias: 'ComplementoAplicacao3_1'
       }
     }
   });

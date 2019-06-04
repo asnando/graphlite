@@ -6,5 +6,7 @@ module.exports = function success() {
     .from(arguments)
     .map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : arg)
     .join(' ');
-  console.log(chalk.green(toTab(m)));
+  if (!process.env.WEBPACK_ENV) {
+    console.log(chalk.green(toTab(m)));
+  }
 }

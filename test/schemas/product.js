@@ -6,19 +6,19 @@ module.exports = function(graphlite) {
       CodigoProduto: 'primaryKey',
       description: {
         type: 'string',
-        alias: 'DescricaoProduto'
+        alias: 'DescricaoProduto',
       },
       number: {
         type: 'string',
         alias: 'NumeroProduto'
       },
-      image: {
-        type: 'string',
-        resolve: [
-          'ArquivoFotoProduto',
-          'ArquivoFotoProduto2'
-        ]
-      },
+      // image: {
+      //   type: 'string',
+      //   resolve: [
+      //     'ArquivoFotoProduto',
+      //     'ArquivoFotoProduto2'
+      //   ]
+      // },
       release: {
         alias: 'FlagLancamento',
         type: 'boolean'

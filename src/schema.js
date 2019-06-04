@@ -1,28 +1,32 @@
 const debug = require('./debugger');
 const  _ = require('./utils/');
 const Association = require('./association');
+const {
+  PRIMARY_KEY_DATA_TYPE
+} = require('./constants');
 
 class Schema {
 
-  constructor(name, opts) {
+  constructor(name, opts, schemaProvider) {
+    this.schemaProvider = schemaProvider;
     this.name = name;
     this.tableName = opts.tableName;
     this.hash = _.createHashCode();
     this.properties = this._createSchemaProperties(opts.properties);
-    this.hasManyRelationsWith = {};
-    this.hasOneRelationWith = {};
-    this.belongsToOneRelation = {};
-    this.belongsToManyRelations = {};
+    this.has = {};
+    this.belongs = {};
+    if (!this.tableName) {
+      throw new Error(`Missing table name definition for "${this.name}" schema.`);
+    }
   }
 
   _createSchemaProperties(props) {
     props = _.keys(props).map(keyName => {
       return this._createSchemaProperty(keyName, props[keyName])
     });
-    // Schemas usually have a primary key. Warn developer if
-    // this property is missing.
-    if (!props.find(prop => prop.type === 'primaryKey')) {
-      debug.warn(`[WARN] Missing primary key for "${this.name}" schema.`);
+    // Schema must always declare one primary key property.
+    if (!props.find(prop => prop.type === PRIMARY_KEY_DATA_TYPE)) {
+      throw new Error(`Missing primary key definition for "${this.name}" schema.`);
     }
     return props;
   }
@@ -37,9 +41,10 @@ class Schema {
       resolver: propDef.resolve,
       join:     propDef.join,
       parser:   propDef.parser,
+      useLocale: !!propDef.useLocale,
     });
 
-    if (propType === 'primaryKey') {
+    if (propType === PRIMARY_KEY_DATA_TYPE) {
       this.primaryKey = property.name;
     }
 
@@ -47,128 +52,95 @@ class Schema {
   }
 
   _createAssociation(schema, options, associationType) {
-    const has = /^has/.test(associationType);
-    const belongs = /^belongs/.test(associationType);
-    return new Association({
-      targetHash:   belongs ? this.hash : schema.hash,
-      targetTable:  belongs ? this.tableName : schema.tableName,
-      targetKey:    belongs ? this.primaryKey : schema.primaryKey,
-      sourceHash:   belongs ? schema.hash : this.hash,
-      sourceTable:  belongs ? schema.tableName : this.tableName,
-      sourceKey:    belongs ? schema.primaryKey : this.primaryKey,
+    const h = /^has/.test(associationType);
+    const b = /^belongs/.test(associationType);
+    const source = h ? this : schema;
+    const target = h ? schema : this;
+    const associationOptions = {
+      schemaFrom:   this.name,
+      schemaTo:     schema.name,
+      targetHash:   target.hash,
+      targetTable:  target.tableName,
+      targetKey:    target.primaryKey,
+      sourceHash:   source.hash,
+      sourceTable:  source.tableName,
+      sourceKey:    source.primaryKey,
       foreignTable: options.foreignTable,
       foreignKey:   options.foreignKey,
+      useKey:       options.useKey,
+      useSourceKey: options.useSourceKey,
+      useTargetKey: options.useTargetKey,
+      type:         options.type,
       objectType:   /many/i.test(associationType) ? 'array' : 'object',
+      using:        (options.using || []).map(schemaName => this.schemaProvider(schemaName)),
       associationType,
-      grouped: options.grouped,
-    });
+    };
+    return new Association(associationOptions);
   }
 
   hasMany(schema, options = {}) {
-    this.hasManyRelationsWith[schema.name] = this._createAssociation(schema, options, 'hasMany');
+    this.has[schema.name] = this._createAssociation(schema, options, 'hasMany');
   }
 
   hasOne(schema, options = {}) {
-    this.hasOneRelationWith[schema.name] = this._createAssociation(schema, options, 'hasOne');
+    this.has[schema.name] = this._createAssociation(schema, options, 'hasOne');
   }
 
   belongsTo(schema, options = {}) {
-    this.belongsToOneRelation[schema.name] = this._createAssociation(schema, options, 'belongsTo');
-    // As the merge association options is not yet implemented it
-    // uses a method "extendOptions" to override the options of the parent
-    // association with this schema.
-    const parentRelation = schema.hasManyRelationsWith[this.name] || schema.hasOneRelationWith[this.name];
-    if (parentRelation) {
-      parentRelation.extendOptions(options);
-    } 
+    this.belongs[schema.name] = this._createAssociation(schema, options, 'belongsTo');
   }
 
   belongsToMany(schema, options = {}) {
-    this.belongsToManyRelations[schema.name] = this._createAssociation(schema, options, 'belongsToMany');
-    // As the merge association options is not yet implemented it
-    // uses a method "extendOptions" to override the options of the parent
-    // association with this schema.
-    const parentRelation = schema.hasManyRelationsWith[this.name] || schema.hasOneRelationWith[this.name];
-    if (parentRelation) {
-      parentRelation.extendOptions(options);
-    } 
+    this.belongs[schema.name] = this._createAssociation(schema, options, 'belongsToMany');
   }
 
-  haveAssociationWithParent(parent) {
-    return !!(this._getDirectAssociationWith(parent) || this._getRelatedAssociationWith(parent));
+  haveAssociationWith(schema) {
+    const selfKeys = this._getAssociationKeys();
+    const schemaKeys = schema._getAssociationKeys();
+    return selfKeys.includes(schema.name) || schemaKeys.includes(this.name);
   }
 
-  getAssociationWithParent(schema) {
-    return this._getDirectAssociationWith(schema) || this._getRelatedAssociationWith(schema);
-  }
-
-  getAssociationFromParent(schema) {
-    return this.getAssociationFrom(schema.name);
-  }
-
-  _getDirectAssociationWith(schema) {
-    const belongsToKeys = getAssociationToKeys(this);
-    const association = belongsToKeys.includes(schema.name);
-    return !association ? null :
-      (this.belongsToManyRelations[schema.name] || this.belongsToOneRelation[schema.name]);
-  }
-
-  _getRelatedAssociationWith(schema) {
-    const belongsToKeys = getAssociationToKeys(this);
-    const hasKeys = getAssociationFromKeys(schema);
-
-    // In some cases schemas are associated with each other throught another
-    // associations. In that cases the "middle" associations will be added into the
-    // parent and child associations.
-    const middleAssociationMatch = hasKeys.find(key => belongsToKeys.includes(key));
-
-    if (!middleAssociationMatch) return null;
-
-    const middleAssociation = schema.hasManyRelationsWith[middleAssociationMatch] || schema.hasOneRelationWith[middleAssociationMatch];
-
-    function createMiddleAssociation(association) {
-      return new Association({
-        sourceHash: association.sourceHash,
-        sourceTable: association.sourceTable,
-        sourceKey: association.sourceKey,
-        targetHash: this.hash,
-        targetTable: this.tableName,
-        targetKey: this.primaryKey,
-        throught: association,
-        associationType: association.associationType,
-        objectType: association.objectType
-      });
+  getAssociationOptionsWith(schema) {
+    let association = this._getAssociation(schema, this);
+    if (!association) {
+      throw new Error(`No association found between "${schema.name}" and "${this.name}".`);
     }
-
-    if (schema.hasManyRelationsWith[middleAssociationMatch]) {
-      this.belongsToManyRelations[schema.name] = createMiddleAssociation.call(this, middleAssociation);
-    }
-    
-    if (schema.hasOneRelationWith[middleAssociationMatch]) {
-      this.belongsToOneRelation[schema.name] = createMiddleAssociation.call(this, middleAssociation);
-    }
-
-    return this.getAssociationWith(schema.name);
+    association = !association.using.length
+      ? association
+      : this._resolveAssociationTree(schema, this, association);
+    return association;
   }
 
-  getAssociationFrom(name) {
-    return this.hasManyRelationsWith[name] || this.hasOneRelationWith[name];
+  _getAssociation(a, b) {
+    // Directly access the external schema associations object.
+    return (a.has[b.name] || a.belongs[b.name]) || (b.has[a.name] || b.belongs[a.name]);
   }
 
-  getAssociationWith(name) {
-    return this.belongsToManyRelations[name] || this.belongsToOneRelation[name];
+  // Used when the association options contains the "using" key that must
+  // resolve each association between the two schemas.
+  _resolveAssociationTree(a, b, association) {
+    // Note.: from parent to child.
+    return [a, ...association.using, b].reduce((value, schema, index, self) => {
+      if (!index) {
+        return value;
+      } else {
+        const before = self[index - 1];
+        const association = this._getAssociation(before, schema);
+        return value.concat(association);
+      }
+    }, []);
   }
 
-}
+  _getAssociationKeys(schema = this) {
+    const h = _.keys(schema.has);
+    const b = _.keys(schema.belongs);
+    return {
+      has: h,
+      belongs: b,
+      includes: (name) => [...h, ...b].includes(name),
+    };
+  }
 
-// Returns child.belongs*
-function getAssociationToKeys(schema) {
-  return _.keys(schema.belongsToManyRelations).concat(_.keys(schema.belongsToOneRelation));
-}
-
-// Returns parent.has*
-function getAssociationFromKeys(schema) {
-  return _.keys(schema.hasManyRelationsWith).concat(_.keys(schema.hasOneRelationWith));
 }
 
 module.exports = Schema;
