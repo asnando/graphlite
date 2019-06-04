@@ -65,7 +65,6 @@ class GraphNode {
   _renderFromResolver(resolver, queryOptions = {}, node = this, options = {
     usePatch: false,
   }) {
-    // debug.log(resolver, queryOptions, options);
     const nodeValue = node.getValue();
     const resolveNextNodes = node.resolveNextNodes.bind(node, resolver, queryOptions, options);
     const resolveNode = node.resolveNode.bind(node, queryOptions);

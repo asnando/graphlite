@@ -112,7 +112,6 @@ class GraphLite {
   }
 
   _run(queryName, options = {}) {
-    debug.log(`Fetching data using "${queryName}" query, with options`, options);
     const query = this._mountQuery(queryName, options);
     return this._executeQuery(query).then(parseResponseRows);
   }
