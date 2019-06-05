@@ -2,7 +2,6 @@ const keys = require('lodash/keys');
 const isNil = require('lodash/isNil');
 const translateFilterProp = require('./translate-filter-prop');
 const resolveStaticOptions = require('./resolve-static-options');
-const debug = require('../../../debug');
 
 const useWhere = (schema, queryOptions) => {
   const schemaDefinedOptions = schema.getDefinedOptions();

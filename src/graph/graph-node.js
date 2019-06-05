@@ -1,5 +1,4 @@
 const assign = require('lodash/assign');
-const debug = require('../debug');
 
 const DEFAULT_RESOLVER_NAME = 'root';
 

@@ -1,6 +1,3 @@
-const isNil = require('lodash/isNil');
-const debug = require('../../debug');
-
 const createAssociationList = (schema, parentSchemaName) => {
   const association = schema.getAssociationWith(parentSchemaName);
   return [association].concat(association.using);

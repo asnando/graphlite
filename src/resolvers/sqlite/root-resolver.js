@@ -1,7 +1,6 @@
 const translatePropsToObject = require('./helpers/translate-props-to-object');
 const resolveOptions = require('./helpers/resolve-options');
 const constants = require('../../constants');
-const debug = require('../../debug');
 
 const {
   RESPONSE_OBJECT_NAME,

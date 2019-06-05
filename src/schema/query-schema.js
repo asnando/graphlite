@@ -1,11 +1,9 @@
 const assign = require('lodash/assign');
 const size = require('lodash/size');
-const keys = require('lodash/keys');
 const isNil = require('lodash/isNil');
 const Schema = require('../schema/schema');
 const schemaList = require('../jar/schema-list');
 const constants = require('../constants');
-const debug = require('../debug');
 
 const {
   DEFAULT_PAGE_SIZE,

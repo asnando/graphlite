@@ -8,7 +8,6 @@ const hashCode = require('../utils/hash-code');
 const Association = require('./association');
 const SchemaProperty = require('./schema-property');
 const constants = require('../constants');
-const debug = require('../debug');
 
 const {
   GRAPHLITE_PRIMARY_KEY_DATA_TYPE,

@@ -2,7 +2,6 @@ const quote = require('../../../utils/quote');
 const glob = require('../../../utils/glob');
 const constants = require('../../../constants');
 const schemaList = require('../../../jar/schema-list');
-const debug = require('../../../debug');
 
 const {
   GRAPHLITE_STRING_DATA_TYPE,

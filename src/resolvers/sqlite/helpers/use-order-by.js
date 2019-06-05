@@ -1,7 +1,6 @@
 const isString = require('lodash/isString');
 const isArray = require('lodash/isArray');
 const translateSchemaPropsLiterals = require('./translate-schema-props-literals');
-const debug = require('../../../debug');
 
 const isQueryLike = str => !/^\w+$/.test(str);
 

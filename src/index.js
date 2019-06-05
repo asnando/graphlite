@@ -8,7 +8,6 @@ const schemaList = require('./jar/schema-list');
 const queryList = require('./jar/query-list');
 const formatQuery = require('./utils/query');
 const constants = require('./constants');
-const debug = require('./debug');
 const jtree = require('./utils/jtree');
 
 const {
@@ -118,22 +117,18 @@ class GraphLite {
 
   // Public API
   findOne(queryName, options) {
-    // Force options size.
-    options.size = 1;
-    return this._run(queryName, options);
+    return this._run(queryName, {
+      ...options,
+      size: 1,
+    });
   }
 
   findAll(queryName, options) {
     return this._run(queryName, options);
   }
 
-  defineSchema() {
-
-  }
-
-  defineQuery() {
-
-  }
+  // defineSchema() {}
+  // defineQuery() {}
 
   setLocale(locale) {
     const { locales } = this;

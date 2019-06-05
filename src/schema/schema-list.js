@@ -4,7 +4,6 @@ const isString = require('lodash/isString');
 const jset = require('lodash/set');
 const keys = require('lodash/keys');
 const Schema = require('./schema');
-const debug = require('../debug');
 
 class SchemaList {
   constructor(opts = {}) {

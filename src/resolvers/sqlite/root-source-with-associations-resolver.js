@@ -1,6 +1,5 @@
 const keys = require('lodash/keys');
 const isNil = require('lodash/isNil');
-const debug = require('../../debug');
 
 // Walk while node is not the root one creating the association list.
 const createAssociationList = (node) => {
@@ -25,67 +24,60 @@ const createAssociationList = (node) => {
   return associations;
 };
 
-const haveOptionsWithValue = (filters, queryOptions) => {
-  return !!keys(filters).find(filterName => !isNil(queryOptions[filterName]));
-};
+const haveOptionsWithValue = (filters, queryOptions) => !!keys(filters)
+  .find(filterName => !isNil(queryOptions[filterName]));
 
 // Return list of schema names detected from the actual schema defined
 // options and not refers to it.
-const whichSchemasOptionsRefersTo = (filters, queryOptions) => {
-  return keys(filters)
-    // Must not be inside 'static' options array.
-    .filter(optionName => !/^static$/.test(optionName))
-    // Consider only filter names having value.
-    .filter(optionName => !isNil(queryOptions[optionName]))
-    // Filter option names only matching "schema.schemaPropertyName"
-    .filter(optionName => /\w{2,}\.\w{2,}/.test(filters[optionName]))
-    // Extract the schema name from filter condition.
-    .map((optionName) => {
-      const condition = filters[optionName];
-      const match = Array.from(condition.match(/(\w{2,})\.\w{2,}/))[1];
-      return match;
-    });
-};
+const whichSchemasOptionsRefersTo = (filters, queryOptions) => keys(filters)
+  // Must not be inside 'static' options array.
+  .filter(optionName => !/^static$/.test(optionName))
+  // Consider only filter names having value.
+  .filter(optionName => !isNil(queryOptions[optionName]))
+  // Filter option names only matching "schema.schemaPropertyName"
+  .filter(optionName => /\w{2,}\.\w{2,}/.test(filters[optionName]))
+  // Extract the schema name from filter condition.
+  .map((optionName) => {
+    const condition = filters[optionName];
+    const match = Array.from(condition.match(/(\w{2,})\.\w{2,}/))[1];
+    return match;
+  });
 
 // Returns if defined options from schema have any filter using any
 // property from another schema(not from the actual node).
-const haveAnotherSchemaReferenceOnOptions = (filters, queryOptions) => {
-  return !!whichSchemasOptionsRefersTo(filters, queryOptions).length;
-};
+const haveAnotherSchemaReferenceOnOptions = (filters, queryOptions) => (
+  !!whichSchemasOptionsRefersTo(filters, queryOptions).length
+);
 
-const createAssociationListFromSchemasList = (schema, schemaNames = []) => {
-  return schemaNames.map(schemaName => schema.getAssociationWith(schemaName));
-};
+const createAssociationListFromSchemasList = (schema, schemaNames = []) => schemaNames
+  .map(schemaName => schema.getAssociationWith(schemaName));
 
-const resolveJoinFromAssociationList = (associationList) => {
-  return associationList
-    .map((association) => {
-      const {
-        sourceHash,
-        targetTable,
-        targetKey,
-        targetHash,
-        foreignTable,
-        foreignKey,
-        useSourceKey,
-        useTargetKey,
-        joinType,
-      } = association;
-      if (foreignTable && foreignKey) {
-        // When foreign table is defined it must join the table multiple times.
-        return `
-          ${joinType.toUpperCase()} JOIN ${foreignTable}
-            ON ${foreignTable}.${foreignKey}=${sourceHash}.${foreignKey}
-          ${joinType.toUpperCase()} JOIN ${targetTable} ${targetHash}
-            ON ${targetHash}.${useTargetKey || targetKey}=${foreignTable}.${useTargetKey || targetKey}
-        `;
-      }
-      return `
-        ${joinType.toUpperCase()} JOIN ${targetTable} ${targetHash}
-          ON ${targetHash}.${useTargetKey || targetKey}=${sourceHash}.${useSourceKey || targetKey}
-      `;
-    }).join(' ');
-};
+const resolveJoinFromAssociationList = associationList => associationList.map((association) => {
+  const {
+    sourceHash,
+    targetTable,
+    targetKey,
+    targetHash,
+    foreignTable,
+    foreignKey,
+    useSourceKey,
+    useTargetKey,
+    joinType,
+  } = association;
+  if (foreignTable && foreignKey) {
+    // When foreign table is defined it must join the table multiple times.
+    return `
+      ${joinType.toUpperCase()} JOIN ${foreignTable}
+        ON ${foreignTable}.${foreignKey}=${sourceHash}.${foreignKey}
+      ${joinType.toUpperCase()} JOIN ${targetTable} ${targetHash}
+        ON ${targetHash}.${useTargetKey || targetKey}=${foreignTable}.${useTargetKey || targetKey}
+    `;
+  }
+  return `
+    ${joinType.toUpperCase()} JOIN ${targetTable} ${targetHash}
+      ON ${targetHash}.${useTargetKey || targetKey}=${sourceHash}.${useSourceKey || targetKey}
+  `;
+}).join(' ');
 
 // This resolver will be called for every graph node. When it refers to the root node,
 // it will return the 'FROM' clause, otherwise it will return the join with another

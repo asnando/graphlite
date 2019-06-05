@@ -7,7 +7,6 @@ const hashCode = require('../utils/hash-code');
 const schemaList = require('../jar/schema-list');
 const GraphNode = require('./graph-node');
 const QuerySchema = require('../schema/query-schema');
-const debug = require('../debug');
 
 const initialGraph = {
   head: null,

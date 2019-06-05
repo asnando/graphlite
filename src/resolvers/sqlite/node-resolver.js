@@ -1,7 +1,6 @@
 const translatePropsToObject = require('./helpers/translate-props-to-object');
 const translatePropsToFields = require('./helpers/translate-props-to-fields');
 const resolveOptions = require('./helpers/resolve-options');
-const debug = require('../../debug');
 
 const SQLiteGraphNodeNestedNodeResolver = (
   schema,

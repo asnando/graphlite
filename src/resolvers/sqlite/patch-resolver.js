@@ -1,7 +1,6 @@
 const chunk = require('lodash/chunk');
 const isArray = require('lodash/isArray');
 const pair = require('../../utils/pair');
-const debug = require('../../debug');
 
 const renderPatch = (pairedNodes) => {
   if (!isArray(pairedNodes)) return pairedNodes;

@@ -37,17 +37,19 @@ class SchemaProperty {
     type,
     defaultValue,
   }) {
+    let propAlias = alias;
+    let propName = name;
     const resolvedType = this._resolvePropertyType(type);
     if (resolvedType === GRAPHLITE_PRIMARY_KEY_DATA_TYPE) {
       // save alias before it change to id
-      alias = alias || name;
-      name = ID_PROPERTY_KEY_NAME;
+      propAlias = alias || name;
+      propName = ID_PROPERTY_KEY_NAME;
     } else {
-      alias = alias || name;
+      propAlias = alias || name;
     }
     assign(this, pickBy({
-      name,
-      alias,
+      name: propName,
+      alias: propAlias,
       type: resolvedType,
       schemaName,
       tableAlias,

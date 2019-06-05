@@ -8,14 +8,12 @@ const glob = (value) => {
     i: '[IÍÌÎÏiíìîï]',
     o: '[OÓÒÔÖÕºoóòôöõ]',
     u: '[UÚÙÛÜuúùûü]',
-    c: '[CÇcç]'
+    c: '[CÇcç]',
   };
   // eslint-disable-next-line no-param-reassign
   value = accent(value);
   const charKeys = keys(chars);
-  return `*${value.split('').map((char) => {
-    return charKeys.includes(char) ? chars[char] : `[${char.toUpperCase()}${char}]`;
-  }).join('')}*`;
+  return `*${value.split('').map(char => (charKeys.includes(char) ? chars[char] : `[${char.toUpperCase()}${char}]`)).join('')}*`;
 };
 
 module.exports = glob;

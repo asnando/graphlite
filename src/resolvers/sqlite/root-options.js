@@ -1,5 +1,4 @@
 const resolveOptions = require('./helpers/resolve-options');
-const debug = require('../../debug');
 
 const SQLiteGraphNodeRootOptionsResolver = (schema, options, node, resolveNextNodes) => {
   const optionsType = ['where'];
