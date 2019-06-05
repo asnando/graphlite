@@ -98,6 +98,11 @@ class SchemaProperty {
   parseValue(...args) {
     let value = args[0];
     const { type, parser } = this;
+    // If parser function is defined in the property inside schema definition
+    // then will call it with the property value from database.
+    if (parser && isFunction(parser)) {
+      value = parser(value);
+    }
     switch (type) {
       // string
       case GRAPHLITE_STRING_DATA_TYPE:
@@ -124,9 +129,6 @@ class SchemaProperty {
       case GRAPHLITE_PRIMARY_KEY_DATA_TYPE:
       default:
         break;
-    }
-    if (parser && isFunction(parser)) {
-      value = parser(value);
     }
     // If "defaultValue" is defined, then use it if property value is empty.
     if (!isNil(this.defaultValue)) {
