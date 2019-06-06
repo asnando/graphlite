@@ -98,6 +98,10 @@ class Schema {
     return ignoreId ? props.filter(propName => isIdPropName(propName)) : props;
   }
 
+  hasProperty(propName) {
+    return !!this.getProperty(propName);
+  }
+
   translateToProperty(propName) {
     const prop = this.getProperty(propName);
     if (!prop) {
