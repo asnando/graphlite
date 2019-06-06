@@ -8,3 +8,4 @@ yarn.lock
 test
 __test__/**/*.js
 !__test__/integration/index.test.js
+!__test__/unit/*.test.js
