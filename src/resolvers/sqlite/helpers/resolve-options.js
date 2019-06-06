@@ -9,7 +9,8 @@ const {
   DEFAULT_PAGE_SIZE,
 } = constants;
 
-const SQLiteGraphNodeOptionsResolver = (schema, queryOptions, node, useOnly = []) => {
+const SQLiteGraphNodeOptionsResolver = (schema, options, node, useOnly = []) => {
+  const queryOptions = options;
   const schemaDefinedOptions = schema.getDefinedOptions();
   const isRoot = node.isRoot();
 
@@ -22,6 +23,12 @@ const SQLiteGraphNodeOptionsResolver = (schema, queryOptions, node, useOnly = []
   } else {
     resolvedExtraOptions.size = schemaDefinedOptions.size;
     resolvedExtraOptions.page = schemaDefinedOptions.page;
+  }
+
+  // 'groupBy' option must not be used as query option. It must be
+  // statically inside the query definition.
+  if (queryOptions.groupBy) {
+    delete queryOptions.groupBy;
   }
 
   // merge query options and query static defined options.

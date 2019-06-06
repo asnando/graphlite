@@ -9,7 +9,6 @@ const queryList = require('./jar/query-list');
 const formatQuery = require('./utils/query');
 const constants = require('./constants');
 const jtree = require('./utils/jtree');
-const debug = require('./debug');
 
 const {
   RESPONSE_OBJECT_NAME,
@@ -113,7 +112,6 @@ class GraphLite {
 
   _run(queryName, options = {}) {
     const query = this._mountQuery(queryName, options);
-    // debug.log(query);
     return this._executeQuery(query).then(parseResponseRows);
   }
 
