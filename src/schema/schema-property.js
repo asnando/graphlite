@@ -29,33 +29,27 @@ const graphliteSupportPropertyType = type => (
 
 class SchemaProperty {
   constructor({
-    schemaName,
-    tableAlias,
-    name,
-    alias,
-    parser,
-    type,
-    defaultValue,
+    schemaName, tableAlias, name, alias, parser, type, defaultValue,
   }) {
-    let propAlias = alias;
-    let propName = name;
-    const resolvedType = this._resolvePropertyType(type);
-    if (resolvedType === GRAPHLITE_PRIMARY_KEY_DATA_TYPE) {
-      // save alias before it change to id
-      propAlias = alias || name;
-      propName = ID_PROPERTY_KEY_NAME;
-    } else {
-      propAlias = alias || name;
-    }
     assign(this, pickBy({
-      name: propName,
-      alias: propAlias,
-      type: resolvedType,
+      name,
+      alias,
       schemaName,
       tableAlias,
       parser,
       defaultValue,
     }));
+    const resolvedType = this._resolvePropertyType(type);
+    // When property type matches "GRAPHLITE_PRIMARY_KEY_DATA_TYPE" it will
+    // force change the property name to be "ID_PROPERTY_KEY_NAME" value.
+    if (resolvedType === GRAPHLITE_PRIMARY_KEY_DATA_TYPE) {
+      this.alias = alias || name;
+      this.name = ID_PROPERTY_KEY_NAME;
+    } else {
+      this.alias = alias || name;
+    }
+    // Update property type.
+    this.type = resolvedType;
   }
 
   _resolvePropertyType(type) {
