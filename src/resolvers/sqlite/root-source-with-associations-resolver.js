@@ -50,7 +50,13 @@ const haveAnotherSchemaReferenceOnOptions = (filters, queryOptions) => (
 );
 
 const createAssociationListFromSchemasList = (schema, schemaNames = []) => schemaNames
-  .map(schemaName => schema.getAssociationWith(schemaName));
+  .map((schemaName) => {
+    const association = schema.getAssociationWith(schemaName);
+    if (!association) {
+      throw new Error(`${schema.getSchemaName()} have no association with ${schemaName} to use its properties on options`);
+    }
+    return association;
+  });
 
 const resolveJoinFromAssociationList = associationList => associationList.map((association) => {
   const {

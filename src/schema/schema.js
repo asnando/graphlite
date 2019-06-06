@@ -154,6 +154,10 @@ class Schema {
     return this.has[schemaName] || this.belongs[schemaName] || schema.getAssociationWith(this.name);
   }
 
+  hasAssociationWith(schemaName) {
+    return !!this.getAssociationWith(schemaName);
+  }
+
   getSchemaFromList(schemaName) {
     return this.schemaList.getSchema(schemaName);
   }
