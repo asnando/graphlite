@@ -153,9 +153,14 @@ class Schema {
     return this.tableHash;
   }
 
-  getAssociationWith(schemaName) {
+  getAssociationWith(schemaName, origin) {
     const schema = this.getSchemaFromList(schemaName);
-    return this.has[schemaName] || this.belongs[schemaName] || schema.getAssociationWith(this.name);
+    // Prevent infinity loop when another schema resolver cant resolve the association.
+    if (origin === schemaName) {
+      throw new Error(`Could not detect association with "${schemaName}", maybe association definitions are missing.`);
+    }
+    return this.has[schemaName] || this.belongs[schemaName]
+      || schema.getAssociationWith(this.name, origin || schemaName);
   }
 
   hasAssociationWith(schemaName) {
