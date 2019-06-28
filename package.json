@@ -21,8 +21,9 @@
     "sqlite-storage": "^1.0.0"
   },
   "dependencies": {
-    "sql-formatter": "^2.3.2",
     "chalk": "^2.4.2",
-    "lodash": "^4.17.11"
+    "lodash": "^4.17.11",
+    "sql-formatter": "^2.3.2",
+    "util": "^0.12.0"
   }
 }
