@@ -11,13 +11,40 @@ const createAssociationList = (node) => {
       const parentSchema = walker.parent.getValue();
       const parentSchemaName = parentSchema.getSchemaName();
       const associationWithParent = schema.getAssociationWith(parentSchemaName);
-      if (walker === node) {
-        // when first node it must get the directly association with parent
+      // "using" refers to middleware associations used between the directly association
+      // of two schemas.
+      const { using } = associationWithParent;
+      if (using && using.length) {
+        // When there is defined middleware associations, it must be concatenated just
+        // before the association list.
+        const middlewareAssociation = using[0];
+        // Fix: In some cases when using the middleware associations we need to
+        // force a new structure for the root schema from the association list with
+        // the target(in that case) table configuration as the source for this one.
+        const {
+          targetTable: middlewareAssociationTargetTable,
+          targetHash: middlewareAssociationTargetHash,
+          targetKey: middlewareAssociationTargetKey,
+        } = middlewareAssociation;
+        // So... We concat the middleware associations, the root schema and the previous
+        // associations after.
+        associations = using.concat([{
+          ...associationWithParent,
+          sourceTable: middlewareAssociationTargetTable,
+          sourceHash: middlewareAssociationTargetHash,
+          sourceKey: middlewareAssociationTargetKey,
+        }]).concat(associations);
+      } else {
+        // Otherwise we just prepend the root schema configuration to the association list.
         associations = [associationWithParent].concat(associations);
-      } else if (associationWithParent.using.length) {
-        // otherwise it will concat all the middleware associations until the root node.
-        associations = associationWithParent.using.concat(associations);
       }
+      // if (walker === node) {
+      //   // when first node it must get the directly association with parent
+      //   associations = [associationWithParent].concat(associations);
+      // } else if (associationWithParent.using.length) {
+      //   // otherwise it will concat all the middleware associations until the root node.
+      //   associations = associationWithParent.using.concat(associations);
+      // }
     }
     walker = walker.parent;
   }

@@ -159,8 +159,7 @@ class Schema {
     if (origin === schemaName) {
       throw new Error(`Could not detect association with "${schemaName}", maybe association definitions are missing.`);
     }
-    return this.has[schemaName] || this.belongs[schemaName]
-      || schema.getAssociationWith(this.name, origin || schemaName);
+    return this.has[schemaName] || this.belongs[schemaName] || schema.getAssociationWith(this.name, origin || schemaName);
   }
 
   hasAssociationWith(schemaName) {
