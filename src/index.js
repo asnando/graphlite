@@ -35,7 +35,7 @@ const parseResponseRowObject = (row) => {
     const objectPath = path
       .replace(/#(\d{1,})/g, '[$1]')
       .replace(/^\$\.?/, '')
-      .replace(/\w+\.(?=\w+$)/, '');
+      .replace(/\w+\.(\w+)$/, '$1');
     // Set the new parsed value into the shadow of the actual row object.
     jset(shadow, objectPath, propValue);
   });
