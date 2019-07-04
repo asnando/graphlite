@@ -49,7 +49,7 @@ const translateFilterProp = (condition, value, schema) => {
   // to translate the property instance from the schema it refers to.
   if (/\w+\.\w+/.test(propName)) {
     const anotherSchemaName = propName.match(/(\w+)\.\w/)[1];
-    propName = propName.replace(/\w+\.(?=\w+)/, '');
+    propName = propName.replace(/\w+\.(\w+)/, '$1');
     anotherSchema = schemaList.getSchema(anotherSchemaName);
   }
   // Resolve which schema the prop refers to.

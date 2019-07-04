@@ -25,7 +25,7 @@ class Graph {
     const { graph } = this;
     const RGXP_PATH_EMPTY = /^\$$/;
     const RGXP_PATH_ENDS_WITH = /(name|as|shows|alias|properties|\d|where|groupBy|size|page|orderBy)$/;
-    const RGXP_PATH_CONTAINS = /(?<=(where|shows))\.\w+$/;
+    const RGXP_PATH_CONTAINS = /(where|shows)\.\w+$/;
     jtree(structure, (node, path) => {
       // If empty path, or end with "..." or have some specific keywords in the middle of it.
       if (RGXP_PATH_EMPTY.test(path)
