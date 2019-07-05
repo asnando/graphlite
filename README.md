@@ -134,3 +134,11 @@ graphlite.findAll('product-list', { id: 38125 }, { page: 1, size: 30, orderBy: '
   } */  
 });
 ```
+
+# Response
+The response will be an object with the following properties:
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| rows | Array | Array containing all rows object values fetched from the database |
+| total | Number | Count the total number of rows that query have matched from the query |
+| count | Number | Count the number of rows loaded by the actual page (equals to the rows.length) |
