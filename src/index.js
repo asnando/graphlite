@@ -6,7 +6,6 @@ const keys = require('lodash/keys');
 const jset = require('lodash/set');
 const schemaList = require('./jar/schema-list');
 const queryList = require('./jar/query-list');
-const formatQuery = require('./utils/query');
 const jtree = require('./utils/jtree');
 const {
   RESPONSE_OBJECT_NAME,
@@ -104,12 +103,12 @@ class GraphLite {
 
   _mountQuery(queryName, options = {}) {
     const query = this._getQuery(queryName);
-    return formatQuery(query.resolve(options));
+    return query.resolve(options);
   }
 
   _mountCountQuery(queryName, options = {}) {
     const query = this._getQuery(`${queryName}-count`);
-    return formatQuery(query.resolve(options));
+    return query.resolve(options);
   }
 
   _executeQuery(query) {

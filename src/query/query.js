@@ -1,5 +1,11 @@
 const isString = require('lodash/isString');
+const formatQuery = require('../utils/query');
 const Graph = require('../graph/graph');
+
+const removeDuplicatedLines = text => text
+  .replace(/$\n\s{1,}ON\s/gm, ' ON ')
+  .replace(/^\s{1,}$\n/gm, '')
+  .replace(/^(.*)(\r?\n\1)+$/gm, '$1');
 
 const createGraph = structure => new Graph(structure);
 
@@ -23,11 +29,12 @@ class Query {
 
   resolve(...args) {
     const { graph, type } = this;
-    if (type === 'count') {
-      const [options] = args;
-      return graph.resolveGraph(options, 'rootCount');
-    }
-    return graph.resolveGraph(...args);
+    const [options] = args;
+    const resolverName = type === 'count' ? 'rootCount' : undefined;
+    let resolvedQuery = graph.resolveGraph(options, resolverName);
+    resolvedQuery = removeDuplicatedLines(resolvedQuery);
+    resolvedQuery = formatQuery(resolvedQuery);
+    return resolvedQuery;
   }
 }
 
