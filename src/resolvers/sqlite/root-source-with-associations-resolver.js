@@ -68,7 +68,7 @@ const whichSchemasOptionsRefersTo = (filters, queryOptions) => {
       return Array.isArray(conditions) ? conditions : [conditions];
     })
     // Make one level array
-    .reduce((a, b) => a.concat(b))
+    .reduce((a, b) => a.concat(b), [])
     // Remove conditions which have no reference to another schema.
     .filter((condition) => /\w{2,}\.\w{2,}/.test(condition))
     // Detect the schema which condition refers to.
