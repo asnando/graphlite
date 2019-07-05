@@ -56,19 +56,24 @@ const haveOptionsWithValue = (filters, queryOptions) => !!keys(filters)
 
 // Return list of schema names detected from the actual schema defined
 // options and not refers to it.
-const whichSchemasOptionsRefersTo = (filters, queryOptions) => keys(filters)
-  // Must not be inside 'static' options array.
-  .filter(optionName => !/^static$/.test(optionName))
-  // Consider only filter names having value.
-  .filter(optionName => !isNil(queryOptions[optionName]))
-  // Filter option names only matching "schema.schemaPropertyName"
-  .filter(optionName => /\w{2,}\.\w{2,}/.test(filters[optionName]))
-  // Extract the schema name from filter condition.
-  .map((optionName) => {
-    const condition = filters[optionName];
-    const match = Array.from(condition.match(/(\w{2,})\.\w{2,}/))[1];
-    return match;
-  });
+const whichSchemasOptionsRefersTo = (filters, queryOptions) => {
+  return keys(filters)
+    // Desconsiders static options.
+    .filter(optionName => !/^static$/.test(optionName))
+    // Desconsiders filters without given values(from options).
+    .filter(optionName => !isNil(queryOptions[optionName]))
+    // Map defined conditions of the filter
+    .map((optionName) => {
+      const conditions = filters[optionName];
+      return Array.isArray(conditions) ? conditions : [conditions];
+    })
+    // Make one level array
+    .reduce((a, b) => a.concat(b))
+    // Remove conditions which have no reference to another schema.
+    .filter((condition) => /\w{2,}\.\w{2,}/.test(condition))
+    // Detect the schema which condition refers to.
+    .map(condition => Array.from(condition.match(/(\w{2,})\.\w{2,}/))[1]);
+};
 
 // Returns if defined options from schema have any filter using any
 // property from another schema(not from the actual node).

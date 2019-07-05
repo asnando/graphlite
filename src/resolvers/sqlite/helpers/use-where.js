@@ -20,7 +20,15 @@ const useWhere = (schema, queryOptions) => {
     if (/^static$/.test(filterName)) {
       return resolveStaticOptions(schema, condition);
     }
-    return translateFilterProp(condition, optionValue, schema);
+    if (Array.isArray(condition)) {
+      // When condition is defined as array, iterate over the array translating
+      // the filter conditions to valid filter query string.
+      return condition
+        .map(c => translateFilterProp(c, optionValue, schema))
+        .join(' AND ');
+    } else {
+      return translateFilterProp(condition, optionValue, schema);
+    }
   }).join(' AND ')}`;
 };
 
