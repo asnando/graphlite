@@ -7,13 +7,13 @@ const jset = require('lodash/set');
 const schemaList = require('./jar/schema-list');
 const queryList = require('./jar/query-list');
 const formatQuery = require('./utils/query');
-const constants = require('./constants');
 const jtree = require('./utils/jtree');
-
 const {
   RESPONSE_OBJECT_NAME,
+  COUNT_RESPONSE_FIELD_NAME,
   GRAPHLITE_CONNECTION_EXECUTER_NAME,
-} = constants;
+  TOTAL_ROWS_COUNT_PROPERTY_NAME,
+} = require('./constants');
 
 const parseResponseRowObject = (row) => {
   const shadow = {};
@@ -48,6 +48,11 @@ const parseResponseRows = (rows) => {
     rows: parsedRows,
     count: parsedRows.length,
   };
+};
+
+const parseCountResponse = (rows) => {
+  const [row] = rows;
+  return typeof row === 'object' ? row[COUNT_RESPONSE_FIELD_NAME] : 0;
 };
 
 class GraphLite {
@@ -99,8 +104,12 @@ class GraphLite {
 
   _mountQuery(queryName, options = {}) {
     const query = this._getQuery(queryName);
-    const resolvedQuery = formatQuery(query.resolve(options));
-    return resolvedQuery;
+    return formatQuery(query.resolve(options));
+  }
+
+  _mountCountQuery(queryName, options = {}) {
+    const query = this._getQuery(`${queryName}-count`);
+    return formatQuery(query.resolve(options));
   }
 
   _executeQuery(query) {
@@ -111,8 +120,24 @@ class GraphLite {
   }
 
   _run(queryName, options = {}) {
-    const query = this._mountQuery(queryName, options);
-    return this._executeQuery(query).then(parseResponseRows);
+    const executeQuery = this._executeQuery.bind(this);
+    const mainQuery = this._mountQuery(queryName, options);
+    const countQuery = this._mountCountQuery(queryName, options);
+    const fetchData = () => executeQuery(mainQuery).then(parseResponseRows);
+    const fetchDataCount = () => executeQuery(countQuery).then(parseCountResponse);
+    const shouldCount = (typeof options.count !== 'undefined' && options.count === false) ? false : true;
+    const isFirstPage = options.page === 1;
+    return fetchData().then((rows) => {
+      // Run another query to count the total number of rows that can be listed by the query.
+      if (isFirstPage && shouldCount) {
+        // Merge the data from the two executed queries:
+        return fetchDataCount().then(totalCount => ({
+          ...rows,
+          [TOTAL_ROWS_COUNT_PROPERTY_NAME]: totalCount,
+        }));
+      }
+      return rows;
+    });
   }
 
   // Public API

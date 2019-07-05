@@ -21,7 +21,6 @@ const SQLiteGraphNodeRootResolver = (schema, options, node, resolveNextNodes, re
   const nextNodes = resolveNode('node', { usePatch: true });
 
   const optionsType = ['limit', 'offset', 'groupBy', 'orderBy'];
-  // todo: add description
   const resolvedOptions = resolveNode('rootOptions');
   const resolvedExtraOptions = resolveOptions(schema, options, node, optionsType);
 

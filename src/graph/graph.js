@@ -113,8 +113,8 @@ class Graph {
     return graph[tailHash];
   }
 
-  resolveGraph(...args) {
-    return this.getHead().resolveNode(...args);
+  resolveGraph(options, resolverName) {
+    return this.getHead().resolveNode(options, resolverName);
   }
 }
 

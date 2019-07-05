@@ -23,7 +23,19 @@ class QueryList {
       const [queryName] = args;
       query.name = queryName;
     }
-    return jset(this.queries, query.name, new Query(query));
+    // Register the query.
+    const queryName = query.name;
+    const mainQuery = new Query(query);
+    jset(this.queries, queryName, mainQuery);
+    // Register another query for total rows count.
+    const countQueryName = `${queryName}-count`;
+    const countQuery = new Query({
+      ...query,
+      name: countQueryName,
+      type: 'count',
+    });
+    jset(this.queries, countQueryName, countQuery);
+    return mainQuery;
   }
 
   getQuery(queryName) {
