@@ -9,6 +9,8 @@ const Association = require('./association');
 const SchemaProperty = require('./schema-property');
 const constants = require('../constants');
 
+const getSchemaList = () => require('../jar/schema-list');
+
 const {
   GRAPHLITE_PRIMARY_KEY_DATA_TYPE,
   ID_PROPERTY_KEY_NAME,
@@ -27,7 +29,7 @@ class Schema {
     tableName,
     tableHash,
     properties,
-  }, schemaList) {
+  }) {
     if (!isString(name)) {
       throw new Error('Schema must have a unique name. The name is missing or is not a string.');
     }
@@ -38,10 +40,6 @@ class Schema {
       properties: {},
       has: {},
       belongs: {},
-      // schemaList reference must be saved inside this class instance because
-      // the SchemaList class depends on this class. So, when we need access to the schema
-      // list jar we can access throught it.
-      schemaList,
     });
     if (!isPrimaryKeyDefined(properties)) {
       throw new Error(`Missing primary key on "${name}" schema.`);
@@ -167,7 +165,7 @@ class Schema {
   }
 
   getSchemaFromList(schemaName) {
-    return this.schemaList.getSchema(schemaName);
+    return getSchemaList().getSchema(schemaName);
   }
 
   _createAssociation(associatedSchema, {

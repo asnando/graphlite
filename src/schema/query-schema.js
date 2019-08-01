@@ -1,8 +1,7 @@
 const assign = require('lodash/assign');
 const size = require('lodash/size');
 const isNil = require('lodash/isNil');
-const Schema = require('../schema/schema');
-const schemaList = require('../jar/schema-list');
+const Schema = require('./schema');
 const constants = require('../constants');
 
 const {
@@ -26,8 +25,7 @@ class QuerySchema extends Schema {
     useProperties: [],
     ignoreId: false,
   }) {
-    // Pass the "schemaList" reference to parent constructor as it must be saved inside it.
-    super(opts.schema, schemaList);
+    super(opts.schema);
     // Extend specific QuerySchema Class props.
     assign(this, {
       // Object with merged properties definition. If "useProperties" array
