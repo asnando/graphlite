@@ -2,6 +2,14 @@
   "name": "graphlite",
   "version": "2.1.2",
   "description": "SQLite query builder that supports json",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ffrm/graphlite.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ffrm/graphlite/issues"
+  },
+  "homepage": "https://github.com/ffrm/graphlite#readme",
   "main": "src/index.js",
   "scripts": {
     "test": "jest",
@@ -9,9 +17,15 @@
     "lint": "eslint src/",
     "prepublish": ""
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "sqlite",
+    "sqlcipher",
+    "graph",
+    "query",
+    "graphlite"
+  ],
+  "author": "Fernando Rama",
+  "license": "MIT",
   "devDependencies": {
     "clipboardy": "^2.0.0",
     "eslint": "^5.16.0",
