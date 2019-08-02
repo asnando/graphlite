@@ -49,22 +49,24 @@ const SQLiteGraphNodeOptionsResolver = (schema, options, node, useOnly = []) => 
     'offset',
   ];
 
-  return types.filter(type => (!useOnly.length ? true : useOnly.includes(type))).map((type) => {
-    switch (type) {
-      case 'limit':
-        return useLimit(size);
-      case 'offset':
-        return useOffset(size, page);
-      case 'orderBy':
-        return useOrderBy(schema, mergedOptions, options);
-      case 'where':
-        return useWhere(schema, mergedOptions, options);
-      case 'groupBy':
-        return useGroupBy(schema, mergedOptions, options);
-      default:
-        return '';
-    }
-  }).join(' ');
+  return types
+    .filter(type => (!useOnly.length ? true : useOnly.includes(type)))
+    .map((type) => {
+      switch (type) {
+        case 'limit':
+          return useLimit(size);
+        case 'offset':
+          return useOffset(size, page);
+        case 'orderBy':
+          return useOrderBy(schema, mergedOptions, options);
+        case 'where':
+          return useWhere(schema, mergedOptions, options);
+        case 'groupBy':
+          return useGroupBy(schema, mergedOptions, options);
+        default:
+          return '';
+      }
+    }).join(' ');
 };
 
 module.exports = SQLiteGraphNodeOptionsResolver;

@@ -11,9 +11,7 @@ const SQLiteGraphNodeNestedNodeResolver = (
 ) => {
   // As this resolver is called from the root node it will render for the root node too.
   // So it must be ignored when this resolver is called for the root node.
-  if (node.isRoot()) {
-    return resolveNextNodes();
-  }
+  if (node.isRoot()) return resolveNextNodes();
 
   const optionsTypes = ['limit', 'offset', 'groupBy', 'orderBy'];
 
