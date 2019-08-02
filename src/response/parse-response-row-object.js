@@ -18,7 +18,7 @@ const parseResponseRowObject = (row) => {
       // value is array (it will be maped from another function)
       || isArray(value)
       // path refers to a array index
-      || /\.\d$/.test(path)
+      || /#\d$/.test(path)
     ) return;
 
     let prop = path.match(/\w+\.\w+$/)[0].split('.');
