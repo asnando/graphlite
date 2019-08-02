@@ -17,13 +17,9 @@ class SchemaList {
     return schemas.forEach(schema => this.defineSchema(schema));
   }
 
-  defineSchema(...args) {
-    const schema = size(args) === 2 ? args[1] : args[0];
-    if (!isString(schema.name) && size(args) === 2) {
-      const [schemaName] = args;
-      schema.name = schemaName;
-    }
-    return jset(this.schemas, schema.name, new Schema(schema, this));
+  defineSchema(schema) {
+    const { name: schemaName } = schema;
+    return jset(this.schemas, schemaName, new Schema(schema));
   }
 
   getSchema(schemaName) {

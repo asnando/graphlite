@@ -17,24 +17,20 @@ class QueryList {
     return queries.forEach(query => this.defineQuery(query));
   }
 
-  defineQuery(...args) {
-    const query = size(args) === 2 ? args[1] : args[0];
-    if (!isString(query.name) && size(args) === 2) {
-      const [queryName] = args;
-      query.name = queryName;
-    }
-    // Register the query.
-    const queryName = query.name;
-    const mainQuery = new Query(query);
-    jset(this.queries, queryName, mainQuery);
-    // Register another query for total rows count.
+  defineQuery(struct) {
+    const self = this;
+    const pushToQuerylist = (queryName, query) => jset(self.queries, queryName, query);
+    const createQuery = queryStruct => new Query(queryStruct);
+    const { name: queryName } = struct;
     const countQueryName = `${queryName}-count`;
-    const countQuery = new Query({
-      ...query,
+    const mainQuery = createQuery(struct);
+    const countQuery = createQuery({
+      ...struct,
       name: countQueryName,
       type: 'count',
     });
-    jset(this.queries, countQueryName, countQuery);
+    pushToQuerylist(queryName, mainQuery);
+    pushToQuerylist(countQueryName, countQuery);
     return mainQuery;
   }
 
