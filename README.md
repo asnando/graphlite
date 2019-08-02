@@ -81,7 +81,7 @@ const image = graphlite.defineSchema('image', {
   tableName: 'images',
   properties: {
     imageName: 'primaryKey',
-    imageSource: 'string,
+    imageSource: 'string',
   }
 });
 ```
