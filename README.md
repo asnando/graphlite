@@ -18,11 +18,7 @@ const Graphlite = require('graphlite');
 
 // ... schemas, queries, associations, connection, locales
 const graphliteInstance = new Graphlite({
-  schemas,
-  queries,
-  associations,
-  connection,
-  locales,
+  /* ...options */
 });
 
 graphliteInstance
@@ -39,6 +35,7 @@ graphliteInstance
 | associations | Function([associations](#associations)) | false |
 | connection | Function([connection](#connection-provider)) | true |
 | locales | Object([locales](#locales)) | false |
+| debug | Boolean | false |
 
 ## Connection Provider
 GraphLite takes the defined query and schemas and translate the query graph to a executable SQLite query. The query is passed to a connection provider class (which can be any javascript class that have the ```run``` method). Basically a Connection Provider is a class that wraps the connection to the real SQLite instance.

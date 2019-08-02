@@ -19,6 +19,10 @@ class Debug {
     };
   }
 
+  setDebugMode(mode) {
+    return mode ? this.enable() : this.disable();
+  }
+
   enable() {
     keys(this.enabled).forEach((key) => {
       this.enabled[key] = true;

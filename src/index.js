@@ -1,6 +1,7 @@
 const assign = require('lodash/assign');
 const isFunction = require('lodash/isFunction');
 const size = require('lodash/size');
+const debug = require('./debug');
 const schemaList = require('./jar/schema-list');
 const queryList = require('./jar/query-list');
 const locales = require('./jar/locales');
@@ -13,13 +14,17 @@ const {
 
 class GraphLite {
   constructor({
+    connection,
     schemas,
     queries,
     associations,
     locales: useLocales,
-    connection,
+    debug: debugMode = false,
   }) {
+    // Extend connection
     assign(this, { connection });
+    // Set debug mode on debugger.
+    debug.setDebugMode(debug);
     // Create locales configuration in the jar.
     if (useLocales) {
       locales.defineLocales(useLocales);
@@ -27,6 +32,11 @@ class GraphLite {
     this._defineSchemasFromArrayList(schemas);
     this._useAssociationFunction(associations);
     this._defineQueriesFromArrayList(queries);
+  }
+
+  inDebugMode() {
+    const { debug: debugMode } = this;
+    return !!debugMode;
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -85,6 +95,7 @@ class GraphLite {
     const executeQuery = this._executeQuery.bind(this);
     const mainQuery = this._mountQuery(queryName, options);
     const countQuery = this._mountCountQuery(queryName, options);
+    debug.log(mainQuery);
     const fetchData = () => executeQuery(mainQuery).then(parseResponseRows);
     const shouldCount = !(withCount === false);
     const isFirstPage = page === 1;
