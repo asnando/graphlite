@@ -1,6 +1,7 @@
 const assign = require('lodash/assign');
 const isFunction = require('lodash/isFunction');
 const isObject = require('lodash/isObject');
+const size = require('lodash/size');
 const schemaList = require('./jar/schema-list');
 const queryList = require('./jar/query-list');
 const parseCountResponse = require('./response/parse-count-response');
@@ -122,9 +123,23 @@ class GraphLite {
     return this._run(queryName, options);
   }
 
-  // defineSchema() {}
+  defineSchema(...args) {
+    const struct = (size(args) > 1 ? args[1] : args[0]);
+    const schemaName = (size(args) > 1 ? args[0] : struct.name);
+    return this._defineSchema({
+      ...struct,
+      name: schemaName,
+    });
+  }
 
-  // defineQuery() {}
+  defineQuery(...args) {
+    const struct = (size(args) > 1 ? args[1] : args[0]);
+    const queryName = (size(args) > 1 ? args[0] : struct.name);
+    return this._defineQuery({
+      ...struct,
+      name: queryName,
+    });
+  }
 
   setLocale(locale) {
     const { locales } = this;
