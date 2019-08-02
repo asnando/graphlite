@@ -18,17 +18,16 @@ const useWhere = (schema, queryOptions) => {
     const condition = schemaOptions[filterName];
     const optionValue = queryOptions[filterName];
     if (/^static$/.test(filterName)) {
-      return resolveStaticOptions(schema, condition);
+      return resolveStaticOptions(schema, condition, queryOptions);
     }
     if (Array.isArray(condition)) {
       // When condition is defined as array, iterate over the array translating
       // the filter conditions to valid filter query string.
       return condition
-        .map(c => translateFilterProp(c, optionValue, schema))
+        .map(c => translateFilterProp(c, optionValue, schema, queryOptions))
         .join(' AND ');
-    } else {
-      return translateFilterProp(condition, optionValue, schema);
     }
+    return translateFilterProp(condition, optionValue, schema, queryOptions);
   }).join(' AND ')}`;
 };
 

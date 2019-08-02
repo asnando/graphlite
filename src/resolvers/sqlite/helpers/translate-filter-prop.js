@@ -37,7 +37,7 @@ const resolvePropWithOperator = (propName, propType, operator, value) => {
   }
 };
 
-const translateFilterProp = (condition, value, schema) => {
+const translateFilterProp = (condition, value, schema, queryOptions) => {
   // Resolves the operator from the condition. Generally it is at
   // the beginning of the condition string.
   const opr = Array.from(condition.match(/^\W+/)).shift();
@@ -57,7 +57,7 @@ const translateFilterProp = (condition, value, schema) => {
   useSchema = anotherSchema || schema;
   const prop = useSchema.translateToProperty(propName);
   const propType = prop.getPropertyType();
-  const propColumnName = prop.getPropertyColumnName();
+  const propColumnName = prop.getPropertyColumnName(queryOptions);
   const tableAlias = useSchema.getTableHash();
   return resolvePropWithOperator(`${tableAlias}.${propColumnName}`, propType, opr, value);
 };

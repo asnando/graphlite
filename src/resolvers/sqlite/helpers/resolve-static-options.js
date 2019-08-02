@@ -3,12 +3,12 @@ const translateConditionProps = require('./translate-condition-props');
 
 // Will resolve all conditions from array, translating all schema properties
 // by its names.
-const resolveStaticOptions = (schema, conditions = []) => {
+const resolveStaticOptions = (schema, conditions = [], queryOptions) => {
   if (!isArray(conditions)) {
     throw new Error('Static options must be defined as array of strings.');
   }
   return conditions
-    .map(condition => translateConditionProps(schema, condition)).join(' AND ');
+    .map(condition => translateConditionProps(schema, condition, queryOptions)).join(' AND ');
 };
 
 module.exports = resolveStaticOptions;

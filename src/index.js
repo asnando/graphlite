@@ -59,32 +59,47 @@ class GraphLite {
     schemas,
     queries,
     associations,
-    locales,
-    defaultLanguage,
+    locales: useLocales,
     connection,
   }) {
-    const supportedLocales = isObject(locales) ? keys(locales) : {};
-
     assign(this, {
       connection,
-      supportedLocales,
-      locales,
-      locale: defaultLanguage || supportedLocales[0],
+      locales: {
+        ...useLocales,
+        defaultLocale: isObject(useLocales) ? Object.keys(useLocales)[0] : null,
+      },
     });
-
     this._defineSchemasFromArrayList(schemas);
     this._useAssociationFunction(associations);
     this._defineQueriesFromArrayList(queries);
   }
 
+  _defineSchema(schema) {
+    const { locales } = this;
+    return schemaList.defineSchema({
+      ...schema,
+      // Pass locales configuration down to the Schema constructor
+      // so it can pass it to properties and when request is made
+      // the SchemaProperty can detect which multilang column name
+      // to use based on the query prefered locale.
+      locales,
+    });
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  _defineQuery(query) {
+    return queryList.defineQuery(query);
+  }
+
   _defineSchemasFromArrayList(schemas = []) {
-    schemas.forEach(schema => schemaList.defineSchema(schema));
+    schemas.forEach(schema => this._defineSchema(schema));
   }
 
   _defineQueriesFromArrayList(queries = []) {
-    queries.forEach(query => queryList.defineQuery(query));
+    queries.forEach(query => this._defineQuery(query));
   }
 
+  // eslint-disable-next-line class-methods-use-this
   _useAssociationFunction(useAssociation) {
     if (isFunction(useAssociation)) {
       const schemas = schemaList.getSchemaList();
@@ -92,6 +107,7 @@ class GraphLite {
     }
   }
 
+  // eslint-disable-next-line class-methods-use-this
   _getQuery(queryName) {
     return queryList.getQuery(queryName);
   }
@@ -114,16 +130,20 @@ class GraphLite {
   }
 
   _run(queryName, options = {}) {
+    const {
+      count: withCount = true,
+      page = 1,
+    } = options;
     const executeQuery = this._executeQuery.bind(this);
     const mainQuery = this._mountQuery(queryName, options);
     const countQuery = this._mountCountQuery(queryName, options);
     const fetchData = () => executeQuery(mainQuery).then(parseResponseRows);
-    const fetchDataCount = () => executeQuery(countQuery).then(parseCountResponse);
-    const shouldCount = (typeof options.count !== 'undefined' && options.count === false) ? false : true;
-    const isFirstPage = options.page === 1;
+    const shouldCount = !(withCount === false);
+    const isFirstPage = page === 1;
     return fetchData().then((rows) => {
       // Run another query to count the total number of rows that can be listed by the query.
       if (isFirstPage && shouldCount) {
+        const fetchDataCount = () => executeQuery(countQuery).then(parseCountResponse);
         // Merge the data from the two executed queries:
         return fetchDataCount().then(totalCount => ({
           ...rows,
@@ -147,6 +167,7 @@ class GraphLite {
   }
 
   // defineSchema() {}
+
   // defineQuery() {}
 
   setLocale(locale) {

@@ -29,7 +29,15 @@ const graphliteSupportPropertyType = type => (
 
 class SchemaProperty {
   constructor({
-    schemaName, tableAlias, name, alias, parser, type, defaultValue,
+    schemaName,
+    tableAlias,
+    name,
+    alias,
+    parser,
+    type,
+    defaultValue,
+    useLocale = false,
+    locales,
   }) {
     assign(this, pickBy({
       name,
@@ -37,7 +45,9 @@ class SchemaProperty {
       schemaName,
       tableAlias,
       parser,
+      useLocale,
       defaultValue,
+      locales,
     }));
     const resolvedType = this._resolvePropertyType(type);
     // When property type matches "GRAPHLITE_PRIMARY_KEY_DATA_TYPE" it will
@@ -71,8 +81,27 @@ class SchemaProperty {
     return this.alias;
   }
 
-  getPropertyColumnName() {
-    return this.alias || this.name;
+  detectLocale(preferredLocale) {
+    const { locales } = this;
+    const { defaultLocale } = locales;
+    const useLocale = preferredLocale || defaultLocale;
+    if (locales[useLocale]) {
+      const detectedLocale = locales[useLocale];
+      const { columnSuffix } = detectedLocale;
+      return columnSuffix;
+    };
+    return '';
+  }
+
+  getPropertyColumnName({ locale } = {}) {
+    const { alias, name, useLocale } = this;
+    if (useLocale) {
+      const localeColumnSuffix = this.detectLocale(locale);
+      return alias
+        ? `${alias}${localeColumnSuffix}`
+        : `${name}${localeColumnSuffix}`;
+    }
+    return alias || name;
   }
 
   getPropertySchemaName() {

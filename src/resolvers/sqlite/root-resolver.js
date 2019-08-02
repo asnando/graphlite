@@ -15,7 +15,7 @@ const SQLiteGraphNodeRootResolver = (schema, options, node, resolveNextNodes, re
   // Starts a new resolver loop from the actual node. It will render the
   // "root source with associations" query piece.
   const rootSourceWithAssociations = resolveNode('rootSourceWithAssociations');
-  const rootObjectFields = translatePropsToObject(schema.getDefinedProperties(), tableHash);
+  const rootObjectFields = translatePropsToObject(schema.getDefinedProperties(), tableHash, options);
 
   // Resolve next nodes query patching with json_patch() function.
   const nextNodes = resolveNode('node', { usePatch: true });

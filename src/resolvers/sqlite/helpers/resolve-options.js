@@ -56,11 +56,11 @@ const SQLiteGraphNodeOptionsResolver = (schema, options, node, useOnly = []) => 
       case 'offset':
         return useOffset(size, page);
       case 'orderBy':
-        return useOrderBy(schema, mergedOptions);
+        return useOrderBy(schema, mergedOptions, options);
       case 'where':
-        return useWhere(schema, mergedOptions);
+        return useWhere(schema, mergedOptions, options);
       case 'groupBy':
-        return useGroupBy(schema, mergedOptions);
+        return useGroupBy(schema, mergedOptions, options);
       default:
         return '';
     }

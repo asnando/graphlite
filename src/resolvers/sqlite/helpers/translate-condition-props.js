@@ -1,13 +1,13 @@
 // Parses the condition string translating all the schema properties to its
 // column name. Example: Will translate: ${productNumber} to its real column name.
-const translateConditionProps = (schema, condition = '') => {
+const translateConditionProps = (schema, condition = '', queryOptions) => {
   let parsedCondition = condition;
   const props = Array.from(condition.match(/\$\{\w+\}/g));
   props.forEach((propMarkup) => {
     const propName = propMarkup.replace(/(^\$\{)|(\}$)/g, '');
     const prop = schema.getProperty(propName);
     const propReplacer = new RegExp(`\\$\\{${propName}\\}`);
-    const translatedPropertyName = `${prop.getPropertyTableAlias()}.${prop.getPropertyColumnName()}`;
+    const translatedPropertyName = `${prop.getPropertyTableAlias()}.${prop.getPropertyColumnName(queryOptions)}`;
     parsedCondition = parsedCondition.replace(propReplacer, translatedPropertyName);
   });
   return parsedCondition;

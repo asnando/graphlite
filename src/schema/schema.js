@@ -29,10 +29,12 @@ class Schema {
     tableName,
     tableHash,
     properties,
+    locales,
   }) {
     if (!isString(name)) {
       throw new Error('Schema must have a unique name. The name is missing or is not a string.');
     }
+
     assign(this, {
       name,
       tableName,
@@ -40,14 +42,18 @@ class Schema {
       properties: {},
       has: {},
       belongs: {},
+      locales,
     });
+
     if (!isPrimaryKeyDefined(properties)) {
       throw new Error(`Missing primary key on "${name}" schema.`);
     }
+
     this._definePropertiesFromList(properties);
   }
 
   _definePropertiesFromList(props = {}) {
+    const { locales } = this;
     keys(props)
       .map((propName) => {
         const prop = props[propName];
@@ -72,6 +78,8 @@ class Schema {
           defaultValue,
           schemaName: this.name,
           tableAlias: this.getTableHash(),
+          // todo: add description
+          locales,
         });
         jset(this.properties, prop.getPropertyName(), prop);
       });

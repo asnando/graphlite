@@ -4,7 +4,7 @@ const translateSchemaPropsLiterals = require('./translate-schema-props-literals'
 
 const isQueryLike = str => !/^\w+$/.test(str);
 
-const useOrderBy = (schema, { orderBy }) => {
+const useOrderBy = (schema, { orderBy }, queryOptions) => {
   let resolvedOrderBy = isString(orderBy) ? [orderBy] : orderBy;
   // Return empty string if no order by condition.
   if (!isArray(resolvedOrderBy)) return '';
@@ -37,12 +37,12 @@ const useOrderBy = (schema, { orderBy }) => {
     // If prop name is like a query parse it as javascript literals resolving
     // the properties real names inside it.
     if (isQueryLike(usePropName)) {
-      return translateSchemaPropsLiterals(usePropName, schema);
+      return translateSchemaPropsLiterals(usePropName, schema, queryOptions);
     }
 
     const prop = schema.translateToProperty(usePropName);
     const tableAlias = prop.getPropertyTableAlias();
-    const propColumnName = prop.getPropertyColumnName();
+    const propColumnName = prop.getPropertyColumnName(queryOptions);
     return `${tableAlias}.${propColumnName} ${orderType}`;
   }).join(',')}
   `;
