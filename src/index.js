@@ -1,66 +1,14 @@
 const assign = require('lodash/assign');
 const isFunction = require('lodash/isFunction');
 const isObject = require('lodash/isObject');
-const isArray = require('lodash/isArray');
-const keys = require('lodash/keys');
-const jset = require('lodash/set');
 const schemaList = require('./jar/schema-list');
 const queryList = require('./jar/query-list');
-const jtree = require('./utils/jtree');
+const parseCountResponse = require('./response/parse-count-response');
+const parseResponseRows = require('./response/parse-response-rows');
 const {
-  RESPONSE_OBJECT_NAME,
-  COUNT_RESPONSE_FIELD_NAME,
   GRAPHLITE_CONNECTION_EXECUTER_NAME,
   TOTAL_ROWS_COUNT_PROPERTY_NAME,
 } = require('./constants');
-
-const parseResponseRowObject = (row) => {
-  const shadow = {};
-  const object = JSON.parse(row[RESPONSE_OBJECT_NAME]);
-  // Parse each property value/index of the object.
-  jtree(object, (value, path) => {
-    // Ignore path when:
-    if (
-      // refers to beggining path "$"
-      /^\$$/.test(path)
-      // value is array (it will be maped from another function)
-      || isArray(value)
-      // path refers to a array index
-      || /\.\d$/.test(path)
-    ) return;
-
-    let prop = path.match(/\w+\.\w+$/)[0].split('.');
-    const [schemaAlias, propName] = prop;
-    // Resolve the property schema.
-    const schema = schemaList.getSchemaByAlias(schemaAlias);
-    // Get the schema property instance by the property name.
-    prop = schema.getProperty(propName);
-    // Resolve the property value.
-    const propValue = prop.parseValue(value);
-    // Transform the path string representation to use with the
-    // lodash "set" function.
-    const objectPath = path
-      .replace(/#(\d{1,})/g, '[$1]')
-      .replace(/^\$\.?/, '')
-      .replace(/\w+\.(\w+)$/, '$1');
-    // Set the new parsed value into the shadow of the actual row object.
-    jset(shadow, objectPath, propValue);
-  });
-  return shadow;
-};
-
-const parseResponseRows = (rows) => {
-  const parsedRows = rows.map(row => parseResponseRowObject(row));
-  return {
-    rows: parsedRows,
-    count: parsedRows.length,
-  };
-};
-
-const parseCountResponse = (rows) => {
-  const [row] = rows;
-  return typeof row === 'object' ? row[COUNT_RESPONSE_FIELD_NAME] : 0;
-};
 
 class GraphLite {
   constructor({
