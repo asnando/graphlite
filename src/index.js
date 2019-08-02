@@ -19,8 +19,16 @@ const parseResponseRowObject = (row) => {
   const object = JSON.parse(row[RESPONSE_OBJECT_NAME]);
   // Parse each property value/index of the object.
   jtree(object, (value, path) => {
-    // ignore when begin path, value is array or it represents a object inside array.
-    if (/^\$$/.test(path) || isArray(value) || /\d$/.test(path)) return;
+    // Ignore path when:
+    if (
+      // refers to beggining path "$"
+      /^\$$/.test(path)
+      // value is array (it will be maped from another function)
+      || isArray(value)
+      // path refers to a array index
+      || /\.\d$/.test(path)
+    ) return;
+
     let prop = path.match(/\w+\.\w+$/)[0].split('.');
     const [schemaAlias, propName] = prop;
     // Resolve the property schema.
