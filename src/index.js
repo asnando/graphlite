@@ -1,9 +1,9 @@
 const assign = require('lodash/assign');
 const isFunction = require('lodash/isFunction');
-const isObject = require('lodash/isObject');
 const size = require('lodash/size');
 const schemaList = require('./jar/schema-list');
 const queryList = require('./jar/query-list');
+const locales = require('./jar/locales');
 const parseCountResponse = require('./response/parse-count-response');
 const parseResponseRows = require('./response/parse-response-rows');
 const {
@@ -19,28 +19,19 @@ class GraphLite {
     locales: useLocales,
     connection,
   }) {
-    assign(this, {
-      connection,
-      locales: {
-        ...useLocales,
-        defaultLocale: isObject(useLocales) ? Object.keys(useLocales)[0] : null,
-      },
-    });
+    assign(this, { connection });
+    // Create locales configuration in the jar.
+    if (useLocales) {
+      locales.defineLocales(useLocales);
+    }
     this._defineSchemasFromArrayList(schemas);
     this._useAssociationFunction(associations);
     this._defineQueriesFromArrayList(queries);
   }
 
+  // eslint-disable-next-line class-methods-use-this
   _defineSchema(schema) {
-    const { locales } = this;
-    return schemaList.defineSchema({
-      ...schema,
-      // Pass locales configuration down to the Schema constructor
-      // so it can pass it to properties and when request is made
-      // the SchemaProperty can detect which multilang column name
-      // to use based on the query prefered locale.
-      locales,
-    });
+    return schemaList.defineSchema(schema);
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -141,12 +132,9 @@ class GraphLite {
     });
   }
 
+  // eslint-disable-next-line class-methods-use-this
   setLocale(locale) {
-    const { locales } = this;
-    if (!locales.includes(locale)) {
-      throw new Error(`Unsupported locale "${locale}".`);
-    }
-    this.locale = locale;
+    locales.setLocale(locale);
   }
 }
 

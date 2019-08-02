@@ -4,6 +4,7 @@ const isNil = require('lodash/isNil');
 const isFunction = require('lodash/isFunction');
 const isString = require('lodash/isString');
 const debug = require('../debug');
+const locales = require('../jar/locales');
 const constants = require('../constants');
 const toString = require('../utils/to-string');
 const toNumber = require('../utils/to-number');
@@ -37,7 +38,6 @@ class SchemaProperty {
     type,
     defaultValue,
     useLocale = false,
-    locales,
   }) {
     assign(this, pickBy({
       name,
@@ -47,7 +47,6 @@ class SchemaProperty {
       parser,
       useLocale,
       defaultValue,
-      locales,
     }));
     const resolvedType = this._resolvePropertyType(type);
     // When property type matches "GRAPHLITE_PRIMARY_KEY_DATA_TYPE" it will
@@ -81,25 +80,13 @@ class SchemaProperty {
     return this.alias;
   }
 
-  detectLocale(preferredLocale) {
-    const { locales } = this;
-    const { defaultLocale } = locales;
-    const useLocale = preferredLocale || defaultLocale;
-    if (locales[useLocale]) {
-      const detectedLocale = locales[useLocale];
-      const { columnSuffix } = detectedLocale;
-      return columnSuffix;
-    };
-    return '';
-  }
-
   getPropertyColumnName({ locale } = {}) {
     const { alias, name, useLocale } = this;
     if (useLocale) {
-      const localeColumnSuffix = this.detectLocale(locale);
+      const { columnSuffix } = locales.detectLocale(locale);
       return alias
-        ? `${alias}${localeColumnSuffix}`
-        : `${name}${localeColumnSuffix}`;
+        ? `${alias}${columnSuffix}`
+        : `${name}${columnSuffix}`;
     }
     return alias || name;
   }
