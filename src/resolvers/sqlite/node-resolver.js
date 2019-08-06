@@ -1,6 +1,9 @@
 const translatePropsToObject = require('./helpers/translate-props-to-object');
 const translatePropsToFields = require('./helpers/translate-props-to-fields');
 const resolveOptions = require('./helpers/resolve-options');
+const {
+  ROW_MATCH_OBJECT_KEY_NAME,
+} = require('../../constants');
 
 const SQLiteGraphNodeNestedNodeResolver = (
   schema,
@@ -16,7 +19,7 @@ const SQLiteGraphNodeNestedNodeResolver = (
   const optionsTypes = ['limit', 'offset', 'groupBy', 'orderBy'];
 
   const tableAlias = schema.getTableHash();
-  const objectFields = translatePropsToObject(schema.getDefinedProperties(), tableAlias);
+  let objectFields = translatePropsToObject(schema.getDefinedProperties(), tableAlias);
   let rawFields = translatePropsToFields(schema.getDefinedProperties(), tableAlias, options);
   const parentSchema = node.parent.getValue();
   const parentSchemaName = parentSchema.getSchemaName();
@@ -29,6 +32,17 @@ const SQLiteGraphNodeNestedNodeResolver = (
 
   // Resolve the key name that represents the array/object data.
   const schemaDisplayName = schema.getDisplayName();
+
+  // Support nested object/array match highlight.
+  // When query options constains a value that refers to any of this node filters
+  // we add a match property to the node response object which means that
+  // the specific result was found by a match using the filter.
+  const conditions = resolveOptions(schema, options, node, ['where']);
+  const containsWhereConditions = /^\s{0,}where/i.test(conditions);
+  if (containsWhereConditions) {
+    objectFields = `'${tableAlias}.${ROW_MATCH_OBJECT_KEY_NAME}', ${tableAlias}.${ROW_MATCH_OBJECT_KEY_NAME}, ${objectFields}`;
+    rawFields += `, CAST(${conditions.replace(/where/i, '')} AS boolean) AS ${ROW_MATCH_OBJECT_KEY_NAME}`;
+  }
 
   if (objectType === 'array') {
     const sourceWithAssociations = resolveNode('nodeSourceWithAssociations');

@@ -4,7 +4,15 @@ const jtree = require('../utils/jtree');
 const schemaList = require('../jar/schema-list');
 const {
   RESPONSE_OBJECT_NAME,
+  ROW_MATCH_OBJECT_KEY_NAME,
 } = require('../constants');
+
+// Transform the path string representation to use with the
+// lodash "set" function.
+const transformPathToLodashSetPath = path => path
+  .replace(/#(\d{1,})/g, '[$1]')
+  .replace(/^\$\.?/, '')
+  .replace(/\w+\.(\w+)$/, '$1');
 
 const parseResponseRowObject = (row) => {
   const shadow = {};
@@ -21,6 +29,11 @@ const parseResponseRowObject = (row) => {
       || /#\d$/.test(path)
     ) return;
 
+    if (new RegExp(`${ROW_MATCH_OBJECT_KEY_NAME}$`, 'i').test(path)) {
+      jset(shadow, transformPathToLodashSetPath(path), !!value);
+      return;
+    }
+
     let prop = path.match(/\w+\.\w+$/)[0].split('.');
     const [schemaAlias, propName] = prop;
     // Resolve the property schema.
@@ -29,14 +42,8 @@ const parseResponseRowObject = (row) => {
     prop = schema.getProperty(propName);
     // Resolve the property value.
     const propValue = prop.parseValue(value);
-    // Transform the path string representation to use with the
-    // lodash "set" function.
-    const objectPath = path
-      .replace(/#(\d{1,})/g, '[$1]')
-      .replace(/^\$\.?/, '')
-      .replace(/\w+\.(\w+)$/, '$1');
     // Set the new parsed value into the shadow of the actual row object.
-    jset(shadow, objectPath, propValue);
+    jset(shadow, transformPathToLodashSetPath(path), propValue);
   });
   return shadow;
 };
