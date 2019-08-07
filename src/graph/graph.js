@@ -1,4 +1,5 @@
 const isObject = require('lodash/isObject');
+const isFunction = require('lodash/isFunction');
 const keys = require('lodash/keys');
 const jset = require('lodash/set');
 const jget = require('lodash/get');
@@ -24,7 +25,7 @@ class Graph {
   _createGraphStructure(structure) {
     const { graph } = this;
     const RGXP_PATH_EMPTY = /^\$$/;
-    const RGXP_PATH_ENDS_WITH = /(name|as|shows|alias|properties|\d|where|groupBy|size|page|orderBy)$/;
+    const RGXP_PATH_ENDS_WITH = /(htm|name|as|shows|alias|properties|\d|where|groupBy|size|page|orderBy)$/;
     const RGXP_PATH_CONTAINS = /(where|shows)\.\w+$/;
     jtree(structure, (node, path) => {
       // If empty path, or end with "..." or have some specific keywords in the middle of it.
@@ -57,6 +58,8 @@ class Graph {
           groupBy: node.groupBy,
           orderBy: node.orderBy,
         },
+        // Hightlight text match array.
+        htm: node.htm,
       }), parentSchemaName);
     });
     return graph;
@@ -113,8 +116,40 @@ class Graph {
     return graph[tailHash];
   }
 
+  getGraphNodesHashes() {
+    const { graph } = this;
+    return keys(graph).filter(hash => !/^(head|tail|depth)$/.test(hash));
+  }
+
+  // getNodeSchemaByAlias(alias) {
+  //   const graphNodesHashes = this.getGraphNodesHashes();
+  //   const matchedHash = graphNodesHashes.find((hash) => {
+  //     const node = this.getNodeByHash(hash);
+  //     const schema = node.getValue();
+  //     return schema.tableHash === alias;
+  //   });
+  //   if (matchedHash) {
+  //     return this.getNodeByHash(matchedHash).getValue();
+  //   }
+  //   return null;
+  // }
+
   resolveGraph(options, resolverName) {
     return this.getHead().resolveNode(options, resolverName);
+  }
+
+  walk(walker) {
+    const walk = (node) => {
+      if (!node) return;
+      if (isFunction(walker)) {
+        walker(node);
+      }
+      const { nextNodes } = node;
+      if (nextNodes && nextNodes.length) {
+        nextNodes.forEach(child => walk(child));
+      }
+    };
+    return walk(this.getHead());
   }
 }
 

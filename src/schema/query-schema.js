@@ -24,6 +24,12 @@ class QuerySchema extends Schema {
     displayAs: null,
     useProperties: [],
     ignoreId: false,
+    // htm contains a list of filter names or static strings that will
+    // be used by the Hightlight text match functionality. When any of the
+    // filters from the array is used, the inputed value for the filter will
+    // be searched and highlighted inside all the schema properties with
+    // the htm enabled.
+    htm: [],
   }) {
     super(opts.schema);
     // Extend specific QuerySchema Class props.
@@ -34,6 +40,7 @@ class QuerySchema extends Schema {
       definedProperties: {},
       definedOptions: opts.options,
       displayAs: opts.displayAs,
+      htm: opts.htm,
     });
     // it must return a list of all schema properties merged with usedProperties
     // names array(when defined). It must check too when id needs to be used or not.
@@ -56,6 +63,13 @@ class QuerySchema extends Schema {
 
   getDefinedOptions() {
     return this.definedOptions;
+  }
+
+  // Return the list of pre defined filters names that the inputed
+  // strings must be used for text match hightlighting.
+  getFiltersWithHTMSupport() {
+    const { htm } = this;
+    return htm;
   }
 
   getDisplayName() {

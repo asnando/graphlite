@@ -14,7 +14,39 @@ const transformPathToLodashSetPath = path => path
   .replace(/^\$\.?/, '')
   .replace(/\w+\.(\w+)$/, '$1');
 
-const parseResponseRowObject = (row) => {
+const replaceAccentsWithAccentsChain = (str = '') => {
+  const chain = {
+    a: '[AÁÀÂÄÃªaáàâäã]',
+    e: '[EÉÈÊËeéèêë]',
+    i: '[IÍÌÎÏiíìîï]',
+    o: '[OÓÒÔÖÕºoóòôöõ]',
+    u: '[UÚÙÛÜuúùûü]',
+    c: '[CÇcç]',
+  };
+
+  const chainKeys = Object.keys(chain);
+
+  return str
+    .split('')
+    .map((char) => {
+      const chainMatch = chainKeys.find((key) => {
+        const list = chain[key];
+        return list.indexOf(char) >= 0;
+      });
+      return chainMatch ? chain[chainMatch] : char;
+    })
+    .join('');
+};
+
+const hightlightTextMatch = (input, output, markup = '<strong>') => {
+  input = `(${replaceAccentsWithAccentsChain(input)})`;
+  const rgxp = new RegExp(input, 'ig');
+  const open = markup;
+  const close = markup.replace(/\</, '</');
+  return output.replace(rgxp, `${open}$1${close}`);
+};
+
+const parseResponseRowObject = (row, { htm }) => {
   const shadow = {};
   const object = JSON.parse(row[RESPONSE_OBJECT_NAME]);
   // Parse each property value/index of the object.
@@ -29,6 +61,8 @@ const parseResponseRowObject = (row) => {
       || /#\d$/.test(path)
     ) return;
 
+    // If ends with the match object property which came from
+    // the database response row object. Evaluate always as boolean.
     if (new RegExp(`${ROW_MATCH_OBJECT_KEY_NAME}$`, 'i').test(path)) {
       jset(shadow, transformPathToLodashSetPath(path), !!value);
       return;
@@ -41,7 +75,14 @@ const parseResponseRowObject = (row) => {
     // Get the schema property instance by the property name.
     prop = schema.getProperty(propName);
     // Resolve the property value.
-    const propValue = prop.parseValue(value);
+    let propValue = prop.parseValue(value);
+    // If property have htm funcionality enabled then it tries
+    // to hightlight the matching words from the htm received array.
+    if (htm.length && prop.supportHightlightTextMatch()) {
+      htm.filter(str => !!str).forEach((str) => {
+        propValue = hightlightTextMatch(str, propValue);
+      });
+    }
     // Set the new parsed value into the shadow of the actual row object.
     jset(shadow, transformPathToLodashSetPath(path), propValue);
   });

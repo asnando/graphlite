@@ -96,11 +96,13 @@ class GraphLite {
     const mainQuery = this._mountQuery(queryName, options);
     const countQuery = this._mountCountQuery(queryName, options);
     debug.log(mainQuery);
-    const fetchData = () => executeQuery(mainQuery).then(parseResponseRows);
+    const fetchData = () => executeQuery(mainQuery)
+      .then(rows => parseResponseRows(rows, queryName, options));
     const shouldCount = !(withCount === false);
     const isFirstPage = page === 1;
     return fetchData().then((rows) => {
-      // Run another query to count the total number of rows that can be listed by the query.
+      // Run another query to count the total number of rows
+      // that can be listed by the query.
       if (isFirstPage && shouldCount) {
         const fetchDataCount = () => executeQuery(countQuery).then(parseCountResponse);
         // Merge the data from the two executed queries:

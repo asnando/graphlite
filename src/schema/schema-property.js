@@ -38,6 +38,7 @@ class SchemaProperty {
     type,
     defaultValue,
     useLocale = false,
+    htm = false,
   }) {
     assign(this, pickBy({
       name,
@@ -59,6 +60,8 @@ class SchemaProperty {
     }
     // Update property type.
     this.type = resolvedType;
+    // Sets the support to hightlight text match.
+    this.htm = htm;
   }
 
   _resolvePropertyType(type) {
@@ -101,6 +104,12 @@ class SchemaProperty {
 
   getPropertyType() {
     return this.type;
+  }
+
+  // Return if this property have htm funcionality enabled.
+  supportHightlightTextMatch() {
+    const { htm } = this;
+    return !!htm;
   }
 
   // After data fetch from database it must be parsed to the

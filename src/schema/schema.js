@@ -65,6 +65,7 @@ class Schema {
         parser,
         useLocale,
         defaultValue,
+        htm,
       }) => {
         const prop = new SchemaProperty({
           name,
@@ -75,6 +76,7 @@ class Schema {
           defaultValue,
           schemaName: this.name,
           tableAlias: this.getTableHash(),
+          htm,
         });
         jset(this.properties, prop.getPropertyName(), prop);
       });

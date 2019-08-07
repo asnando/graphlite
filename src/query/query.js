@@ -36,6 +36,20 @@ class Query {
     resolvedQuery = formatQuery(resolvedQuery);
     return resolvedQuery;
   }
+
+  // Search for all htm arrays defined inside the graph nodes.
+  getFiltersWithHTMSupportFromGraph() {
+    const { graph } = this;
+    let filters = [];
+    graph.walk((node) => {
+      const schema = node.getValue();
+      const filtersWithHTMSupport = schema.getFiltersWithHTMSupport();
+      if (filtersWithHTMSupport && filtersWithHTMSupport.length) {
+        filters = filters.concat(filtersWithHTMSupport);
+      }
+    });
+    return filters;
+  }
 }
 
 module.exports = Query;
