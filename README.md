@@ -12,6 +12,16 @@ Another related modules that can work with the Graphlite:
 
 [sqlite-storage](https://github.com/ffrm/sqlite-storage) - Makes easy to manage multiple related databases on Node.js
 
+## Features
+- Schemas ```(with association between them)```
+- Queries
+- Multi level array graph response with ```array``` and ```sub objects``` directly from the database (using the ```json1``` builtin extension)
+- Schema properties response types and parsers
+- JavaScript response parser for accurate types
+- Custom query filters
+- [Locale](#locales) support
+- [HTM](#htm) - Hightlight text match
+
 ## Usage
 ```javascript
 const Graphlite = require('graphlite');
@@ -88,12 +98,11 @@ The name for the field that will be showed by the query response will be resolve
 #### Properties Options
 | Name | Type | Description | Acceptable |
 | ---- | ---- | ----------- | ---------- |
-| type | String | Type of the field value on response | primaryKey, string, number, boolean |
-| join | Array | Join two or more columns into one | - |
-| resolve | Array | Resolves one of columns that is not empty nor defined | - |
-| parse | Function | Function that will receive the response value of this column and returns a new value | - |
-| alias | String | Alias used when the key name inside properties object does not represents the real column name | - |
-
+| type | String | Type of the field value on response | pkey, string, number, bool |
+| parser | Function | Function that will receive the response value of this column and returns a new value | - |
+| alias | String | The name of the column into database that the property refers to | - |
+| useLocale | Boolean | If property supports [multi lang](#locales) feature | -
+| htm | Boolean | If [Hightlight text match](#htm) feature must be used for this field | -
 
 ## Queries
 Graph representation of the queries that will execute. The keys from graph must match the schemas names (GraphLite will import it when mounting the query representation of the query graph).
@@ -126,8 +135,7 @@ All the association methods above accepts some extra options needed for that ass
 | ---- | ---- | ----------- | ------- |
 | foreignTable | String | Name of the foreign table | - |
 | foreignKey | String | Name of the foreign key | - |
-| grouped | Boolean | Tells if any group by is defined in the query definition that uses this association | - |
-| type | String | The type of join used to associate the tables (e.g: left/inner) | inner |
+| join | String | The type of join used to associate the tables ```(e.g: left/inner)``` | inner |
 | using | [String] | When schemas are not directly asssociated but they need to have data patched. ```using``` must receive the name of all the others schemas which goes down the associations tree to turn it into a valid association. | - |
 | useSourceKey | String | When the keys used by the association between the tables must be different from it primary keys. The source will repesent the table which ```have``` data from the other table. | - |
 | useTargetKey | String | When the keys used by the association between the tables must be different from it primary keys. The target will repesent the table which ```belongs``` to the other table. | - |
@@ -207,17 +215,61 @@ graphlite.findAll(queryName, {
 }).then(({ rows }) => console.log(rows[0].description));
 ```
 
+## HTM
+Refers to hightlight text match feature. This feature hightlightes the matching sub strings of the response values from the enabled schema properties within a ```<strong>``` enclose query. Properties that must be hightlighted must contains the ```htm``` property as enabled in the schema definition.
+
+<i>Text hightlight will only be working when you use a query filter with the ```htm``` feature support.</i>
+
+Example:
+```javascript
+const mySchema = {
+  // ...
+  someProperty: {
+    alias: 'columnName',
+    type: 'string',
+    htm: true,
+  }
+};
+
+const myQuery = {
+  // ...
+  product: {
+    mySchema: {
+      properties: '*',
+      where: {
+        text: {
+          // ...
+          htm: true,
+        },
+      }
+    }
+  }
+};
+
+// Then when using the query:
+graphlite.findAll('myQuery', {
+  text: 'productName',
+}).then((data) => {
+  console.log(data);
+  // {
+  //   someProperty: 'This is the <strong>productName</strong> description',
+  // }
+});
+
+```
+
 ## Getting data
 Data can be fetched by using the ```findAll``` or ```findOne``` methods from the Graplite instance.
 These methods can receive two argument objects. The first object represents the filters that will be used by the query within its values, while the second object receive some extra options for pagination, ordering, etc.
 
-| Option | Type   | Required | Default |
-| ------ | ------ | -------- | ------- |
-| page   | Number | false    | 1       |
-| size   | Number | false    | 100     |
-| orderBy | String/Array | false | - |
-| count | Boolean | false | true |
-| locale | String | false | Will use the first locale configuration from the ```locales``` object. |
+| Option | Type   | Required | Default | Description |
+| ------ | ------ | -------- | ------- | ----------- |
+| page   | Number | false    | 1       | -
+| size   | Number | false    | 100     | -
+| orderBy | String/Array | false | - | -
+| count | Boolean | false | true | -
+| locale | String | false | - | Name of the defined locale to use with the query. If locale does not match it will detect the default one.
+| htm | Array[String] | false | - | Query can hightlight specific words on response for properties with ```htm``` feature enabled. You can specify a list of strings that will be hightlighted.
 
 ```javascript
 graphlite.findAll('product-list', {
@@ -228,11 +280,16 @@ graphlite.findAll('product-list', {
 }).then(data => {
   console.log(data.rows[0]);
   /* {
-    _id: 38125,
+    id: 38125,
     productDescription: '...',
     productNumber: 38125,
     isRelease: true,
-    imageSource: 'data:image/png;base64,...'
+    imageSource: 'data:image/png;base64,...',
+    vehicles: [
+      { vehicleDescription: '...' },
+      { vehicleDescription: '...' },
+      { vehicleDescription: '...' }
+    ]
   } */  
 });
 ```
@@ -244,4 +301,4 @@ The response will be an object with the following properties:
 | ---- | ---- | ----------- |
 | rows | Array | Array containing all rows object values fetched from the database |
 | total | Number | Count the total number of rows that query have matched from the query |
-| count | Number | Count the number of rows loaded by the actual page (equals to the rows.length) |
+| count | Number | Count the number of rows loaded by the actual page ```(equals to the rows.length)``` |
