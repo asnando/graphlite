@@ -1,6 +1,7 @@
 const isArray = require('lodash/isArray');
 const jset = require('lodash/set');
 const jtree = require('../utils/jtree');
+const hightlightTextMatch = require('./helpers/hightlight-text-match');
 const schemaList = require('../jar/schema-list');
 const {
   RESPONSE_OBJECT_NAME,
@@ -13,38 +14,6 @@ const transformPathToLodashSetPath = path => path
   .replace(/#(\d{1,})/g, '[$1]')
   .replace(/^\$\.?/, '')
   .replace(/\w+\.(\w+)$/, '$1');
-
-const replaceAccentsWithAccentsChain = (str = '') => {
-  const chain = {
-    a: '[AÁÀÂÄÃªaáàâäã]',
-    e: '[EÉÈÊËeéèêë]',
-    i: '[IÍÌÎÏiíìîï]',
-    o: '[OÓÒÔÖÕºoóòôöõ]',
-    u: '[UÚÙÛÜuúùûü]',
-    c: '[CÇcç]',
-  };
-
-  const chainKeys = Object.keys(chain);
-
-  return str
-    .split('')
-    .map((char) => {
-      const chainMatch = chainKeys.find((key) => {
-        const list = chain[key];
-        return list.indexOf(char) >= 0;
-      });
-      return chainMatch ? chain[chainMatch] : char;
-    })
-    .join('');
-};
-
-const hightlightTextMatch = (input, output, markup = '<strong>') => {
-  input = `(${replaceAccentsWithAccentsChain(input)})`;
-  const rgxp = new RegExp(input, 'ig');
-  const open = markup;
-  const close = markup.replace(/\</, '</');
-  return output.replace(rgxp, `${open}$1${close}`);
-};
 
 const parseResponseRowObject = (row, { htm }) => {
   const shadow = {};
