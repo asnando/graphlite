@@ -12,6 +12,8 @@ const useLike = value => value.replace(/^'/, '\'%').replace(/'$/, '%\'');
 
 const resolvePropWithOperator = (propName, propType, operator, value) => {
   if (propType === GRAPHLITE_STRING_DATA_TYPE) {
+    // Prevent query from breaking in case of input with single quote character.
+    value = value.replace(/'/g, '\'\'');
     // eslint-disable-next-line no-param-reassign
     value = quote(value);
   }
