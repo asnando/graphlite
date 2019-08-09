@@ -37,6 +37,11 @@ class Query {
     return resolvedQuery;
   }
 
+  getSchemaByAliasFromGraph(alias) {
+    const { graph } = this;
+    return graph.getNodeSchemaByAlias(alias);
+  }
+
   // Search for all htm arrays defined inside the graph nodes.
   getFiltersWithHTMSupportFromGraph() {
     const { graph } = this;

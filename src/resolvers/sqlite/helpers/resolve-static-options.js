@@ -8,7 +8,8 @@ const resolveStaticOptions = (schema, conditions = [], queryOptions) => {
     throw new Error('Static options must be defined as array of strings.');
   }
   return conditions
-    .map(condition => translateConditionProps(schema, condition, queryOptions)).join(' AND ');
+    .map(condition => translateConditionProps(schema, condition, queryOptions))
+    .join(' AND ');
 };
 
 module.exports = resolveStaticOptions;

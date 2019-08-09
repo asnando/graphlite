@@ -25,8 +25,8 @@ class Graph {
   _createGraphStructure(structure) {
     const { graph } = this;
     const RGXP_PATH_EMPTY = /^\$$/;
-    const RGXP_PATH_ENDS_WITH = /(htm|name|as|shows|alias|properties|\d|where|groupBy|size|page|orderBy)$/;
-    const RGXP_PATH_CONTAINS = /(where|shows)\.\w+$/;
+    const RGXP_PATH_ENDS_WITH = /(htm|name|as|alias|properties|\d|where|groupBy|size|page|orderBy)$/;
+    const RGXP_PATH_CONTAINS = /(where).*?\w+$/;
     jtree(structure, (node, path) => {
       // If empty path, or end with "..." or have some specific keywords in the middle of it.
       if (RGXP_PATH_EMPTY.test(path)
@@ -121,18 +121,18 @@ class Graph {
     return keys(graph).filter(hash => !/^(head|tail|depth)$/.test(hash));
   }
 
-  // getNodeSchemaByAlias(alias) {
-  //   const graphNodesHashes = this.getGraphNodesHashes();
-  //   const matchedHash = graphNodesHashes.find((hash) => {
-  //     const node = this.getNodeByHash(hash);
-  //     const schema = node.getValue();
-  //     return schema.tableHash === alias;
-  //   });
-  //   if (matchedHash) {
-  //     return this.getNodeByHash(matchedHash).getValue();
-  //   }
-  //   return null;
-  // }
+  getNodeSchemaByAlias(alias) {
+    const graphNodesHashes = this.getGraphNodesHashes();
+    const matchedHash = graphNodesHashes.find((hash) => {
+      const node = this.getNodeByHash(hash);
+      const schema = node.getValue();
+      return schema.tableHash === alias;
+    });
+    if (matchedHash) {
+      return this.getNodeByHash(matchedHash).getValue();
+    }
+    return null;
+  }
 
   resolveGraph(options, resolverName) {
     return this.getHead().resolveNode(options, resolverName);

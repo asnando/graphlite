@@ -1,5 +1,3 @@
-const size = require('lodash/size');
-const isString = require('lodash/isString');
 const isArray = require('lodash/isArray');
 const jset = require('lodash/set');
 const Query = require('./query');

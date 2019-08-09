@@ -1,8 +1,13 @@
 const assign = require('lodash/assign');
 const size = require('lodash/size');
+const keys = require('lodash/keys');
 const isNil = require('lodash/isNil');
+const isString = require('lodash/isString');
+const isObject = require('lodash/isObject');
+const isArray = require('lodash/isArray');
 const Schema = require('./schema');
 const constants = require('../constants');
+const QueryFilter = require('../query/query-filter');
 
 const {
   DEFAULT_PAGE_SIZE,
@@ -48,6 +53,45 @@ class QuerySchema extends Schema {
     // As it is an array of string it must be translated to an object
     // within the fields names as key and field definition as value.
     this._createUsePropertiesListFromDefinition(useProperties);
+    // #
+    this.filters = this._transformOptionsFiltersToQueryFilters();
+  }
+
+  // Todo: Add description
+  _transformOptionsFiltersToQueryFilters() {
+    const filters = {};
+    const { definedOptions } = this;
+    const { where } = definedOptions;
+    keys(where).forEach((name) => {
+      const filter = where[name];
+      filters[name] = (() => {
+        // Pass down reference to this, so the QueryFilter
+        // can detect this schema needed definitions.
+        const schemaName = this.getSchemaName();
+        if (isString(filter) || isArray(filter)) {
+          return new QueryFilter({
+            condition: filter,
+            name,
+            schemaName,
+          });
+        }
+        if (isObject(filter)) {
+          return new QueryFilter({
+            ...filter,
+            name,
+            schemaName,
+            condition: undefined,
+          });
+        }
+        return null;
+      })();
+    });
+    return filters;
+  }
+
+  getFilterList() {
+    const { filters } = this;
+    return filters;
   }
 
   _createUsePropertiesListFromDefinition(props) {
