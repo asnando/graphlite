@@ -4,24 +4,17 @@ const isString = require('lodash/isString');
 const isArray = require('lodash/isArray');
 const isFunction = require('lodash/isFunction');
 const quote = require('../utils/quote');
+const withParenthesis = require('../utils/withParenthesis');
+const replaceWithCharactersChain = require('../utils/replace-with-characters-chain');
 const debug = require('../debug');
 const schemaList = require('../jar/schema-list');
 const {
   GRAPHLITE_STRING_DATA_TYPE,
 } = require('../constants');
 
-// Examples:
-// field = 'abc'
-// field = 10
-// field like '%abc'
-// field like 'abc%'
-// field like '%abc%'
-// field glob '*abc*'
-// field > 1
-// field < 1
-// field <> 'abc'
-// field <> 1
+const DEFAULT_FILTER_MATCH_TYPE = 'equalsTo';
 
+// Todo: resolve parser
 const resolveParserFromList = (name) => {
   switch (name) {
     default:
@@ -38,8 +31,6 @@ const resolveParser = (parser) => {
   }
   return null;
 };
-
-const DEFAULT_FILTER_MATCH_TYPE = 'equalsTo';
 
 const equalsTo = str => /^=/.test(str);
 const moreThan = str => /^>/.test(str);
@@ -62,14 +53,145 @@ const resolveMatchType = (str) => {
   return DEFAULT_FILTER_MATCH_TYPE;
 };
 
-const detectPropertyFromString = (str) => {
-  const rgxp = /^(=|%|<>|<|>)/;
-  return str.replace(rgxp, '');
+const detectPropertyFromString = str => str
+  // Begins with
+  .replace(/^(=|%|<>|<|>)/, '')
+  // Ends with
+  .replace(/%$/, '');
+
+const isQueryLike = str => (
+  !(equalsTo(str)
+    || moreThan(str)
+    || lessThan(str)
+    || contains(str)
+    || endsWith(str)
+    || beginsWith(str)
+    || globed(str)
+    || differs(str))
+);
+
+const getPropertyFromSchema = (schema, propName) => schema.getProperty(propName);
+const containsPropMarkup = str => /\$\{[\w\.]+\}/.test(str);
+const getPropMarkupsFromString = str => Array.from(str.match(/(\$\{[\w\.]+\})/g));
+const removePropMarkup = markup => markup.replace(/^\$\{/, '').replace(/\}$/, '');
+const propRefersToAnotherSchema = propName => /\w+\.\w+/.test(propName);
+
+const extractSchemaNameFromPropName = (propName) => {
+  if (propRefersToAnotherSchema(propName)) {
+    return propName.match(/(\w+)\.\w+/)[1];
+  }
+  return null;
 };
 
-const isQueryLike = str => !/^(=|%|<>|<|>)?[\w\.]+$/.test(str);
+const resolvePropJoinType = (type) => {
+  switch (type) {
+    case '||':
+      return ' OR ';
+    case '&&':
+    default:
+      return ' AND ';
+  }
+};
 
-const getSchema = schemaName => schemaList.getSchema(schemaName);
+// Quote the query value based on value and match type.
+const resolveFilterValue = (value, matchType) => {
+  const shouldQuoteValue = typeof value === GRAPHLITE_STRING_DATA_TYPE;
+  if (shouldQuoteValue) {
+    // Prevent query from breaking if user input any (') on filter value.
+    // eslint-disable-next-line no-param-reassign
+    value = value.replace(/'/g, '\'\'');
+    switch (matchType) {
+      case 'contains':
+        return quote(`%${value}%`);
+      case 'endsWith':
+        return quote(`${value}%`);
+      case 'beginsWith':
+        return quote(`%${value}`);
+      case 'globed':
+        return quote(`*${replaceWithCharactersChain(value)}*`);
+      case 'equalsTo':
+      default:
+        return quote(value);
+    }
+  }
+  return value;
+};
+
+const resolvePropWithOperator = (propName, value, matchType, schema) => {
+  let prop = getPropertyFromSchema(schema, propName);
+  if (propRefersToAnotherSchema(propName)) {
+    let useSchema = propName.split('.').shift();
+    // eslint-disable-next-line no-param-reassign
+    propName = propName.split('.').pop();
+    useSchema = schemaList.getSchema(useSchema);
+    prop = useSchema.translateToProperty(propName);
+  }
+  const propColumnName = prop.getPropertyColumnName();
+  const propTableAlias = prop.getPropertyTableAlias();
+  const name = `${propTableAlias}.${propColumnName}`;
+  // eslint-disable-next-line no-param-reassign
+  value = resolveFilterValue(value, matchType);
+  switch (matchType) {
+    case 'moreThan':
+      return `${name}>${value}`;
+    case 'lessThan':
+      return `${name}<${value}`;
+    case 'contains':
+      return `${name} LIKE ${value}`;
+    case 'endsWith':
+      return `${name} LIKE ${value}`;
+    case 'beginsWith':
+      return `${name} LIKE ${value}`;
+    case 'globed':
+      return `${name} GLOB ${value}`;
+    case 'differs':
+      return `${name}<>${value}`;
+    case 'equalsTo':
+    default:
+      return `${name}=${value}`;
+  }
+};
+
+// If value is string and contains spaces, then resolve the condition
+// with the value N times with each word from string.
+const resolvePropWithValue = (propName, value, matchType, join, schema) => {
+  if (isString(value) && /\s/.test(value)) {
+    return value
+      .split(' ')
+      .map(chunk => resolvePropWithOperator(propName, chunk, matchType, schema))
+      .join(resolvePropJoinType(join));
+  }
+  return resolvePropWithOperator(propName, value, matchType, schema);
+};
+
+const resolvePropList = (props, value, matchType, join, schema) => props
+  .map(prop => resolvePropWithValue(prop, value, matchType, join, schema))
+  .join(resolvePropJoinType(join));
+
+const translatePropsMarkups = (condition, schema) => {
+  const props = getPropMarkupsFromString(condition);
+  props.forEach((propMarkup) => {
+    const propName = removePropMarkup(propMarkup);
+    const prop = getPropertyFromSchema(schema, propName);
+    const propColumnName = prop.getPropertyColumnName();
+    const propTableAlias = prop.getPropertyTableAlias();
+    // eslint-disable-next-line no-param-reassign
+    condition = condition.replace(propMarkup, `${propTableAlias}.${propColumnName}`);
+  });
+  return condition;
+};
+
+const resolveStaticCondition = (conditions, schema) => {
+  // eslint-disable-next-line no-param-reassign
+  conditions = isArray(conditions) ? conditions : [conditions];
+  return conditions.map((condition) => {
+    if (containsPropMarkup(condition)) {
+      // eslint-disable-next-line no-param-reassign
+      condition = translatePropsMarkups(condition, schema);
+    }
+    return condition;
+  }).join(' AND ');
+};
 
 const defaultProps = {
   htm: false,
@@ -113,11 +235,11 @@ class QueryFilter {
           this.condition = condition;
         }
       }
-    } else if (!isNil(property)) {
-      this.property = property;
-      this.matchType = resolveMatchType(operator);
     } else if (!isNil(properties)) {
       this.properties = properties;
+      this.matchType = resolveMatchType(operator);
+    } else if (!isNil(property)) {
+      this.property = property;
       this.matchType = resolveMatchType(operator);
     }
 
@@ -129,8 +251,6 @@ class QueryFilter {
       schemaName,
       static: /^static$/.test(name),
     });
-
-    console.log(name, '-', this.resolve('AAA'));
   }
 
   resolve(value) {
@@ -142,126 +262,57 @@ class QueryFilter {
       join,
       static: isStatic,
       schemaName,
-      // schema,
     } = this;
-    const schema = getSchema(schemaName);
+    const schema = schemaList.getSchema(schemaName);
+    let resolvedValue = '';
     if (!isNil(condition)) {
       if (isStatic) {
-        return resolveStaticCondition(condition, schema);
+        resolvedValue = resolveStaticCondition(condition, schema);
       } else {
         debug.warn('must resolve condition #2', condition);
       }
     } else if (!isNil(property)) {
-      return resolvePropWithOperator(property, value, matchType, schema);
+      resolvedValue = resolvePropWithValue(property, value, matchType, join, schema);
     } else if (!isNil(properties)) {
-      return resolvePropList(properties, value, matchType, join, schema);
+      resolvedValue = resolvePropList(properties, value, matchType, join, schema);
     }
-    return '';
+    return withParenthesis(resolvedValue);
+  }
+
+  usesAnotherSchema() {
+    const { condition, property, properties } = this;
+    if (!isNil(condition)) {
+      if (!isQueryLike(condition)) {
+        return propRefersToAnotherSchema(condition);
+      }
+    } else if (!isNil(properties)) {
+      return !!properties.find(prop => propRefersToAnotherSchema(prop));
+    } else if (!isNil(property)) {
+      return propRefersToAnotherSchema(property);
+    }
+    return false;
+  }
+
+  getSchemaNames() {
+    const {
+      condition,
+      property,
+      properties,
+      schemaName,
+    } = this;
+    if (!isNil(condition)) {
+      if (!isQueryLike(condition)) {
+        return extractSchemaNameFromPropName(condition) || schemaName;
+      }
+    } else if (!isNil(properties)) {
+      return properties
+        .map(prop => extractSchemaNameFromPropName(prop))
+        .map(schema => schema || schemaName);
+    } else if (!isNil(property)) {
+      return extractSchemaNameFromPropName(property) || schemaName;
+    }
+    return schemaName;
   }
 }
-
-const getPropertyFromSchema = (schema, propName) => schema.getProperty(propName);
-const containsPropMarkup = str => /\$\{[\w\.]+\}/.test(str);
-const getPropMarkupsFromString = str => Array.from(str.match(/(\$\{[\w\.]+\})/g));
-const removePropMarkup = markup => markup.replace(/^\$\{/, '').replace(/\}$/, '');
-
-const resolveFilterValue = (value, matchType) => {
-  const shouldQuoteValue = typeof value === GRAPHLITE_STRING_DATA_TYPE;
-  if (shouldQuoteValue) {
-    // Prevent query from breaking if user input any (') on filter value.
-    // eslint-disable-next-line no-param-reassign
-    value = value.replace(/'/g, '\'\'');
-    switch (matchType) {
-      case 'contains':
-        return quote(`%${value}%`);
-      case 'endsWith':
-        return quote(`${value}%`);
-      case 'beginsWith':
-        return quote(`%${value}`);
-      case 'globed':
-        return quote(`*${value}*`);
-      case 'equalsTo':
-      default:
-        return quote(value);
-    }
-  }
-  return value;
-};
-
-const propRefersToAnotherSchema = propName => /\w+\.\w+/.test(propName);
-
-const resolvePropWithOperator = (propName, value, matchType, schema) => {
-  let prop = getPropertyFromSchema(schema, propName);
-  if (propRefersToAnotherSchema(propName)) {
-    let useSchema = propName.split('.').shift();
-    // eslint-disable-next-line no-param-reassign
-    propName = propName.split('.').pop();
-    useSchema = getSchema(useSchema);
-    prop = useSchema.getProperty(propName);
-  }
-  const propColumnName = prop.getPropertyColumnName();
-  const propTableAlias = prop.getPropertyTableAlias();
-  const name = `${propTableAlias}.${propColumnName}`;
-  // eslint-disable-next-line no-param-reassign
-  value = resolveFilterValue(value, matchType);
-  switch (matchType) {
-    case 'moreThan':
-      return `${name}>${value}`;
-    case 'lessThan':
-      return `${name}<${value}`;
-    case 'contains':
-      return `${name} LIKE ${value}`;
-    case 'endsWith':
-      return `${name} LIKE ${value}`;
-    case 'beginsWith':
-      return `${name} LIKE ${value}`;
-    case 'globed':
-      return `${name} ${value}`;
-    case 'differs':
-      return `${name}<>${value}`;
-    case 'equalsTo':
-    default:
-      return `${name}=${value}`;
-  }
-};
-
-const resolvePropJoinType = (type) => {
-  switch (type) {
-    case '||':
-      return ' OR ';
-    case '&&':
-    default:
-      return ' AND ';
-  }
-};
-
-const resolvePropList = (props, value, matchType, join, schema) => props
-  .map(prop => resolvePropWithOperator(prop, value, matchType, schema))
-  .join(resolvePropJoinType(join));
-
-const translatePropsMarkups = (condition, schema) => {
-  const props = getPropMarkupsFromString(condition);
-  props.forEach((propMarkup) => {
-    const propName = removePropMarkup(propMarkup);
-    const prop = getPropertyFromSchema(schema, propName);
-    const propColumnName = prop.getPropertyColumnName();
-    const propTableAlias = prop.getPropertyTableAlias();
-    // eslint-disable-next-line no-param-reassign
-    condition = condition.replace(propMarkup, `${propTableAlias}.${propColumnName}`);
-  });
-  return condition;
-};
-
-const resolveStaticCondition = (conditions, schema) => {
-  // eslint-disable-next-line no-param-reassign
-  conditions = isArray(conditions) ? conditions : [conditions];
-  return conditions.map((condition) => {
-    if (containsPropMarkup(condition)) {
-      // eslint-disable-next-line no-param-reassign
-      condition = translatePropsMarkups(condition, schema);
-    }
-    return condition;
-  }).join(' AND ');
-};
 
 module.exports = QueryFilter;

@@ -38,57 +38,50 @@ const createAssociationList = (node) => {
         // Otherwise we just prepend the root schema configuration to the association list.
         associations = [associationWithParent].concat(associations);
       }
-      // if (walker === node) {
-      //   // when first node it must get the directly association with parent
-      //   associations = [associationWithParent].concat(associations);
-      // } else if (associationWithParent.using.length) {
-      //   // otherwise it will concat all the middleware associations until the root node.
-      //   associations = associationWithParent.using.concat(associations);
-      // }
     }
     walker = walker.parent;
   }
   return associations;
 };
 
-const haveOptionsWithValue = (filters, queryOptions) => !!keys(filters)
-  .find(filterName => !isNil(queryOptions[filterName]));
+const haveOptionsWithValue = (filters, queryOptions) => (
+  !!keys(filters).find(name => !isNil(queryOptions[name]))
+);
 
 // Return list of schema names detected from the actual schema defined
 // options and not refers to it.
-const whichSchemasOptionsRefersTo = (filters, queryOptions) => {
+const whichSchemasOptionsRefersTo = (filters, queryOptions, schemaName) => {
   return keys(filters)
-    // Desconsiders static options.
-    .filter(optionName => !/^static$/.test(optionName))
-    // Desconsiders filters without given values(from options).
-    .filter(optionName => !isNil(queryOptions[optionName]))
-    // Map defined conditions of the filter
-    .map((optionName) => {
-      const conditions = filters[optionName];
-      return Array.isArray(conditions) ? conditions : [conditions];
-    })
-    // Make one level array
+    .map(filterName => filters[filterName])
+    // Ignore static filters.
+    .filter(({ static: isStatic }) => !isStatic)
+    // Desconsiders filters without value on query options.
+    .filter(({ name }) => !isNil(queryOptions[name]))
+    // Check if query properties refers to another schema.
+    .filter(filter => filter.usesAnotherSchema())
+    // Map schemas that properties from filter refers to.
+    .map(filter => filter.getSchemaNames())
+    // Put all schema names into one level array.
     .reduce((a, b) => a.concat(b), [])
-    // Remove conditions which have no reference to another schema.
-    .filter((condition) => /\w{2,}\.\w{2,}/.test(condition))
-    // Detect the schema which condition refers to.
-    .map(condition => Array.from(condition.match(/(\w{2,})\.\w{2,}/))[1]);
+    // Remove same node schema.
+    .filter(schema => schema !== schemaName);
 };
 
 // Returns if defined options from schema have any filter using any
 // property from another schema(not from the actual node).
-const haveAnotherSchemaReferenceOnOptions = (filters, queryOptions) => (
-  !!whichSchemasOptionsRefersTo(filters, queryOptions).length
+const haveAnotherSchemaReferenceOnOptions = (...args) => (
+  whichSchemasOptionsRefersTo(...args).length > 0
 );
 
-const createAssociationListFromSchemasList = (schema, schemaNames = []) => schemaNames
-  .map((schemaName) => {
+const createAssociationListFromSchemasList = (schema, schemaNames = []) => (
+  schemaNames.map((schemaName) => {
     const association = schema.getAssociationWith(schemaName);
     if (!association) {
       throw new Error(`${schema.getSchemaName()} have no association with ${schemaName} to use its properties on options`);
     }
     return association;
-  });
+  })
+);
 
 const resolveJoinFromAssociationList = associationList => associationList.map((association) => {
   const {
@@ -123,8 +116,8 @@ const resolveJoinFromAssociationList = associationList => associationList.map((a
 // ignored).
 const SQLiteGraphNodeSourceWithAssociationsResolver = (schema, options, node, resolveNextNodes) => {
   // Check if there is at least one filter with value from this schema.
-  const schemaDefinedOptions = schema.getDefinedOptions();
-  const { where } = schemaDefinedOptions;
+  const filtersList = schema.getFilterList();
+  const schemaName = schema.getSchemaName();
 
   if (node.isRoot()) {
     const tableName = schema.getTableName();
@@ -136,8 +129,8 @@ const SQLiteGraphNodeSourceWithAssociationsResolver = (schema, options, node, re
     // and will join that schemas with the actual schema. It is only resolved in the
     // root node cuz if there is another query node schemas it will have they own filters
     // references.
-    if (haveAnotherSchemaReferenceOnOptions(where, options)) {
-      const anotherSchemas = whichSchemasOptionsRefersTo(where, options);
+    if (haveAnotherSchemaReferenceOnOptions(filtersList, options, schemaName)) {
+      const anotherSchemas = whichSchemasOptionsRefersTo(filtersList, options, schemaName);
       const associationList = createAssociationListFromSchemasList(schema, anotherSchemas);
       useAssociations = resolveJoinFromAssociationList(associationList);
     }
@@ -145,7 +138,7 @@ const SQLiteGraphNodeSourceWithAssociationsResolver = (schema, options, node, re
   }
 
   // If no defined options value just return the next resolved nodes.
-  if (!haveOptionsWithValue(where, options)) {
+  if (!haveOptionsWithValue(filtersList, options)) {
     return resolveNextNodes();
   }
   return resolveJoinFromAssociationList(createAssociationList(node));

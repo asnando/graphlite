@@ -95,7 +95,7 @@ class GraphLite {
     const executeQuery = this._executeQuery.bind(this);
     const mainQuery = this._mountQuery(queryName, options);
     const countQuery = this._mountCountQuery(queryName, options);
-    // debug.log(mainQuery);
+    debug.log(mainQuery);
     const fetchData = () => executeQuery(mainQuery)
       .then(rows => parseResponseRows(rows, queryName, options));
     const shouldCount = !(withCount === false);

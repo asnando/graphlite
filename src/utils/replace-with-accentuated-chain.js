@@ -1,3 +1,5 @@
+const isString = require('lodash/isString');
+
 const replaceWithAccentuatedChain = (str = '') => {
   const chains = [
     'AÁÀÂÄÃªaáàâäã',
@@ -7,7 +9,7 @@ const replaceWithAccentuatedChain = (str = '') => {
     'UÚÙÛÜuúùûü',
     'CÇcç',
   ];
-  return str.split('').map((char) => {
+  return (isString(str) ? str : str.toString()).split('').map((char) => {
     const chainMatch = chains.find(chain => chain.indexOf(char) >= 0);
     return chainMatch ? `[${chainMatch}]` : char;
   }).join('');
