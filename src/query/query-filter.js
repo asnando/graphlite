@@ -259,6 +259,16 @@ class QueryFilter {
     });
   }
 
+  getFilterName() {
+    const { name } = this;
+    return name;
+  }
+
+  supportHTM() {
+    const { htm } = this;
+    return htm;
+  }
+
   resolve(value) {
     const {
       condition,

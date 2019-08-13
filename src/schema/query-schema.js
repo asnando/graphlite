@@ -112,8 +112,11 @@ class QuerySchema extends Schema {
   // Return the list of pre defined filters names that the inputed
   // strings must be used for text match hightlighting.
   getFiltersWithHTMSupport() {
-    const { htm } = this;
-    return htm;
+    const { filters } = this;
+    return keys(filters)
+      .map(filterName => filters[filterName])
+      .filter(filter => filter.supportHTM())
+      .map(filter => filter.getFilterName());
   }
 
   getDisplayName() {

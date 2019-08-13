@@ -107,7 +107,7 @@ class SchemaProperty {
   }
 
   // Return if this property have htm funcionality enabled.
-  supportHightlightTextMatch() {
+  supportHTM() {
     const { htm } = this;
     return !!htm;
   }

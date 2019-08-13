@@ -47,7 +47,7 @@ const parseResponseRowObject = (row, { htm }) => {
     let propValue = prop.parseValue(value);
     // If property have htm funcionality enabled then it tries
     // to hightlight the matching words from the htm received array.
-    if (htm.length && prop.supportHightlightTextMatch()) {
+    if (htm.length && prop.supportHTM()) {
       htm.filter(str => !!str).forEach((str) => {
         propValue = hightlightTextMatch(str, propValue);
       });
