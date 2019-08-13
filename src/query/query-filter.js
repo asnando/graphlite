@@ -218,9 +218,7 @@ class QueryFilter {
     // Filter defined in compact string format instead of object.
     condition,
     htm = defaultProps.htm,
-    // = Equals, % Like, <> Different, < Less than, > More than
     operator = defaultProps.operator,
-    // || or, && and
     join = defaultProps.join,
   }) {
     if (!isNil(condition)) {

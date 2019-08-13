@@ -105,15 +105,102 @@ The name for the field that will be showed by the query response will be resolve
 | htm | Boolean | If [Hightlight text match](#htm) feature must be used for this field | -
 
 ## Queries
-Graph representation of the queries that will execute. The keys from graph must match the schemas names (GraphLite will import it when mounting the query representation of the query graph).
+You must define the query structure to get data from the database. Query is a representation of schemas and the associations between them in graph format. The graph keys must match the desired schema name. For example, if want to fetch data where product is the root of the graph we could do like so:
+
 ```javascript
-graphlite.defineQuery('products-list', {
+graphlite.defineQuery('products', {
   product: {
-    image: {
-      properties: ['imageSource']
+    properties: '*'
+  }
+});
+```
+
+and when resolved we will get the products data in the root node like:
+
+```json
+[
+  { "description": "Product 1" },
+  { "description": "Product 2" }
+]
+```
+
+The nexted nodes in graph will resolve data from associated schemas. It can create a new node inside the response object in case of array associations (defined in [associations](#associations)) or it can merge all the nested schema properties into the current node. See the examples below:
+
+```javascript
+graphlite.defineQuery('products', {
+  product: {
+    properties: '*',
+    group: {
+      as: 'groups',
+      properties: [
+        'groupDescription'
+      ]
     }
   }
 });
+```
+and then
+
+```json
+[
+  {
+    "description": "Product 1",
+    "groups": [
+      { "groupDescription": "Group 1" },
+      { "groupDescription": "Group 2" },
+    ]
+  }
+]
+```
+
+### Query specific keys options
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| properties | Array[String] | Filter the properties that must be returned for this node data using the properties names from schema definition.
+| as | String | Alias for new response object node key (when using array).
+| size | Number | Limits the current node with N records.
+| where | Object | Object containing filters (static or dynamic) with the [following](#query-filters) configuration.
+| groupBy | String, Array[String] | Property name or list of properties names from the schema to be static used for group by.
+| orderBy | String, Array[String] | Property name or list of properties names to use as order by. It will be overrided when query options receives a new orderBy array on query call.
+
+### Query filters
+Each schema in graph can receive dynnamic or use static query filters to filter the data from the tables. A query filter must be defined inside the <b>where</b> object inside the query graph node. Query filter supports the following keys:
+
+| Name | Type | Description | Acceptable values |
+| ---- | ---- | ----------- | --------- |
+| property | String | Schema property name to be used. | -
+| properties | Array[String] | List of schema properties names to be used. Will create a ```and``` or ```or``` condition based on the ```join``` definition. | -
+| parser | String, Function | Parses the query input for filter before querying the data. | -
+| operator | String | Represents | equals ```=propName, =```, more than ```>propName, >```, less than ```<propName, <```, begins with ```%propName, ^%```, ends with ```propName%, ...%```, contains ```%propName%, %%```, globed ```*propName, *```, differs ```<>propName, <>``` |
+| join | String | The type of concatenation to be used when property refers to a list of properties or the value inputed for query contains " "(spaces). | and ```&&```, or ```||```
+| htm | Boolean | Indicates if schema properties with [htm](#htm) support must be hightlighted when using this filter. | -
+
+Example:
+
+```js
+{
+  product: {
+    properties: '*',
+    where: {
+      text: {
+        property: 'keywords',
+        operator: '^%',
+        htm: true,
+      }
+    }
+  }
+}
+```
+
+Query filters can also be used as a simple string but it supports less functionalities:
+
+```js
+{
+  // ...
+  where: {
+    description: '=productDescription',
+  }
+}
 ```
 
 ## Associations
