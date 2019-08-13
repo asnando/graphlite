@@ -24,7 +24,7 @@ class GraphLite {
     // Extend connection
     assign(this, { connection });
     // Set debug mode on debugger.
-    debug.setDebugMode(debug);
+    debug.setDebugMode(debugMode);
     // Create locales configuration in the jar.
     if (useLocales) {
       locales.defineLocales(useLocales);
