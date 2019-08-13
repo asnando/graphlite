@@ -32,22 +32,30 @@ const resolveParser = (parser) => {
   return null;
 };
 
-const equalsTo = str => /^=/.test(str);
-const moreThan = str => /^>/.test(str);
-const lessThan = str => /^</.test(str);
-const beginsWith = str => /^%[\w\.]+$/.test(str);
-const endsWith = str => /^[\w\.]+%$/.test(str);
-const contains = str => /^%[\w\.]+%$/.test(str);
-const globed = str => /^\*/.test(str);
-const differs = str => /^<>/.test(str);
+// =propName, =
+const equalsTo = str => /^=\w{0,}$/.test(str);
+// >propName, >
+const moreThan = str => /^>\w{0,}$/.test(str);
+// <propName, <
+const lessThan = str => /^<\w{0,}$/.test(str);
+// %propName, ^%
+const beginsWith = str => /^(%\w+)$|^\^%$/.test(str);
+// propName%, ...%
+const endsWith = str => /^(\w+|\.{3})%$/.test(str);
+// %propName%, %%
+const contains = str => /^%\w+%$|^%{2}$/.test(str);
+// *propName, *
+const globed = str => /^\*\w{0,}$/.test(str);
+// <>propName, <>
+const differs = str => /^<>\w{0,}$/.test(str);
 
 const resolveMatchType = (str) => {
   if (equalsTo(str)) return 'equalsTo';
   if (moreThan(str)) return 'moreThan';
   if (lessThan(str)) return 'lessThan';
-  if (contains(str)) return 'contains';
-  if (endsWith(str)) return 'endsWith';
   if (beginsWith(str)) return 'beginsWith';
+  if (endsWith(str)) return 'endsWith';
+  if (contains(str)) return 'contains';
   if (globed(str)) return 'globed';
   if (differs(str)) return 'differs';
   return DEFAULT_FILTER_MATCH_TYPE;
@@ -55,7 +63,7 @@ const resolveMatchType = (str) => {
 
 const detectPropertyFromString = str => str
   // Begins with
-  .replace(/^(=|%|<>|<|>)/, '')
+  .replace(/^(=|%|<>|<|>|\*|\^%|\.{3}%)/, '')
   // Ends with
   .replace(/%$/, '');
 
