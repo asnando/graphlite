@@ -4,6 +4,7 @@ const SQLiteGraphNodeNodeResolver = require('./node-resolver');
 const SQLiteGraphNodeRootSourceWithAssociationsResolver = require('./root-source-with-associations-resolver');
 const SQLiteGraphNodeSourceWithAssociationsResolver = require('./node-source-with-associations-resolver');
 const SQLiteGraphNodeRootOptionsResolver = require('./root-options');
+const SQLiteGrapNodeWithConditions = require('./node-with-conditions');
 
 const useSQLiteResolvers = () => ({
   root: SQLiteGraphNodeRootResolver,
@@ -12,6 +13,7 @@ const useSQLiteResolvers = () => ({
   rootSourceWithAssociations: SQLiteGraphNodeRootSourceWithAssociationsResolver,
   nodeSourceWithAssociations: SQLiteGraphNodeSourceWithAssociationsResolver,
   rootOptions: SQLiteGraphNodeRootOptionsResolver,
+  nodeWithConditions: SQLiteGrapNodeWithConditions,
 });
 
 module.exports = useSQLiteResolvers;
