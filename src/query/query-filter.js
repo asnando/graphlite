@@ -112,9 +112,9 @@ const resolveFilterValue = (value, matchType) => {
       case 'contains':
         return quote(`%${value}%`);
       case 'endsWith':
-        return quote(`${value}%`);
-      case 'beginsWith':
         return quote(`%${value}`);
+      case 'beginsWith':
+        return quote(`${value}%`);
       case 'globed':
         return quote(`*${replaceWithCharactersChain(value)}*`);
       case 'equalsTo':
