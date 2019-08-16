@@ -1,6 +1,6 @@
 Query SQLite data using graph notation and receive it as json (uses sqlite ```json1``` builtin extension).
 
-<p align="center">
+<div align="center">
 
 [![Build Status](https://img.shields.io/travis/com/ffrm/graphlite.svg?logo=travis)](https://travis-ci.com/ffrm/graphlite)
 [![codecov](https://img.shields.io/codecov/c/github/ffrm/graphlite?logo=codecov)]()
@@ -13,7 +13,7 @@ Query SQLite data using graph notation and receive it as json (uses sqlite ```js
 [![](https://img.shields.io/github/last-commit/ffrm/graphlite?logo=github)]()
 [![](https://img.shields.io/github/release-date/ffrm/graphlite?logo=github)]()
 
-</p>
+</div>
 
 ## Installation
 ```bash
