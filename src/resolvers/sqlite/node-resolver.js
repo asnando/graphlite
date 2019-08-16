@@ -1,4 +1,3 @@
-const debug = require('../../debug');
 const translatePropsToObject = require('./helpers/translate-props-to-object');
 const translatePropsToFields = require('./helpers/translate-props-to-fields');
 const resolveOptions = require('./helpers/resolve-options');
@@ -44,7 +43,9 @@ const SQLiteGraphNodeNestedNodeResolver = (
     objectFields = `'${tableAlias}.${ROW_MATCH_OBJECT_KEY_NAME}', ${tableAlias}.${ROW_MATCH_OBJECT_KEY_NAME}, ${objectFields}`;
     rawFields += `, CAST(${conditions.replace(/where/i, '')} AS boolean) AS ${ROW_MATCH_OBJECT_KEY_NAME}`;
     // Prepend the where conditions with the others resolved options.
-    resolvedOptions = `${conditions} ${resolvedOptions}`;
+    // resolvedOptions = `${conditions} ${resolvedOptions}`;
+    const resolvedConditionsWithPreservation = resolveOptions(schema, options, node, ['where'], { usePreservation: true });
+    resolvedOptions = `${resolvedConditionsWithPreservation} ${resolvedOptions}`;
   }
 
   // If current node have group by options which are aggregating the next node

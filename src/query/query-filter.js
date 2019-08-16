@@ -220,6 +220,7 @@ class QueryFilter {
     htm = defaultProps.htm,
     operator = defaultProps.operator,
     join = defaultProps.join,
+    behavior = 'restrict',
   }) {
     if (!isNil(condition)) {
       if (isArray(condition)) {
@@ -256,6 +257,7 @@ class QueryFilter {
       parser: resolveParser(parser),
       schemaName,
       static: /^static$/.test(name),
+      behavior,
     });
   }
 
@@ -328,6 +330,26 @@ class QueryFilter {
       return extractSchemaNameFromPropName(property) || schemaName;
     }
     return schemaName;
+  }
+
+  // Return boolean if nested array records must be fetched even when
+  // not matching the inputed filter value. For example: If you have a sub list
+  // and want to always bring the top 10 items(ordered in the top) even if they
+  // don't match the inputed filter value.
+  // The default behavior for when using a filter it to not preserve another
+  // collection records.
+  shouldPreserve(usePreservation = false) {
+    const { behavior } = this;
+    if (!usePreservation) {
+      return false;
+    }
+    if (/restrict/.test(behavior)) {
+      return false;
+    }
+    if (/preserve/.test(behavior)) {
+      return true;
+    }
+    return false;
   }
 }
 

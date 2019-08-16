@@ -9,7 +9,13 @@ const {
   DEFAULT_PAGE_SIZE,
 } = constants;
 
-const SQLiteGraphNodeOptionsResolver = (schema, options, node, useOnly = []) => {
+const SQLiteGraphNodeOptionsResolver = (
+  schema,
+  options,
+  node,
+  useOnly = [],
+  customOptions = {},
+) => {
   const queryOptions = options;
   const schemaDefinedOptions = schema.getDefinedOptions();
   const isRoot = node.isRoot();
@@ -60,7 +66,7 @@ const SQLiteGraphNodeOptionsResolver = (schema, options, node, useOnly = []) => 
         case 'orderBy':
           return useOrderBy(schema, mergedOptions, options, node);
         case 'where':
-          return useWhere(schema, mergedOptions, options);
+          return useWhere(schema, mergedOptions, customOptions);
         case 'groupBy':
           return useGroupBy(schema, mergedOptions, options);
         default:

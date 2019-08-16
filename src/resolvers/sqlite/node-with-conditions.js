@@ -1,7 +1,5 @@
 const resolveOptions = require('./helpers/resolve-options');
 
-// const preventBeginningKeywords = str => str.replace(/^\s{0,}(where|and)(\s{0,}where|\s{0,}and)?\s{0,}/ig, '');
-
 const preventKeywordsInEdges = str => str
   .replace(/^(\s|and|where)+/i, '')
   .replace(/(\s|and|where)+$/i, '');
@@ -16,7 +14,7 @@ const SQLiteGrapNodeWithConditions = (
 ) => {
   const depth = resolverOptions.depth || 0;
   const { maxDepth = 1 } = resolverOptions;
-  const resolvedOptions = resolveOptions(schema, options, node, ['where']);
+  const resolvedOptions = resolveOptions(schema, options, node, ['where'], { usePreservation: true });
   // Ignores the first node as it can be rendered inside the function who called this one.
   if (!depth) {
     return preventKeywordsInEdges(resolveNextNodes({ depth: depth + 1 }));
