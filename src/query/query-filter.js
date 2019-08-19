@@ -271,7 +271,7 @@ class QueryFilter {
     return htm;
   }
 
-  resolve(value) {
+  resolve(input) {
     const {
       condition,
       property,
@@ -280,8 +280,11 @@ class QueryFilter {
       join,
       static: isStatic,
       schemaName,
+      parser,
     } = this;
     const schema = schemaList.getSchema(schemaName);
+    // Use the parser function when defined.
+    const value = isFunction(parser) ? parser(input) : input;
     let resolvedValue = '';
     if (!isNil(condition)) {
       if (isStatic) {
