@@ -1,6 +1,6 @@
 {
   "name": "graphlite",
-  "version": "2.4.1",
+  "version": "2.5.0",
   "description": "SQLite query builder that supports json",
   "repository": {
     "type": "git",
