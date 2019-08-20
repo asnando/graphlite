@@ -8,7 +8,7 @@ const translatePropsToObject = (props, schemaHash, queryOptions = {}) => keys(pr
     .concat(',')
     .concat(schemaHash)
     .concat('.')
-    .concat(prop.getPropertyColumnName(queryOptions));
+    .concat(prop.getPropertyColumnName(queryOptions, /* useRaw */ true /* useRaw */));
 }).join(',');
 
 module.exports = translatePropsToObject;

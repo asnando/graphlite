@@ -37,12 +37,14 @@ class SchemaProperty {
     parser,
     type,
     defaultValue,
+    raw,
     useLocale = false,
     htm = false,
   }) {
     assign(this, pickBy({
       name,
       alias,
+      raw,
       schemaName,
       tableAlias,
       parser,
@@ -83,8 +85,18 @@ class SchemaProperty {
     return this.alias;
   }
 
-  getPropertyColumnName({ locale } = {}) {
-    const { alias, name, useLocale } = this;
+  getPropertyColumnName({ locale } = {}, useRaw = false) {
+    const {
+      alias,
+      name,
+      useLocale,
+      raw,
+    } = this;
+    // If should prefer the raw query and it is defined then return it
+    // replacing all the $1 matches with the real property column name.
+    if (useRaw && raw) {
+      return raw.replace(/\$1/g, alias || name);
+    }
     if (useLocale) {
       const { columnSuffix } = locales.detectLocale(locale);
       return alias

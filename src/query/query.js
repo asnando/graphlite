@@ -7,6 +7,10 @@ const removeDuplicatedLines = text => text
   .replace(/^\s{1,}$\n/gm, '')
   .replace(/^(.*)(\r?\n\1)+$/gm, '$1');
 
+// In some cases there could be necessary table alias
+// strings preceeding some reserved keywords.
+const removeUnecessaryTableAlias = text => text.replace(/\w+\.(max|min)/g, '$1');
+
 const createGraph = structure => new Graph(structure);
 
 class Query {
@@ -34,6 +38,7 @@ class Query {
     let resolvedQuery = graph.resolveGraph(options, resolverName);
     resolvedQuery = removeDuplicatedLines(resolvedQuery);
     resolvedQuery = formatQuery(resolvedQuery);
+    resolvedQuery = removeUnecessaryTableAlias(resolvedQuery);
     return resolvedQuery;
   }
 
