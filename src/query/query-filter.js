@@ -33,21 +33,21 @@ const resolveParser = (parser) => {
 };
 
 // =propName, =
-const equalsTo = str => /^=\w{0,}$/.test(str);
+const equalsTo = str => /^=[\w\.]{0,}$/.test(str);
 // >propName, >
-const moreThan = str => /^>\w{0,}$/.test(str);
+const moreThan = str => /^>[\w\.]{0,}$/.test(str);
 // <propName, <
-const lessThan = str => /^<\w{0,}$/.test(str);
+const lessThan = str => /^<[\w\.]{0,}$/.test(str);
 // %propName, ^%
-const beginsWith = str => /^(%\w+)$|^\^%$/.test(str);
+const beginsWith = str => /^(%[\w\.]+)$|^\^%$/.test(str);
 // propName%, ...%
-const endsWith = str => /^(\w+|\.{3})%$/.test(str);
+const endsWith = str => /^([\w\.]+|\.{3})%$/.test(str);
 // %propName%, %%
-const contains = str => /^%\w+%$|^%{2}$/.test(str);
+const contains = str => /^%[\w\.]+%$|^%{2}$/.test(str);
 // *propName, *
-const globed = str => /^\*\w{0,}$/.test(str);
+const globed = str => /^\*[\w\.]{0,}$/.test(str);
 // <>propName, <>
-const differs = str => /^<>\w{0,}$/.test(str);
+const differs = str => /^<>[\w\.]{0,}$/.test(str);
 
 const resolveMatchType = (str) => {
   if (equalsTo(str)) return 'equalsTo';
@@ -201,6 +201,11 @@ const resolveStaticCondition = (conditions, schema) => {
   }).join(' AND ');
 };
 
+const resolveCondition = (condition, schema, value) => {
+  debug.warn('Todo: resolveCondition -', condition);
+  return '';
+};
+
 const defaultProps = {
   htm: false,
   operator: '=',
@@ -290,7 +295,7 @@ class QueryFilter {
       if (isStatic) {
         resolvedValue = resolveStaticCondition(condition, schema);
       } else {
-        debug.warn('must resolve condition #2', condition);
+        resolvedValue = resolveCondition(condition, schema, value);
       }
     } else if (!isNil(property)) {
       resolvedValue = resolvePropWithValue(property, value, matchType, join, schema);
