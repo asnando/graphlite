@@ -2,14 +2,10 @@ Query SQLite data using graph notation and receive it as json (uses sqlite ```js
 
 <div align="center">
 
-[![Build Status](https://img.shields.io/travis/com/ffrm/graphlite.svg?logo=travis)](https://travis-ci.com/ffrm/graphlite)
-[![codecov](https://img.shields.io/codecov/c/github/ffrm/graphlite?logo=codecov)]()
 [![eslint](https://img.shields.io/npm/dependency-version/graphlite/dev/eslint?logo=eslint)]()
 [![npm](https://img.shields.io/npm/v/graphlite?label=npm&logo=npm)]()
 [![yarn](https://img.shields.io/npm/v/graphlite?logo=yarn)]()
 [![downloads](https://img.shields.io/npm/dm/graphlite?logo=npm)]()
-[![](https://img.shields.io/github/contributors/ffrm/graphlite)]()
-[![license](https://img.shields.io/github/license/ffrm/graphlite?logo=github)]()
 [![](https://img.shields.io/github/last-commit/ffrm/graphlite?logo=github)]()
 [![](https://img.shields.io/github/release-date/ffrm/graphlite?logo=github)]()
 
